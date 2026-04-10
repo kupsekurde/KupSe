@@ -1,48 +1,39 @@
-const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
+const S_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
+const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 
-// Sprawdzamy czy biblioteka się załadowała
-if (!window.supabase) {
-    alert("Błąd: Nie załadowano biblioteki Supabase!");
-}
+const mojeSupabase = window.supabase.createClient(S_URL, S_KEY);
 
-const supabaseKlient = window.supabase.createClient(URL_S, KEY_S);
-
-let tryb = 'login';
-
-window.pokazAuth = () => {
-    document.getElementById('sekcja-auth').style.display = 'block';
-};
-
-window.przepnijTryb = () => {
-    tryb = (tryb === 'login') ? 'signup' : 'login';
-    document.getElementById('auth-tytul').innerText = (tryb === 'login') ? 'Logowanie' : 'Rejestracja';
-};
-
+// LOGOWANIE I REJESTRACJA
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
+    if(!email || !password) return alert("Wpisz dane!");
 
-    if (tryb === 'login') {
-        const { error } = await supabaseKlient.auth.signInWithPassword({ email, password });
-        if (error) alert("Błąd logowania: " + error.message); 
-        else { alert("Zalogowano!"); location.reload(); }
+    const { error } = await mojeSupabase.auth.signUp({ email, password });
+    if (error) alert("Błąd: " + error.message);
+    else alert("Sukces! Możesz teraz dodać ogłoszenie.");
+};
+
+// DODAWANIE OGŁOSZENIA (Zabezpieczone przed "wywalaniem")
+window.dodajOgloszenieDB = async (event) => {
+    if (event) event.preventDefault(); // To blokuje przeładowanie strony!
+
+    const tytul = document.getElementById('t-tytul').value;
+    const cena = document.getElementById('t-cena').value;
+    const opis = document.getElementById('t-opis').value;
+    const lok = document.getElementById('t-lok').value;
+
+    const { data, error } = await mojeSupabase
+        .from('ogloszenia')
+        .insert([{ tytul, cena: parseInt(cena), opis, lokalizacja: lok }]);
+
+    if (error) {
+        alert("Błąd bazy: " + error.message);
     } else {
-        const { error } = await supabaseKlient.auth.signUp({ email, password });
-        if (error) alert("Błąd rejestracji: " + error.message); 
-        else alert("Konto stworzone! Sprawdź e-mail (jeśli wymagane) i zaloguj się.");
+        alert("Ogłoszenie dodane pomyślnie!");
+        document.getElementById('okno-dodawania').style.display = 'none';
     }
 };
 
-window.sprawdzDostep = () => {
-    alert("Najpierw się zaloguj!");
-    window.pokazAuth();
-};
-
-// Inicjalizacja kategorii, żeby nie było błędu innerHTML
-document.addEventListener('DOMContentLoaded', () => {
-    const kontener = document.getElementById('kategorie-kontener');
-    if (kontener) {
-        kontener.innerHTML = "<h3>Wybierz kategorię</h3>";
-    }
-});
+window.pokazAuth = () => document.getElementById('sekcja-auth').style.display = 'block';
+window.otworzDodawanie = () => document.getElementById('okno-dodawania').style.display = 'block';
