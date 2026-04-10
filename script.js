@@ -3,21 +3,7 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
-const PODKAT_DANE = {
-    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura", "Garaże"],
-    "Motoryzacja": ["Samochody", "Motocykle", "Dostawcze", "Części", "Opony"],
-    "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Oświetlenie", "Dekoracje"],
-    "Elektronika": ["Telefony", "Komputery", "TV", "Konsole", "AGD"],
-    "Moda": ["Ubrania", "Obuwie", "Biżuteria", "Dodatki"],
-    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Zwierzęta", "Pasze"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Kursy"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Wędkarstwo", "Turystyka"],
-    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka"],
-    "Zdrowie i Uroda": ["Kosmetyki", "Perfumy", "Sprzęt medyczny"],
-    "Noclegi": ["Hotele", "Apartamenty", "Domki"],
-    "Antyki i Kolekcje": ["Monety", "Sztuka", "Modele"],
-    "Oddam za darmo": ["Meble", "Ubrania", "Inne"]
-};
+// --- Funkcje pomocnicze ---
 
 async function sprawdzSesje() {
     const { data: { user } } = await baza.auth.getUser();
@@ -30,46 +16,63 @@ async function sprawdzSesje() {
 window.zmienPodkat = () => {
     const glowna = document.getElementById('t-kat').value;
     const pod = document.getElementById('t-podkat');
-    if (PODKAT_DANE[glowna]) {
-        pod.innerHTML = PODKAT_DANE[glowna].map(p => `<option value="${p}">${p}</option>`).join('');
+    const dane = {
+        "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
+        "Motoryzacja": ["Samochody", "Motocykle", "Części"],
+        "Dom i Ogród": ["Meble", "Ogród", "Narzędzia"],
+        "Elektronika": ["Telefony", "Komputery", "TV"],
+        "Moda": ["Ubrania", "Obuwie"],
+        "Rolnictwo": ["Ciągniki", "Maszyny"],
+        "Sport i Hobby": ["Rowery", "Wędkarstwo"],
+        "Oddam za darmo": ["Wszystko"]
+    };
+    if (dane[glowna]) {
+        pod.innerHTML = dane[glowna].map(p => `<option value="${p}">${p}</option>`).join('');
     }
 };
+
+// --- Główne akcje ---
 
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
-    const { error } = await baza.auth.signUp({ email, password });
+    const { error } = await baza.auth.signInWithPassword({ email, password });
     if (error) {
-        const { error: logErr } = await baza.auth.signInWithPassword({ email, password });
-        if (logErr) alert("Błąd: " + logErr.message);
-        else location.reload();
-    } else {
-        alert("Zalogowano/Zarejestrowano!");
-        location.reload();
+        const { error: regErr } = await baza.auth.signUp({ email, password });
+        if (regErr) alert("Błąd: " + regErr.message);
+        else alert("Założono konto! Zaloguj się.");
     }
+    location.reload();
 };
 
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Musisz być zalogowany!");
-
     const btn = document.getElementById('btn-wyslij');
     const plik = document.getElementById('t-plik').files[0];
-    let imgURL = "";
+    let finalImgURL = "";
 
-    btn.innerText = "Wysyłanie...";
+    btn.innerText = "Wysyłanie pliku...";
     btn.disabled = true;
 
+    // 1. Wgrywanie zdjęcia
     if (plik) {
-        const ext = plik.name.split('.').pop();
-        const path = `${Date.now()}.${ext}`;
-        const { error: upErr } = await baza.storage.from('zdjecia').upload(path, plik);
-        if (upErr) alert("Błąd zdjęcia: " + upErr.message);
-        else imgURL = `${URL_S}/storage/v1/object/public/zdjecia/${path}`;
+        const nazwa = `${Date.now()}_${plik.name.replace(/\s/g, '_')}`;
+        const { data, error: storageErr } = await baza.storage
+            .from('zdjecia')
+            .upload(nazwa, plik);
+
+        if (storageErr) {
+            alert("Błąd wgrywania zdjęcia: " + storageErr.message);
+        } else {
+            // Pobieranie publicznego linku
+            const { data: publicData } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+            finalImgURL = publicData.publicUrl;
+        }
     }
 
-    const o = {
+    // 2. Dodawanie ogłoszenia
+    btn.innerText = "Zapisywanie ogłoszenia...";
+    const daneOgloszenia = {
         tytul: document.getElementById('t-tytul').value,
         kategoria: document.getElementById('t-kat').value,
         podkategoria: document.getElementById('t-podkat').value,
@@ -77,29 +80,33 @@ window.dodajOgloszenieDB = async (e) => {
         opis: document.getElementById('t-opis').value,
         lokalizacja: document.getElementById('t-lok').value,
         telefon: document.getElementById('t-tel').value,
-        zdjecia: imgURL
+        zdjecia: finalImgURL
     };
 
-    const { error: dbErr } = await baza.from('ogloszenia').insert([o]);
+    const { error: dbErr } = await baza.from('ogloszenia').insert([daneOgloszenia]);
+
     if (dbErr) alert("Błąd bazy: " + dbErr.message);
-    else location.reload();
+    else {
+        alert("Sukces!");
+        location.reload();
+    }
 };
 
 async function laduj(f = null) {
     let q = baza.from('ogloszenia').select('*').order('id', { ascending: false });
     if (f) q = q.eq('kategoria', f);
     const { data } = await q;
-    const l = document.getElementById('lista-ogloszen');
-    if (l && data) {
-        l.innerHTML = data.map(o => `
+    const list = document.getElementById('lista-ogloszen');
+    if (list && data) {
+        list.innerHTML = data.map(o => `
             <div class="karta">
                 ${o.zdjecia ? `<img src="${o.zdjecia}" class="karta-zdjecie">` : ''}
-                <h2 style="margin:0;">${o.tytul}</h2>
-                <p style="color:#002f34; font-size:1.4rem; font-weight:bold; margin:10px 0;">${o.cena} zł</p>
-                <p style="white-space: pre-wrap;">${o.opis}</p>
-                <hr style="border:0; border-top:1px solid #eee;">
-                <small>📍 ${o.lokalizacja} | 📂 ${o.kategoria} > ${o.podkategoria}</small>
-                ${o.telefon ? `<br><b>📞 Telefon: ${o.telefon}</b>` : ''}
+                <h2>${o.tytul}</h2>
+                <p style="color:#23e5db; font-size:1.5rem; font-weight:bold;">${o.cena} zł</p>
+                <p>${o.opis}</p>
+                <div style="font-size:0.8rem; color:gray; border-top:1px solid #eee; padding-top:10px;">
+                    📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak numeru'}
+                </div>
             </div>
         `).join('');
     }
