@@ -4,34 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KupSe.pl</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+        header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 800px; margin: auto; padding: 20px; text-align: center; }
+        .btn-main { padding: 15px 30px; background: #23e5db; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .kat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .kat-item { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; font-weight: bold; }
+        .form-box { display: none; background: white; padding: 20px; border-radius: 10px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-auth { width: 95%; padding: 10px; background: #002f34; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    </style>
 </head>
 <body>
-    <header style="background:#002f34; padding:20px; color:white; display:flex; justify-content:space-between; align-items:center;">
+    <header>
         <h1 style="margin:0; color:#23e5db;">KupSe</h1>
         <div id="auth-status">
             <button onclick="otworzAuth()">Zaloguj / Zarejestruj</button>
         </div>
     </header>
 
-    <div class="container" style="max-width:1000px; margin:auto; padding:20px; text-align:center;">
-        <div id="kategorie" style="margin-top:20px;"></div>
+    <div class="container">
+        <div id="kategorie-lista" class="kat-grid"></div>
 
-        <div style="margin: 20px;">
-            <button onclick="sprawdzDostepDoDodawania()" style="padding:15px 30px; background:#23e5db; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">+ Dodaj Ogłoszenie</button>
+        <div style="margin: 30px 0;">
+            <button class="btn-main" onclick="sprawdzDostep()">+ Dodaj Ogłoszenie</button>
         </div>
 
-        <div id="sekcja-auth" style="display:none; background:#f4f4f4; padding:20px; border-radius:10px; border:1px solid #ccc; max-width:400px; margin:20px auto;">
+        <div id="sekcja-auth" class="form-box">
             <h2 id="auth-tytul">Logowanie</h2>
-            <input type="email" id="auth-email" placeholder="E-mail" style="width:90%; padding:10px; margin:5px;">
-            <input type="password" id="auth-haslo" placeholder="Hasło" style="width:90%; padding:10px; margin:5px;">
-            <button onclick="obslugaAuth()" style="width:90%; padding:10px; background:#002f34; color:white; border:none; cursor:pointer;">Zatwierdź</button>
+            <input type="email" id="auth-email" placeholder="Twój e-mail">
+            <input type="password" id="auth-haslo" placeholder="Hasło">
+            <button class="btn-auth" onclick="obslugaAuth()">Zatwierdź</button>
             <p onclick="przepnijAuth()" style="text-decoration:underline; cursor:pointer; font-size:12px;">Zmień (Logowanie / Rejestracja)</p>
-            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="background:none; border:none; color:red; cursor:pointer;">Zamknij</button>
+            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Zamknij</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
