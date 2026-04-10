@@ -14,26 +14,24 @@
         </div>
     </header>
 
-    <div class="container" style="max-width:1000px; margin:auto; padding:20px;">
-        <div id="debug-info" style="color:red; font-weight:bold;"></div>
+    <div class="container" style="max-width:1000px; margin:auto; padding:20px; text-align:center;">
+        <div id="kategorie" style="margin-top:20px;"></div>
 
-        <nav id="kategorie"></nav>
-
-        <div style="text-align: center; margin: 20px;">
+        <div style="margin: 20px;">
             <button onclick="sprawdzDostepDoDodawania()" style="padding:15px 30px; background:#23e5db; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">+ Dodaj Ogłoszenie</button>
         </div>
 
-        <div id="sekcja-auth" style="display:none; background:#eee; padding:20px; border-radius:10px; margin:20px 0;">
+        <div id="sekcja-auth" style="display:none; background:#f4f4f4; padding:20px; border-radius:10px; border:1px solid #ccc; max-width:400px; margin:20px auto;">
             <h2 id="auth-tytul">Logowanie</h2>
-            <input type="email" id="auth-email" placeholder="E-mail" style="width:100%; padding:10px; margin:5px 0;">
-            <input type="password" id="auth-haslo" placeholder="Hasło" style="width:100%; padding:10px; margin:5px 0;">
-            <button onclick="obslugaAuth()" style="width:100%; padding:10px; background:#002f34; color:white; border:none; margin-top:10px;">Zatwierdź</button>
-            <p onclick="przepnijAuth()" style="text-decoration:underline; cursor:pointer; text-align:center;">Zmień tryb (Logowanie/Rejestracja)</p>
-            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="width:100%; padding:10px; background:gray; color:white; border:none;">Anuluj</button>
+            <input type="email" id="auth-email" placeholder="E-mail" style="width:90%; padding:10px; margin:5px;">
+            <input type="password" id="auth-haslo" placeholder="Hasło" style="width:90%; padding:10px; margin:5px;">
+            <button onclick="obslugaAuth()" style="width:90%; padding:10px; background:#002f34; color:white; border:none; cursor:pointer;">Zatwierdź</button>
+            <p onclick="przepnijAuth()" style="text-decoration:underline; cursor:pointer; font-size:12px;">Zmień (Logowanie / Rejestracja)</p>
+            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="background:none; border:none; color:red; cursor:pointer;">Zamknij</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
