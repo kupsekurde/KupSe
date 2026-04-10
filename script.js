@@ -1,6 +1,130 @@
-// Dane do połączenia z Twoim Supabase (znajdziesz je w Settings -> API)
+// KONFIGURACJA - WPISZ SWOJE DANE
 const SUPABASE_URL = 'TWOJ_URL_Z_SUPABASE';
 const SUPABASE_KEY = 'TWOJ_ANON_KEY_Z_SUPABASE';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-console.log("KupSe działa! Połączono z systemem.");
+// TWOJE KATEGORIE
+const daneKategorii = {
+    "🏠 Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura i lokale", "Garaże i parkingi"],
+    "🚗 Motoryzacja": ["Samochody osobowe", "Motocykle i skutery", "Dostawcze", "Części samochodowe", "Opony i felgi", "Maszyny budowlane"],
+    "🛋️ Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Oświetlenie", "Ogrzewanie", "Wyposażenie wnętrz"],
+    "📱 Elektronika": ["Telefony", "Komputery", "TV / Audio", "Konsole i gry", "AGD"],
+    "👕 Moda": ["Ubrania damskie", "Ubrania męskie", "Obuwie", "Dodatki", "Biżuteria"],
+    "🚜 Rolnictwo": ["Maszyny rolnicze", "Ciągniki", "Nawozy", "Części", "Produkty rolne", "Giełda zwierząt"],
+    "🎸 Muzyka i Edukacja": ["Instrumenty", "Książki", "Kursy", "Korepetycje"],
+    "🏀 Sport i Hobby": ["Siłownia i fitness", "Rowery", "Turystyka", "Wędkarstwo", "Kolekcje"],
+    "👶 Dla Dzieci": ["Zabawki", "Wózki", "Ubranka", "Artykuły szkolne"],
+    "💄 Zdrowie i Uroda": ["Kosmetyki", "Sprzęt medyczny", "Suplementy", "Perfumy"],
+    "🏨 Noclegi": ["Hotele", "Apartamenty", "Kwatery prywatne"],
+    "🎁 Antyki i Kolekcje": ["Monety", "Znaczki", "Sztuka", "Vintage"],
+    "♻️ Oddam za darmo": ["Rzeczy gratis"]
+};
+
+let trybAuth = 'login'; // 'login' lub 'signup'
+let zalogowanyUser = null;
+
+// --- FUNKCJE LOGOWANIA ---
+
+async function sprawdzSesje() {
+    const { data } = await supabase.auth.getSession();
+    zalogowanyUser = data.session?.user || null;
+    odswiezWidokAuth();
+}
+
+function odswiezWidokAuth() {
+    const statusDiv = document.getElementById('auth-status');
+    if (zalogowanyUser) {
+        statusDiv.innerHTML = `<span>Witaj, ${zalogowanyUser.email}</span> <button onclick="wyloguj()">Wyloguj</button>`;
+    } else {
+        statusDiv.innerHTML = `<button onclick="otworzAuth()">Zaloguj / Zarejestruj</button>`;
+    }
+}
+
+function otworzAuth() { document.getElementById('sekcja-auth').style.display = 'block'; }
+function zamknijAuth() { document.getElementById('sekcja-auth').style.display = 'none'; }
+function przepnijAuth() {
+    trybAuth = (trybAuth === 'login') ? 'signup' : 'login';
+    document.getElementById('auth-tytul').innerText = (trybAuth === 'login') ? 'Logowanie' : 'Rejestracja';
+}
+
+async function obslugaAuth() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-haslo').value;
+
+    if (trybAuth === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert("Błąd logowania: " + error.message);
+        else location.reload();
+    } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) alert("Błąd rejestracji: " + error.message);
+        else alert("Zarejestrowano! Sprawdź e-mail (jeśli włączyłeś potwierdzenie) lub zaloguj się.");
+    }
+}
+
+async function wyloguj() {
+    await supabase.auth.signOut();
+    location.reload();
+}
+
+// --- FUNKCJE OGŁOSZEŃ ---
+
+function sprawdzDostepDoDodawania() {
+    if (!zalogowanyUser) {
+        alert("Musisz się zalogować, aby dodać ogłoszenie!");
+        otworzAuth();
+    } else {
+        document.getElementById('sekcja-dodawania').style.display = 'block';
+    }
+}
+
+function zamknijDodawanie() { document.getElementById('sekcja-dodawania').style.display = 'none'; }
+
+function wyswietlKategorie() {
+    const kontener = document.getElementById('kategorie');
+    kontener.innerHTML = '<div class="kategorie-grid"></div>';
+    const grid = kontener.querySelector('.kategorie-grid');
+    Object.keys(daneKategorii).forEach(kat => {
+        const div = document.createElement('div');
+        div.className = 'kat-item';
+        div.innerHTML = `<h3>${kat}</h3>`;
+        div.onclick = () => pokazPodkategorie(kat);
+        grid.appendChild(div);
+    });
+}
+
+function pokazPodkategorie(kat) {
+    const kontener = document.getElementById('kategorie');
+    let html = `<h2>${kat}</h2><button onclick="wyswietlKategorie()">Powrót</button><br><br>`;
+    daneKategorii[kat].forEach(pod => {
+        html += `<button class="btn-pod" onclick="filtrujOgloszenia('${kat}', '${pod}')">${pod}</button>`;
+    });
+    kontener.innerHTML = html;
+}
+
+function przygotujFormularz() {
+    const selectKat = document.getElementById('f-kategoria');
+    Object.keys(daneKategorii).forEach(kat => {
+        let opt = document.createElement('option');
+        opt.value = kat; opt.innerText = kat;
+        selectKat.appendChild(opt);
+    });
+}
+
+function zaladujPodkategorieFormularza() {
+    const kat = document.getElementById('f-kategoria').value;
+    const selectPod = document.getElementById('f-podkategoria');
+    selectPod.innerHTML = '';
+    if(daneKategorii[kat]) {
+        daneKategorii[kat].forEach(pod => {
+            let opt = document.createElement('option');
+            opt.value = pod; opt.innerText = pod;
+            selectPod.appendChild(opt);
+        });
+    }
+}
+
+// Start systemu
+sprawdzSesje();
+wyswietlKategorie();
+przygotujFormularz();
