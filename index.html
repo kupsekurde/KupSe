@@ -9,12 +9,13 @@
         .kat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 20px; }
         .kat-item { background: white; padding: 15px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; font-weight: bold; display: flex; flex-direction: column; align-items: center; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
-        .form-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; margin: auto; position: relative; top: 50%; transform: translateY(-50%); box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-        input, textarea, select { width: 100%; margin: 8px 0; padding: 12px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .form-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; margin: auto; position: relative; top: 50%; transform: translateY(-50%); box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        input, textarea, select { width: 100%; margin: 8px 0; padding: 12px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
         button { background: #23e5db; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 6px; width: 100%; margin-top: 10px; }
-        .btn-top { width: auto; background: #23e5db; color: #002f34; }
-        #user-email { font-weight: bold; color: #23e5db; }
-        .karta-zdjecie { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+        .btn-top { width: auto; background: #23e5db; color: #002f34; padding: 8px 15px; }
+        #user-info { color: #23e5db; font-weight: bold; margin-right: 10px; }
+        .karta { background: white; padding: 20px; margin: 0 auto 20px auto; border-radius: 10px; text-align: left; border: 1px solid #ddd; max-width: 800px; }
+        .karta-zdjecie { width: 100%; height: auto; max-height: 400px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; background: #f9f9f9; }
     </style>
 </head>
 <body>
@@ -32,17 +33,22 @@
         <div onclick="window.filtruj('Elektronika')" class="kat-item">📱<span>Elektronika</span></div>
         <div onclick="window.filtruj('Moda')" class="kat-item">👕<span>Moda</span></div>
         <div onclick="window.filtruj('Rolnictwo')" class="kat-item">🚜<span>Rolnictwo</span></div>
+        <div onclick="window.filtruj('Muzyka i Edukacja')" class="kat-item">🎸<span>Muzyka</span></div>
         <div onclick="window.filtruj('Sport i Hobby')" class="kat-item">⚽<span>Sport</span></div>
+        <div onclick="window.filtruj('Dla Dzieci')" class="kat-item">👶<span>Dla Dzieci</span></div>
+        <div onclick="window.filtruj('Zdrowie i Uroda')" class="kat-item">💄<span>Zdrowie</span></div>
+        <div onclick="window.filtruj('Noclegi')" class="kat-item">🏨<span>Noclegi</span></div>
+        <div onclick="window.filtruj('Antyki i Kolekcje')" class="kat-item">🎁<span>Antyki</span></div>
         <div onclick="window.filtruj('Oddam za darmo')" class="kat-item">♻️<span>Za darmo</span></div>
     </div>
 
-    <button style="width: auto; font-size: 1.2rem; padding: 15px 30px;" onclick="document.getElementById('okno-dodaj').style.display='block'">+ Dodaj Ogłoszenie</button>
+    <button style="width: auto; font-size: 1.2rem; padding: 15px 40px; margin-bottom: 20px;" onclick="document.getElementById('okno-dodaj').style.display='block'">+ Dodaj Ogłoszenie</button>
 
-    <div id="lista-ogloszen" style="max-width:800px; margin: 30px auto; padding: 0 20px;"></div>
+    <div id="lista-ogloszen"></div>
 
     <div id="okno-auth" class="overlay">
         <div class="form-box">
-            <h3>Twoje Konto</h3>
+            <h3>Logowanie / Rejestracja</h3>
             <input type="email" id="auth-email" placeholder="Email">
             <input type="password" id="auth-haslo" placeholder="Hasło">
             <button onclick="window.wykonajAuth()">Zatwierdź</button>
@@ -55,23 +61,29 @@
             <h3>Dodaj Nowe Ogłoszenie</h3>
             <input type="text" id="t-tytul" placeholder="Tytuł">
             <select id="t-kat" onchange="window.zmienPodkat()">
-                <option value="">Wybierz kategorię</option>
+                <option value="">Wybierz kategorię główną</option>
                 <option value="Nieruchomości">Nieruchomości</option>
                 <option value="Motoryzacja">Motoryzacja</option>
                 <option value="Dom i Ogród">Dom i Ogród</option>
                 <option value="Elektronika">Elektronika</option>
                 <option value="Moda">Moda</option>
                 <option value="Rolnictwo">Rolnictwo</option>
+                <option value="Muzyka i Edukacja">Muzyka i Edukacja</option>
                 <option value="Sport i Hobby">Sport i Hobby</option>
+                <option value="Dla Dzieci">Dla Dzieci</option>
+                <option value="Zdrowie i Uroda">Zdrowie i Uroda</option>
+                <option value="Noclegi">Noclegi</option>
+                <option value="Antyki i Kolekcje">Antyki i Kolekcje</option>
                 <option value="Oddam za darmo">Oddam za darmo</option>
             </select>
             <select id="t-podkat"><option value="">Wybierz podkategorię</option></select>
             <input type="number" id="t-cena" placeholder="Cena">
             <input type="text" id="t-tel" placeholder="Numer telefonu">
-            <input type="text" id="t-foto" placeholder="Link do zdjęcia (np. z imgur)">
-            <textarea id="t-opis" placeholder="Opis ogłoszenia"></textarea>
-            <input type="text" id="t-lok" placeholder="Miasto">
-            <button onclick="window.dodajOgloszenieDB(event)">Opublikuj</button>
+            <label style="display:block; text-align:left; font-size:12px; margin-top:5px;">Wybierz zdjęcie z dysku:</label>
+            <input type="file" id="t-plik" accept="image/*">
+            <textarea id="t-opis" placeholder="Opis ogłoszenia" rows="4"></textarea>
+            <input type="text" id="t-lok" placeholder="Miasto / Lokalizacja">
+            <button id="btn-wyslij" onclick="window.dodajOgloszenieDB(event)">Opublikuj ogłoszenie</button>
             <button onclick="this.parentElement.parentElement.style.display='none'" style="background:none; color:gray;">Anuluj</button>
         </div>
     </div>
