@@ -2,56 +2,33 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe.pl</title>
+    <title>KupSe - Serwis Ogłoszeniowy</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; }
-        header { background: #002f34; padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .container { max-width: 900px; margin: auto; padding: 20px; text-align: center; }
-        .kat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-        .kat-item { background: white; padding: 25px; border-radius: 10px; cursor: pointer; border: 1px solid #ddd; font-weight: bold; transition: 0.3s; }
-        .kat-item:hover { border-color: #23e5db; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .form-box { display: none; background: white; padding: 25px; border-radius: 12px; border: 1px solid #ddd; max-width: 450px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .btn-main { background: #23e5db; border: none; padding: 15px 35px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin: 20px 0; }
-        .btn-auth { background: #002f34; color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        #auth-status span { font-size: 14px; margin-right: 10px; }
-        button:active { transform: scale(0.98); }
+        body { font-family: sans-serif; margin: 0; background: #f4f4f4; }
+        header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; }
+        .container { max-width: 800px; margin: auto; padding: 20px; text-align: center; }
+        .form-box { display: none; background: white; padding: 20px; border: 1px solid #ccc; margin-top: 20px; border-radius: 8px; }
+        input { width: 80%; padding: 10px; margin: 5px; }
+        button { padding: 10px 20px; cursor: pointer; background: #23e5db; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
-        <h1 style="margin:0; color:#23e5db; cursor:pointer;" onclick="location.reload()">KupSe</h1>
+        <h1>KupSe</h1>
         <div id="auth-status">
-            <button onclick="otworzAuth()" style="padding: 8px 15px; cursor:pointer;">Zaloguj / Zarejestruj</button>
+            <button onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
         </div>
     </header>
 
     <div class="container">
-        <div id="kategorie-lista" class="kat-grid"></div>
-
-        <div style="margin-top: 40px;">
-            <button class="btn-main" onclick="sprawdzDostep()">+ Dodaj Ogłoszenie</button>
-        </div>
+        <div id="kategorie-kontener"></div> <button onclick="window.sprawdzDostep()">+ Dodaj Ogłoszenie</button>
 
         <div id="sekcja-auth" class="form-box">
             <h2 id="auth-tytul">Logowanie</h2>
-            <input type="email" id="auth-email" placeholder="Twój e-mail">
-            <input type="password" id="auth-haslo" placeholder="Hasło (min. 6 znaków)">
-            <button class="btn-auth" onclick="obslugaAuth()">Zatwierdź</button>
-            <p onclick="przepnijAuth()" style="text-decoration:underline; cursor:pointer; font-size:13px; color: #002f34;">Zmień (Logowanie / Rejestracja)</p>
-            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="background:none; border:none; color:red; cursor:pointer; margin-top:15px;">Anuluj</button>
-        </div>
-
-        <div id="sekcja-dodawania" class="form-box">
-            <h2>Nowe Ogłoszenie</h2>
-            <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia">
-            <input type="number" id="f-cena" placeholder="Cena (PLN)">
-            <textarea id="f-opis" placeholder="Opis przedmiotu" rows="4"></textarea>
-            <input type="text" id="f-lokalizacja" placeholder="Miasto">
-            <input type="tel" id="f-telefon" placeholder="Telefon kontaktowy">
-            <button class="btn-auth" style="background: #23e5db; color: #002f34;" onclick="wyslijOgloszenie()">Opublikuj Teraz</button>
-            <button onclick="document.getElementById('sekcja-dodawania').style.display='none'" style="background:none; border:none; color:gray; cursor:pointer; margin-top:10px;">Zamknij</button>
+            <input type="email" id="auth-email" placeholder="E-mail">
+            <input type="password" id="auth-haslo" placeholder="Hasło">
+            <button onclick="window.wykonajAuth()">Zatwierdź</button>
+            <p onclick="window.przepnijTryb()" style="cursor:pointer; text-decoration: underline;">Zmień tryb</p>
         </div>
     </div>
 
