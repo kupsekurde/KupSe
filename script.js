@@ -140,8 +140,8 @@ window.wyslijOgloszenie = async (e) => {
     btn.innerText = "Publikowanie..."; btn.disabled = true;
 
     const path = `${Date.now()}_img`;
-    await baza.storage.from('ZDJECIA').upload(path, plik);
-    const { data: u } = baza.storage.from('ZDJECIA').getPublicUrl(path);
+    await baza.storage.from('zdjecia').upload(path, plik);
+    const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
 
     await baza.from('ogloszenia').insert([{
         tytul: document.getElementById('f-tytul').value,
