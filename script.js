@@ -1,51 +1,48 @@
-// Używamy nowych nazw zmiennych, żeby laptop przestał zgłaszać błędy
-const MOJ_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const MOJ_KLUCZ = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
+const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
+const KEY_S = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
 
-// Tworzymy klienta pod unikalną nazwą 'polaczenie'
-const polaczenie = window.supabase.createClient(MOJ_URL, MOJ_KLUCZ);
+// Sprawdzamy czy biblioteka się załadowała
+if (!window.supabase) {
+    alert("Błąd: Nie załadowano biblioteki Supabase!");
+}
 
-let zalogowanyUzytkownik = null;
-let trybLogowania = 'login';
+const supabaseKlient = window.supabase.createClient(URL_S, KEY_S);
 
-// --- OBSŁUGA AUTH ---
+let tryb = 'login';
+
 window.pokazAuth = () => {
     document.getElementById('sekcja-auth').style.display = 'block';
 };
 
 window.przepnijTryb = () => {
-    trybLogowania = (trybLogowania === 'login') ? 'signup' : 'login';
-    document.getElementById('auth-tytul').innerText = (trybLogowania === 'login') ? 'Logowanie' : 'Rejestracja';
+    tryb = (tryb === 'login') ? 'signup' : 'login';
+    document.getElementById('auth-tytul').innerText = (tryb === 'login') ? 'Logowanie' : 'Rejestracja';
 };
 
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
 
-    if (trybLogowania === 'login') {
-        const { error } = await polaczenie.auth.signInWithPassword({ email, password });
-        if (error) alert("Błąd: " + error.message); else location.reload();
+    if (tryb === 'login') {
+        const { error } = await supabaseKlient.auth.signInWithPassword({ email, password });
+        if (error) alert("Błąd logowania: " + error.message); 
+        else { alert("Zalogowano!"); location.reload(); }
     } else {
-        const { error } = await polaczenie.auth.signUp({ email, password });
-        if (error) alert("Błąd rejestracji: " + error.message); else alert("Konto założone! Zaloguj się.");
+        const { error } = await supabaseKlient.auth.signUp({ email, password });
+        if (error) alert("Błąd rejestracji: " + error.message); 
+        else alert("Konto stworzone! Sprawdź e-mail (jeśli wymagane) i zaloguj się.");
     }
 };
 
-// --- START ---
-async function inicjalizacja() {
-    const { data } = await polaczenie.auth.getSession();
-    zalogowanyUzytkownik = data.session?.user || null;
+window.sprawdzDostep = () => {
+    alert("Najpierw się zaloguj!");
+    window.pokazAuth();
+};
 
-    if (zalogowanyUzytkownik) {
-        document.getElementById('auth-status').innerHTML = `<span>${zalogowanyUzytkownik.email}</span>`;
+// Inicjalizacja kategorii, żeby nie było błędu innerHTML
+document.addEventListener('DOMContentLoaded', () => {
+    const kontener = document.getElementById('kategorie-kontener');
+    if (kontener) {
+        kontener.innerHTML = "<h3>Wybierz kategorię</h3>";
     }
-    
-    // Testowe kategorie
-    document.getElementById('kategorie').innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div style="background:white; padding:20px; border:1px solid #ccc; cursor:pointer;" onclick="alert('Działa!')">🏠 Nieruchomości</div>
-            <div style="background:white; padding:20px; border:1px solid #ccc; cursor:pointer;" onclick="alert('Działa!')">🚗 Motoryzacja</div>
-        </div>`;
-}
-
-inicjalizacja();
+});
