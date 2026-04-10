@@ -6,32 +6,34 @@
     <title>Mój Portal Ogłoszeniowy</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; text-align: center; }
-        .kontener { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #23e5db; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 16px; }
-        button:disabled { background: #ccc; }
-        .auth-sekcja { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
-        .ogloszenie-karta { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; text-align: left; }
-        .ogloszenie-karta img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; }
-        .cena { color: #23e5db; font-size: 1.4rem; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .kontener { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 12px; background: #23e5db; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #1bcac2; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .auth-sekcja { margin-bottom: 30px; padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; }
+        .szukaj-sekcja { margin: 20px 0; padding: 15px; background: #eefbff; border-radius: 10px; border: 1px solid #d1f2f5; }
+        .ogloszenie-karta { background: white; border: 1px solid #eee; padding: 20px; margin-top: 15px; border-radius: 12px; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .ogloszenie-karta img { width: 100%; max-height: 450px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; }
+        .cena { color: #23e5db; font-size: 1.5rem; font-weight: bold; margin: 10px 0; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 25px 0; }
     </style>
 </head>
 <body>
 
 <div class="kontener">
     <div class="auth-sekcja" id="auth-status">
-        <h3>Logowanie / Rejestracja</h3>
+        <h3>Konto użytkownika</h3>
         <input type="email" id="auth-email" placeholder="Email">
         <input type="password" id="auth-haslo" placeholder="Hasło">
-        <button onclick="wykonajAuth()">Zaloguj / Stwórz konto</button>
+        <button onclick="wykonajAuth()">Zaloguj / Zarejestruj się</button>
     </div>
 
     <div id="form-dodawania" style="display: none;">
-        <h2>Dodaj nowe ogłoszenie</h2>
+        <h2>Wystaw przedmiot</h2>
         <form onsubmit="dodajOgloszenieDB(event)">
-            <input type="text" id="t-tytul" placeholder="Tytuł ogłoszenia" required>
-            
+            <input type="text" id="t-tytul" placeholder="Co sprzedajesz?" required>
             <select id="t-kat" onchange="zmienPodkat()" required>
                 <option value="">-- Wybierz kategorię --</option>
                 <option value="Motoryzacja">Motoryzacja</option>
@@ -39,26 +41,25 @@
                 <option value="Elektronika">Elektronika</option>
                 <option value="Dom i Ogród">Dom i Ogród</option>
             </select>
-
-            <select id="t-podkat" required>
-                <option value="">-- Najpierw wybierz kategorię --</option>
-            </select>
-
+            <select id="t-podkat" required><option value="">-- Wybierz podkategorię --</option></select>
             <input type="number" id="t-cena" placeholder="Cena (zł)" min="1" required>
-            <textarea id="t-opis" placeholder="Opis przedmiotu..." rows="4" required></textarea>
-            <input type="text" id="t-lok" placeholder="Lokalizacja" required>
-            <input type="tel" id="t-tel" placeholder="Numer telefonu" required>
-            
-            <label style="display:block; text-align:left; margin-top:10px;">Zdjęcie przedmiotu (wymagane):</label>
+            <textarea id="t-opis" placeholder="Opisz przedmiot (stan, wady, zalety...)" rows="4" required></textarea>
+            <input type="text" id="t-lok" placeholder="Lokalizacja (Miasto)" required>
+            <input type="tel" id="t-tel" placeholder="Twój numer telefonu" required>
+            <label style="display:block; text-align:left; font-size: 13px; color: #666;">Zdjęcie (wymagane):</label>
             <input type="file" id="t-plik" accept="image/*" required>
-
             <button type="submit" id="btn-wyslij">Opublikuj ogłoszenie</button>
         </form>
     </div>
 
     <hr>
-    <h2>Najnowsze ogłoszenia</h2>
-    <div id="lista-ogloszen">Ładowanie...</div>
+
+    <div class="szukaj-sekcja">
+        <h3 style="margin-top:0">Wyszukiwarka</h3>
+        <input type="text" id="wyszukiwarka" placeholder="Wpisz np. Samsung Note 10..." oninput="filtrujOgloszenia()">
+    </div>
+
+    <div id="lista-ogloszen">Ładowanie ogłoszeń...</div>
 </div>
 
 <script src="script.js"></script>
