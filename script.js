@@ -4,44 +4,39 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 let wszystkieOgloszenia = [];
 
-// 1. SYSTEM KATEGORII (PEŁNE 13)
 const KAT_MAPA = {
-    "Motoryzacja": ["Samochody osobowe", "Motocykle", "Dostawcze", "Części"],
-    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
-    "Elektronika": ["Telefony", "Laptopy", "Konsole", "TV"],
-    "Dom i Ogród": ["Meble", "Ogród", "Budownictwo"],
-    "Moda": ["Ubrania", "Buty", "Dodatki"],
-    "Rolnictwo": ["Ciągniki", "Maszyny", "Produkty"],
-    "Zwierzęta": ["Psy", "Koty", "Akcesoria"],
-    "Dla Dzieci": ["Wózki", "Zabawki", "Ubranka"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Kolekcje"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Korepetycje"],
-    "Usługi": ["Budowlane", "Naprawa", "Zdrowie"],
-    "Praca": ["Pełny etat", "Dodatkowa", "Za granicą"],
-    "Inne": ["Oddam za darmo", "Zamiana", "Różne"]
+    "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony"],
+    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Wynajem"],
+    "Elektronika": ["Telefony", "Komputery", "Konsole", "RTV"],
+    "Dom i Ogród": ["Meble", "Narzędzia", "Ogród", "Materiały budowlane"],
+    "Moda": ["Ubrania damskie", "Ubrania męskie", "Buty", "Biżuteria"],
+    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Zwierzęta hodowlane"],
+    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Akcesoria"],
+    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka dziecięce"],
+    "Sport i Hobby": ["Rowery", "Wędkarstwo", "Siłownia", "Gry"],
+    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty"],
+    "Usługi": ["Remonty", "Transport", "Zdrowie i Uroda"],
+    "Praca": ["Pełny etat", "Praca dodatkowa", "Staży"],
+    "Inne": ["Oddam za darmo", "Zamiana", "Kolekcje"]
 };
 
 window.zmienPodkat = () => {
     const glowna = document.getElementById('t-kat').value;
     const pod = document.getElementById('t-podkat');
-    pod.innerHTML = '<option value="">-- Podkategoria --</option>';
+    pod.innerHTML = '<option value="">-- Wybierz --</option>';
     if (KAT_MAPA[glowna]) KAT_MAPA[glowna].forEach(p => pod.innerHTML += `<option value="${p}">${p}</option>`);
 };
 
-// 2. AUTH & NAVBAR
 async function sprawdzSesje() {
     const { data: { user } } = await baza.auth.getUser();
     const navPanel = document.getElementById('nav-user-panel');
-    const authBox = document.getElementById('auth-section');
-    const formBox = document.getElementById('form-dodawania');
-
     if (user) {
         navPanel.innerHTML = `
             <span class="user-email">${user.email}</span>
             <button class="btn-logout" onclick="wyloguj()">Wyloguj</button>
         `;
-        authBox.style.display = "none";
-        formBox.style.display = "block";
+        document.getElementById('auth-section').style.display = "none";
+        document.getElementById('form-dodawania').style.display = "block";
     }
 }
 
@@ -52,19 +47,18 @@ window.wykonajAuth = async () => {
     if (error) {
         const { error: regErr } = await baza.auth.signUp({ email, password });
         if (regErr) alert("Błąd: " + regErr.message);
-        else alert("Konto założone! Zaloguj się.");
+        else alert("Konto utworzone! Zaloguj się.");
     }
     location.reload();
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// 3. DODAWANIE
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-wyslij');
     const plik = document.getElementById('t-plik').files[0];
-    btn.innerText = "Wysyłanie..."; btn.disabled = true;
+    btn.innerText = "Trwa publikacja..."; btn.disabled = true;
 
     try {
         const nazwaPliku = `${Date.now()}_${plik.name.replace(/\s/g, '_')}`;
@@ -82,10 +76,9 @@ window.dodajOgloszenieDB = async (e) => {
             zdjecia: url.publicUrl
         }]);
         location.reload();
-    } catch (err) { alert(err.message); btn.disabled = false; }
+    } catch (err) { alert("Wystąpił błąd: " + err.message); btn.disabled = false; }
 };
 
-// 4. ŁADOWANIE I WYSZUKIWANIE (MIASTO + TEKST)
 async function ladujOgloszenia() {
     const { data, error } = await baza.from('ogloszenia').select('*').order('id', { ascending: false });
     if (error) return;
@@ -102,23 +95,21 @@ window.filtrujWszystko = () => {
         const pasujeMiasto = o.lokalizacja.toLowerCase().includes(miasto);
         return pasujeTekst && pasujeMiasto;
     });
-
-    document.getElementById('view-title').innerText = fraza ? `Wyniki dla: ${fraza}` : "Najnowsze ogłoszenia";
     renderuj(wynik);
 };
 
 function renderuj(tablica) {
     const lista = document.getElementById('lista-ogloszen');
-    document.getElementById('stats').innerText = `Znaleziono: ${tablica.length}`;
-    if (tablica.length === 0) { lista.innerHTML = "<h3>Brak ogłoszeń w tej lokalizacji.</h3>"; return; }
+    document.getElementById('stats').innerText = `Ogłoszenia: ${tablica.length}`;
+    if (tablica.length === 0) { lista.innerHTML = "<h3 style='grid-column: 1/-1; text-align: center;'>Nie znaleźliśmy nic w tej okolicy...</h3>"; return; }
     
     lista.innerHTML = tablica.map(o => `
         <div class="ad-card">
-            <img src="${o.zdjecia || 'https://via.placeholder.com/300'}" alt="foto">
-            <div class="ad-body">
+            <img class="ad-img" src="${o.zdjecia || 'https://via.placeholder.com/300'}" alt="foto">
+            <div class="ad-info">
                 <div class="ad-title">${o.tytul}</div>
                 <div class="ad-price">${o.cena.toLocaleString()} zł</div>
-                <div class="ad-footer">
+                <div class="ad-meta">
                     <span>📍 ${o.lokalizacja}</span>
                     <span>📞 ${o.telefon}</span>
                 </div>
@@ -126,9 +117,6 @@ function renderuj(tablica) {
         </div>
     `).join('');
 }
-
-window.resetujWszystko = () => { location.reload(); };
-window.scrollToAuth = () => { document.getElementById('auth-section').scrollIntoView({behavior: 'smooth'}); };
 
 sprawdzSesje();
 ladujOgloszenia();
