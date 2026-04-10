@@ -1,9 +1,7 @@
-// TWOJA KONFIGURACJA (JUŻ WPISANA)
 const SUPABASE_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// TWOJE KATEGORIE
 const daneKategorii = {
     "🏠 Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura i lokale", "Garaże i parkingi"],
     "🚗 Motoryzacja": ["Samochody osobowe", "Motocykle i skutery", "Dostawcze", "Części samochodowe", "Opony i felgi", "Maszyny budowlane"],
@@ -20,20 +18,22 @@ const daneKategorii = {
     "♻️ Oddam za darmo": ["Rzeczy gratis"]
 };
 
-let trybAuth = 'login';
 let zalogowanyUser = null;
+let trybAuth = 'login';
 
-// --- FUNKCJE LOGOWANIA ---
+// --- LOGOWANIE ---
 async function sprawdzSesje() {
-    const { data } = await supabase.auth.getSession();
-    zalogowanyUser = data.session?.user || null;
-    odswiezWidokAuth();
+    try {
+        const { data } = await supabase.auth.getSession();
+        zalogowanyUser = data.session?.user || null;
+        odswiezWidokAuth();
+    } catch (e) { console.error("Błąd sesji:", e); }
 }
 
 function odswiezWidokAuth() {
     const statusDiv = document.getElementById('auth-status');
     if (zalogowanyUser) {
-        statusDiv.innerHTML = `<span>Witaj, ${zalogowanyUser.email}</span> <button onclick="wyloguj()">Wyloguj</button>`;
+        statusDiv.innerHTML = `<span style="color:white; margin-right:10px;">${zalogowanyUser.email}</span><button onclick="wyloguj()">Wyloguj</button>`;
     } else {
         statusDiv.innerHTML = `<button onclick="otworzAuth()">Zaloguj / Zarejestruj</button>`;
     }
@@ -49,26 +49,29 @@ function przepnijAuth() {
 async function obslugaAuth() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
+    if(!email || !password) { alert("Wpisz dane!"); return; }
+
     if (trybAuth === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) alert("Błąd: " + error.message); else location.reload();
     } else {
         const { error } = await supabase.auth.signUp({ email, password });
-        if (error) alert("Błąd: " + error.message); else alert("Zarejestrowano! Zaloguj się.");
+        if (error) alert("Błąd: " + error.message); else alert("Konto stworzone! Teraz się zaloguj.");
     }
 }
 
 async function wyloguj() { await supabase.auth.signOut(); location.reload(); }
 
-// --- FUNKCJE KATEGORII I WIDOKU ---
+// --- KATEGORIE ---
 function wyswietlKategorie() {
     const kontener = document.getElementById('kategorie');
-    kontener.innerHTML = '<div class="kategorie-grid"></div>';
+    if(!kontener) return;
+    kontener.innerHTML = '<div class="kategorie-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:20px;"></div>';
     const grid = kontener.querySelector('.kategorie-grid');
     Object.keys(daneKategorii).forEach(kat => {
         const div = document.createElement('div');
-        div.className = 'kat-item';
-        div.innerHTML = `<h3>${kat}</h3>`;
+        div.style.cssText = "background:white; padding:15px; text-align:center; border-radius:8px; cursor:pointer; border:1px solid #ddd;";
+        div.innerHTML = `<div style="font-size:24px;">${kat.split(' ')[0]}</div><div style="font-size:12px; font-weight:bold;">${kat.split(' ').slice(1).join(' ')}</div>`;
         div.onclick = () => pokazPodkategorie(kat);
         grid.appendChild(div);
     });
@@ -76,15 +79,15 @@ function wyswietlKategorie() {
 
 function pokazPodkategorie(kat) {
     const kontener = document.getElementById('kategorie');
-    let html = `<h2>${kat}</h2><button onclick="wyswietlKategorie()">Powrót</button><br><br>`;
+    let html = `<h2 style="text-align:center;">${kat}</h2><div style="text-align:center;"><button onclick="wyswietlKategorie()" style="margin-bottom:20px;">Powrót</button></div><div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">`;
     daneKategorii[kat].forEach(pod => {
-        html += `<button class="btn-pod" onclick="filtruj('${kat}', '${pod}')">${pod}</button>`;
+        html += `<button onclick="alert('Tu będą ogłoszenia: ${pod}')" style="padding:10px; border-radius:20px; border:1px solid #002f34; background:white; cursor:pointer;">${pod}</button>`;
     });
+    html += `</div>`;
     kontener.innerHTML = html;
 }
 
-function filtruj(kat, pod) { alert("Tu będą ogłoszenia dla: " + pod); }
-
+// --- DODAWANIE ---
 function przygotujFormularz() {
     const selectKat = document.getElementById('f-kategoria');
     if(!selectKat) return;
@@ -98,7 +101,7 @@ function przygotujFormularz() {
 function zaladujPodkategorieFormularza() {
     const kat = document.getElementById('f-kategoria').value;
     const selectPod = document.getElementById('f-podkategoria');
-    selectPod.innerHTML = '';
+    selectPod.innerHTML = '<option value="">Wybierz podkategorię</option>';
     if(daneKategorii[kat]) {
         daneKategorii[kat].forEach(pod => {
             let opt = document.createElement('option');
@@ -109,13 +112,15 @@ function zaladujPodkategorieFormularza() {
 }
 
 function sprawdzDostepDoDodawania() {
-    if (!zalogowanyUser) { alert("Zaloguj się najpierw!"); otworzAuth(); }
+    if (!zalogowanyUser) { alert("Zaloguj się, aby dodać ogłoszenie!"); otworzAuth(); }
     else { document.getElementById('sekcja-dodawania').style.display = 'block'; }
 }
 
 function zamknijDodawanie() { document.getElementById('sekcja-dodawania').style.display = 'none'; }
 
-// Start
-sprawdzSesje();
-wyswietlKategorie();
-przygotujFormularz();
+// START
+window.onload = () => {
+    sprawdzSesje();
+    wyswietlKategorie();
+    przygotujFormularz();
+};
