@@ -2,34 +2,35 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>KupSe - Serwis Ogłoszeniowy</title>
+    <title>KupSe</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #f4f4f4; }
+        body { font-family: sans-serif; background: #f4f4f4; text-align: center; }
         header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; }
-        .container { max-width: 800px; margin: auto; padding: 20px; text-align: center; }
-        .form-box { display: none; background: white; padding: 20px; border: 1px solid #ccc; margin-top: 20px; border-radius: 8px; }
-        input { width: 80%; padding: 10px; margin: 5px; }
-        button { padding: 10px 20px; cursor: pointer; background: #23e5db; border: none; font-weight: bold; }
+        .form-box { display: none; background: white; padding: 20px; border: 1px solid #ccc; margin: 20px auto; width: 300px; border-radius: 8px; }
+        input, textarea { width: 90%; margin: 5px 0; padding: 8px; }
+        button { background: #23e5db; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
-        <h1>KupSe</h1>
-        <div id="auth-status">
-            <button onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
-        </div>
+        <h1 style="color:#23e5db">KupSe</h1>
+        <button onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
     </header>
 
-    <div class="container">
-        <div id="kategorie-kontener"></div> <button onclick="window.sprawdzDostep()">+ Dodaj Ogłoszenie</button>
+    <button style="margin-top: 50px;" onclick="window.otworzDodawanie()">+ Dodaj Ogłoszenie</button>
 
-        <div id="sekcja-auth" class="form-box">
-            <h2 id="auth-tytul">Logowanie</h2>
-            <input type="email" id="auth-email" placeholder="E-mail">
-            <input type="password" id="auth-haslo" placeholder="Hasło">
-            <button onclick="window.wykonajAuth()">Zatwierdź</button>
-            <p onclick="window.przepnijTryb()" style="cursor:pointer; text-decoration: underline;">Zmień tryb</p>
-        </div>
+    <div id="sekcja-auth" class="form-box">
+        <input type="email" id="auth-email" placeholder="E-mail">
+        <input type="password" id="auth-haslo" placeholder="Hasło">
+        <button onclick="window.wykonajAuth()">Zarejestruj się</button>
+    </div>
+
+    <div id="okno-dodawania" class="form-box">
+        <input type="text" id="t-tytul" placeholder="Tytuł">
+        <input type="number" id="t-cena" placeholder="Cena">
+        <textarea id="t-opis" placeholder="Opis"></textarea>
+        <input type="text" id="t-lok" placeholder="Lokalizacja">
+        <button onclick="window.dodajOgloszenieDB(event)">Opublikuj</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
