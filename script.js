@@ -1,5 +1,5 @@
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const KEY_S = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
+const KEY_S = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqkns4JO';
 
 // Sprawdzamy czy biblioteka się załadowała
 if (!window.supabase) {
