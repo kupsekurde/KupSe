@@ -151,7 +151,7 @@ window.wyslijOgloszenie = async (e) => {
         opis: document.getElementById('f-opis').value,
         lokalizacja: document.getElementById('f-lok').value,
         telefon: document.getElementById('f-tel').value,
-        zdjecia: u.publicUrl
+        zdjecia: urls
     }]);
     location.reload();
 };
