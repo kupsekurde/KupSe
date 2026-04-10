@@ -3,58 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe.pl - Ogłoszenia</title>
+    <title>KupSe.pl</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <header>
-        <h1 onclick="location.reload()" style="cursor:pointer">KupSe</h1>
+    <header style="background:#002f34; padding:20px; color:white; display:flex; justify-content:space-between; align-items:center;">
+        <h1 style="margin:0; color:#23e5db;">KupSe</h1>
         <div id="auth-status">
             <button onclick="otworzAuth()">Zaloguj / Zarejestruj</button>
         </div>
     </header>
 
-    <div class="container">
+    <div class="container" style="max-width:1000px; margin:auto; padding:20px;">
+        <div id="debug-info" style="color:red; font-weight:bold;"></div>
+
         <nav id="kategorie"></nav>
 
         <div style="text-align: center; margin: 20px;">
-            <button onclick="sprawdzDostepDoDodawania()" style="padding:15px; background:#23e5db; font-weight:bold; border:none; border-radius:5px; cursor:pointer;">+ Dodaj Ogłoszenie</button>
+            <button onclick="sprawdzDostepDoDodawania()" style="padding:15px 30px; background:#23e5db; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">+ Dodaj Ogłoszenie</button>
         </div>
 
-        <section id="sekcja-auth" style="display:none; background:white; padding:20px; border-radius:8px; border:2px solid #002f34; margin-bottom:20px;">
+        <div id="sekcja-auth" style="display:none; background:#eee; padding:20px; border-radius:10px; margin:20px 0;">
             <h2 id="auth-tytul">Logowanie</h2>
-            <input type="email" id="auth-email" placeholder="E-mail" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            <input type="password" id="auth-haslo" placeholder="Hasło (min. 6 znaków)" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            <button onclick="obslugaAuth()" style="width:90%; padding:10px; background:#002f34; color:white; border:none; margin:10px;">Zatwierdź</button>
-            <p onclick="przepnijAuth()" style="text-align:center; cursor:pointer; text-decoration:underline;">Zmień tryb (Logowanie/Rejestracja)</p>
-            <button onclick="zamknijAuth()" style="width:90%; padding:10px; background:grey; color:white; border:none; margin:10px;">Anuluj</button>
-        </section>
-
-        <section id="sekcja-dodawania" style="display:none; background:white; padding:20px; border-radius:8px; border:2px solid #002f34;">
-            <h2>Dodaj ogłoszenie</h2>
-            <input type="text" id="f-tytul" placeholder="Tytuł" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            <textarea id="f-opis" placeholder="Opis" style="display:block; width:90%; margin:10px auto; padding:10px;"></textarea>
-            <input type="number" id="f-cena" placeholder="Cena" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            <input type="text" id="f-lokalizacja" placeholder="Lokalizacja" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            <input type="tel" id="f-telefon" placeholder="Telefon (9 cyfr)" maxlength="9" style="display:block; width:90%; margin:10px auto; padding:10px;">
-            
-            <select id="f-kategoria" onchange="zaladujPodkategorieFormularza()" style="display:block; width:90%; margin:10px auto; padding:10px;">
-                <option value="">Wybierz kategorię</option>
-            </select>
-            <select id="f-podkategoria" style="display:block; width:90%; margin:10px auto; padding:10px;">
-                <option value="">Wybierz podkategorię</option>
-            </select>
-
-            <button onclick="alert('Zaraz dodamy funkcję wysyłki!')" style="width:90%; padding:15px; background:#002f34; color:white; border:none; margin:10px;">Opublikuj</button>
-            <button onclick="zamknijDodawanie()" style="width:90%; padding:10px; background:grey; color:white; border:none; margin:10px;">Anuluj</button>
-        </section>
-
-        <main id="app">
-            <div id="lista-ogloszen"></div>
-        </main>
+            <input type="email" id="auth-email" placeholder="E-mail" style="width:100%; padding:10px; margin:5px 0;">
+            <input type="password" id="auth-haslo" placeholder="Hasło" style="width:100%; padding:10px; margin:5px 0;">
+            <button onclick="obslugaAuth()" style="width:100%; padding:10px; background:#002f34; color:white; border:none; margin-top:10px;">Zatwierdź</button>
+            <p onclick="przepnijAuth()" style="text-decoration:underline; cursor:pointer; text-align:center;">Zmień tryb (Logowanie/Rejestracja)</p>
+            <button onclick="document.getElementById('sekcja-auth').style.display='none'" style="width:100%; padding:10px; background:gray; color:white; border:none;">Anuluj</button>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
