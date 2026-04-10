@@ -3,79 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe - Kategorie i Ogłoszenia</title>
+    <title>KupSe - Najlepsze Ogłoszenia</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f0f2f5; color: #333; }
-        header { background: #002f34; padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .container { max-width: 1000px; margin: auto; padding: 20px; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; color: #002f34; }
+        header { background: #002f34; padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .container { max-width: 1100px; margin: auto; padding: 20px; text-align: center; }
         
-        /* Styl kategorii */
-        .kat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 30px 0; }
-        .kat-item { background: white; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; border: 1px solid #ddd; transition: 0.3s; }
-        .kat-item:hover { border-color: #23e5db; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        /* GRID KATEGORII */
+        .kat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 25px 0; }
+        .kat-item { background: white; padding: 15px; border-radius: 12px; cursor: pointer; border: 1px solid #ddd; transition: 0.2s; display: flex; flex-direction: column; align-items: center; font-size: 13px; font-weight: bold; }
+        .kat-item:hover { border-color: #23e5db; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .kat-icon { font-size: 28px; margin-bottom: 5px; }
 
-        /* Formularze */
-        .form-box { display: none; background: white; padding: 25px; border-radius: 12px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        /* LISTA OGŁOSZEŃ */
+        .lista-kontener { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
+        .karta { background: white; padding: 15px; border-radius: 10px; border: 1px solid #ddd; text-align: left; transition: 0.3s; }
+        .karta:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .karta .cena { color: #002f34; font-size: 18px; font-weight: 800; margin: 10px 0; }
+
+        /* MODALE */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; backdrop-filter: blur(3px); }
+        .form-box { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); overflow-y: auto; max-height: 90vh; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
         
-        /* Przyciski */
-        .btn-main { background: #23e5db; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        .btn-auth { background: #002f34; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
-
-        /* Lista ogłoszeń */
-        .ogl-karta { background: white; padding: 20px; margin: 15px auto; border-radius: 8px; border: 1px solid #ddd; text-align: left; max-width: 600px; }
+        .btn-main { background: #23e5db; color: #002f34; border: none; padding: 15px 30px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        .btn-top { background: #23e5db; color: #002f34; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <header>
-        <h1 style="margin:0; color:#23e5db; cursor:pointer;" onclick="location.reload()">KupSe</h1>
-        <div id="auth-status">
-            <button class="btn-auth" onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
-        </div>
-    </header>
 
-    <div class="container">
-        <h2>Kategorie</h2>
-        <div id="lista-kategorii" class="kat-grid">
-            <div class="kat-item" onclick="filtruj('Nieruchomości')">🏠 Nieruchomości</div>
-            <div class="kat-item" onclick="filtruj('Motoryzacja')">🚗 Motoryzacja</div>
-            <div class="kat-item" onclick="filtruj('Elektronika')">📱 Elektronika</div>
-            <div class="kat-item" onclick="filtruj('Dom')">🛋️ Dom i Ogród</div>
-        </div>
-
-        <button class="btn-main" onclick="window.otworzDodawanie()">+ Dodaj Ogłoszenie</button>
-
-        <div id="lista-ogloszen">
-            <p>Ładowanie najnowszych ofert...</p>
-        </div>
+<header>
+    <h1 style="margin:0; color:#23e5db; cursor:pointer;" onclick="location.reload()">KupSe</h1>
+    <div id="auth-status">
+        <button class="btn-top" onclick="window.pokazOkno('okno-auth')">Zaloguj</button>
     </div>
+</header>
 
-    <div id="sekcja-auth" class="form-box">
-        <h3>Dołącz do KupSe</h3>
+<div class="container">
+    <div class="kat-grid" id="menu-kategorii">
+        </div>
+
+    <button class="btn-main" style="max-width:300px;" onclick="window.pokazOkno('okno-dodawania')">+ Dodaj ogłoszenie</button>
+
+    <div id="lista-ogloszen" class="lista-kontener">
+        <p>Szukam ogłoszeń...</p>
+    </div>
+</div>
+
+<div id="okno-auth" class="overlay">
+    <div class="form-box">
+        <h2>Witaj w KupSe</h2>
         <input type="email" id="auth-email" placeholder="E-mail">
         <input type="password" id="auth-haslo" placeholder="Hasło">
-        <button class="btn-auth" style="width:100%" onclick="window.wykonajAuth()">Zarejestruj się / Zaloguj</button>
-        <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">Anuluj</button>
+        <button class="btn-main" onclick="window.wykonajAuth()">Zaloguj / Zarejestruj</button>
+        <button onclick="window.zamknijOkna()" style="background:none; border:none; color:gray; cursor:pointer; margin-top:15px; width:100%;">Zamknij</button>
     </div>
+</div>
 
-    <div id="okno-dodawania" class="form-box">
-        <h3>Co chcesz sprzedać?</h3>
-        <input type="text" id="t-tytul" placeholder="Tytuł ogłoszenia">
-        <input type="number" id="t-cena" placeholder="Cena (zł)">
-        <select id="t-kat">
-            <option value="Inne">Wybierz kategorię</option>
-            <option value="Nieruchomości">Nieruchomości</option>
-            <option value="Motoryzacja">Motoryzacja</option>
-            <option value="Elektronika">Elektronika</option>
-            <option value="Dom">Dom i Ogród</option>
+<div id="okno-dodawania" class="overlay">
+    <div class="form-box">
+        <h3>Dodaj ogłoszenie</h3>
+        <input type="text" id="t-tytul" placeholder="Tytuł (np. iPhone 15 Pro)">
+        
+        <select id="t-kat" onchange="window.aktualizujPodkat()">
+            <option value="">Wybierz główną kategorię</option>
         </select>
-        <textarea id="t-opis" placeholder="Opis przedmiotu" rows="4"></textarea>
-        <input type="text" id="t-lok" placeholder="Miasto / Lokalizacja">
-        <button class="btn-main" style="width:100%" onclick="window.dodajOgloszenieDB(event)">Opublikuj Teraz</button>
-        <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">Zamknij</button>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+        <select id="t-podkat">
+            <option value="">Najpierw wybierz kategorię</option>
+        </select>
+
+        <input type="number" id="t-cena" placeholder="Cena (zł)">
+        <textarea id="t-opis" placeholder="Opis przedmiotu, stan, dane techniczne..." rows="4"></textarea>
+        <input type="text" id="t-lok" placeholder="Lokalizacja (np. Warszawa)">
+        <input type="tel" id="t-tel" placeholder="Numer telefonu">
+        
+        <button class="btn-main" onclick="window.dodajOgloszenieDB(event)">Opublikuj ogłoszenie</button>
+        <button onclick="window.zamknijOkna()" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px; width:100%;">Anuluj</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
 </body>
 </html>
