@@ -3,36 +3,35 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
-// --- Funkcje pomocnicze ---
-
+// Funkcja logowania i pokazywania emaila
 async function sprawdzSesje() {
     const { data: { user } } = await baza.auth.getUser();
     const statusDiv = document.getElementById('auth-status');
     if (user && statusDiv) {
-        statusDiv.innerHTML = `<span id="user-info">${user.email}</span><button class="btn-top" onclick="baza.auth.signOut().then(()=>location.reload())">Wyloguj</button>`;
+        statusDiv.innerHTML = `<span style="color:#23e5db; font-weight:bold; margin-right:15px;">${user.email}</span><button class="btn-top" onclick="baza.auth.signOut().then(()=>location.reload())">Wyloguj</button>`;
     }
 }
 
+// Obsługa kategorii i podkategorii
 window.zmienPodkat = () => {
-    const glowna = document.getElementById('t-kat').value;
-    const pod = document.getElementById('t-podkat');
     const dane = {
-        "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
+        "Nieruchomości": ["Mieszkania", "Domy", "Działki"],
         "Motoryzacja": ["Samochody", "Motocykle", "Części"],
-        "Dom i Ogród": ["Meble", "Ogród", "Narzędzia"],
+        "Dom i Ogród": ["Meble", "Narzędzia"],
         "Elektronika": ["Telefony", "Komputery", "TV"],
         "Moda": ["Ubrania", "Obuwie"],
         "Rolnictwo": ["Ciągniki", "Maszyny"],
-        "Sport i Hobby": ["Rowery", "Wędkarstwo"],
-        "Oddam za darmo": ["Wszystko"]
+        "Sport": ["Rowery", "Sprzęt"],
+        "Za darmo": ["Różne"]
     };
+    const glowna = document.getElementById('t-kat').value;
+    const pod = document.getElementById('t-podkat');
     if (dane[glowna]) {
         pod.innerHTML = dane[glowna].map(p => `<option value="${p}">${p}</option>`).join('');
     }
 };
 
-// --- Główne akcje ---
-
+// Logowanie
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
@@ -40,39 +39,36 @@ window.wykonajAuth = async () => {
     if (error) {
         const { error: regErr } = await baza.auth.signUp({ email, password });
         if (regErr) alert("Błąd: " + regErr.message);
-        else alert("Założono konto! Zaloguj się.");
+        else alert("Konto stworzone! Zaloguj się ponownie.");
     }
     location.reload();
 };
 
+// Dodawanie ogłoszenia ZE ZDJĘCIEM i TELEFONEM
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-wyslij');
     const plik = document.getElementById('t-plik').files[0];
-    let finalImgURL = "";
+    let imgURL = "";
 
-    btn.innerText = "Wysyłanie pliku...";
+    btn.innerText = "Wysyłanie...";
     btn.disabled = true;
 
-    // 1. Wgrywanie zdjęcia
+    // 1. Wgrywanie pliku do Storage
     if (plik) {
         const nazwa = `${Date.now()}_${plik.name.replace(/\s/g, '_')}`;
-        const { data, error: storageErr } = await baza.storage
-            .from('zdjecia')
-            .upload(nazwa, plik);
-
-        if (storageErr) {
-            alert("Błąd wgrywania zdjęcia: " + storageErr.message);
+        const { data, error: upErr } = await baza.storage.from('zdjecia').upload(nazwa, plik);
+        
+        if (upErr) {
+            console.error("Błąd zdjęcia:", upErr);
         } else {
-            // Pobieranie publicznego linku
-            const { data: publicData } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
-            finalImgURL = publicData.publicUrl;
+            const { data: pData } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+            imgURL = pData.publicUrl;
         }
     }
 
-    // 2. Dodawanie ogłoszenia
-    btn.innerText = "Zapisywanie ogłoszenia...";
-    const daneOgloszenia = {
+    // 2. Wysłanie wszystkiego do tabeli
+    const o = {
         tytul: document.getElementById('t-tytul').value,
         kategoria: document.getElementById('t-kat').value,
         podkategoria: document.getElementById('t-podkat').value,
@@ -80,33 +76,28 @@ window.dodajOgloszenieDB = async (e) => {
         opis: document.getElementById('t-opis').value,
         lokalizacja: document.getElementById('t-lok').value,
         telefon: document.getElementById('t-tel').value,
-        zdjecia: finalImgURL
+        zdjecia: imgURL
     };
 
-    const { error: dbErr } = await baza.from('ogloszenia').insert([daneOgloszenia]);
-
+    const { error: dbErr } = await baza.from('ogloszenia').insert([o]);
     if (dbErr) alert("Błąd bazy: " + dbErr.message);
-    else {
-        alert("Sukces!");
-        location.reload();
-    }
+    else location.reload();
 };
 
+// Ładowanie listy ogłoszeń
 async function laduj(f = null) {
     let q = baza.from('ogloszenia').select('*').order('id', { ascending: false });
     if (f) q = q.eq('kategoria', f);
     const { data } = await q;
-    const list = document.getElementById('lista-ogloszen');
-    if (list && data) {
-        list.innerHTML = data.map(o => `
-            <div class="karta">
-                ${o.zdjecia ? `<img src="${o.zdjecia}" class="karta-zdjecie">` : ''}
-                <h2>${o.tytul}</h2>
-                <p style="color:#23e5db; font-size:1.5rem; font-weight:bold;">${o.cena} zł</p>
+    const l = document.getElementById('lista-ogloszen');
+    if (l && data) {
+        l.innerHTML = data.map(o => `
+            <div style="background:white; padding:20px; margin-bottom:15px; border-radius:10px; text-align:left; border:1px solid #ddd;">
+                ${o.zdjecia ? `<img src="${o.zdjecia}" style="width:100%; max-height:300px; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : ''}
+                <h3>${o.tytul}</h3>
+                <p style="color:#23e5db; font-weight:bold; font-size:1.3rem;">${o.cena} zł</p>
                 <p>${o.opis}</p>
-                <div style="font-size:0.8rem; color:gray; border-top:1px solid #eee; padding-top:10px;">
-                    📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak numeru'}
-                </div>
+                <small>📍 ${o.lokalizacja} | 📂 ${o.kategoria} | 📞 ${o.telefon || 'Brak nr'}</small>
             </div>
         `).join('');
     }
