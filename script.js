@@ -1,30 +1,14 @@
-const SUPABASE_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
+// Dane z Twoich screenów
+const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
+const KEY_S = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
 
-let supabase;
+// Tworzymy klienta (zmieniona nazwa zmiennej)
+const klientSupabase = window.supabase.createClient(URL_S, KEY_S);
+
 let zalogowanyUser = null;
 let trybAuth = 'login';
 
-// Czekamy na załadowanie biblioteki
-function initSupabase() {
-    if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log("Supabase gotowy!");
-        sprawdzSesje();
-    } else {
-        setTimeout(initSupabase, 100); // próbuj ponownie za 0.1 sekundy
-    }
-}
-
-async function sprawdzSesje() {
-    const { data } = await supabase.auth.getSession();
-    zalogowanyUser = data.session?.user || null;
-    if(zalogowanyUser) {
-        document.getElementById('auth-status').innerHTML = `<span style="color:white; font-size:12px;">${zalogowanyUser.email}</span>`;
-    }
-}
-
-// Funkcje przycisków - przypisane bezpośrednio do okna (window)
+// Funkcje Auth
 window.otworzAuth = function() {
     document.getElementById('sekcja-auth').style.display = 'block';
 }
@@ -37,35 +21,40 @@ window.przepnijAuth = function() {
 window.obslugaAuth = async function() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
-    
-    if(!email || !password) return alert("Wpisz dane!");
+    if(!email || !password) return alert("Uzupełnij pola!");
 
     if (trybAuth === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await klientSupabase.auth.signInWithPassword({ email, password });
         if (error) alert("Błąd: " + error.message); else location.reload();
     } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) alert("Błąd: " + error.message); else alert("Konto założone! Teraz się zaloguj.");
+        const { error } = await klientSupabase.auth.signUp({ email, password });
+        if (error) alert("Błąd: " + error.message); else alert("Konto założone! Zaloguj się.");
     }
 }
 
-window.sprawdzDostepDoDodawania = function() {
+window.sprawdzDostep = function() {
     if(!zalogowanyUser) {
-        alert("Najpierw się zaloguj!");
+        alert("Musisz się zalogować!");
         otworzAuth();
     } else {
-        alert("Brawo! Jesteś zalogowany. Możemy budować formularz!");
+        alert("Jesteś zalogowany jako " + zalogowanyUser.email);
     }
 }
 
-// Start
-initSupabase();
+// Inicjalizacja strony
+async function start() {
+    const { data } = await klientSupabase.auth.getSession();
+    zalogowanyUser = data.session?.user || null;
+    
+    if(zalogowanyUser) {
+        document.getElementById('auth-status').innerHTML = `<span style="color:white; margin-right:10px;">${zalogowanyUser.email}</span>`;
+    }
 
-// Wyświetlenie kategorii dla testu
-const katHTML = `
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div onclick="alert('Kliknięto Nieruchomości')" style="background:white; padding:20px; border:1px solid #ddd; cursor:pointer;">🏠 Nieruchomości</div>
-        <div onclick="alert('Kliknięto Motoryzację')" style="background:white; padding:20px; border:1px solid #ddd; cursor:pointer;">🚗 Motoryzacja</div>
-    </div>
-`;
-document.getElementById('kategorie').innerHTML = katHTML;
+    const katHTML = `
+        <div class="kat-item" onclick="alert('Kategoria: Nieruchomości')">🏠 Nieruchomości</div>
+        <div class="kat-item" onclick="alert('Kategoria: Motoryzacja')">🚗 Motoryzacja</div>
+    `;
+    document.getElementById('kategorie-lista').innerHTML = katHTML;
+}
+
+start();
