@@ -14,6 +14,15 @@ const PODKAT_DANE = {
     "Oddam za darmo": ["Rzeczy gratis"]
 };
 
+// Funkcja sprawdzająca czy użytkownik jest zalogowany
+async function sprawdzSesje() {
+    const { data: { user } } = await baza.auth.getUser();
+    const statusDiv = document.getElementById('auth-status');
+    if (user) {
+        statusDiv.innerHTML = `<span id="user-email">${user.email}</span> <button class="btn-top" style="margin-left:10px; padding:5px 10px;" onclick="baza.auth.signOut().then(()=>location.reload())">Wyloguj</button>`;
+    }
+}
+
 window.zmienPodkat = () => {
     const glowna = document.getElementById('t-kat').value;
     const pod = document.getElementById('t-podkat');
@@ -26,19 +35,30 @@ window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
     const { error } = await baza.auth.signUp({ email, password });
-    if (error) alert("Błąd: " + error.message);
-    else { alert("Sukces! Sprawdź pocztę."); document.getElementById('okno-auth').style.display = 'none'; }
+    if (error) {
+        const { error: loginError } = await baza.auth.signInWithPassword({ email, password });
+        if (loginError) alert("Błąd: " + loginError.message);
+        else location.reload();
+    } else {
+        alert("Zarejestrowano! Sprawdź e-mail (jeśli wymagane) lub zaloguj się.");
+        location.reload();
+    }
 };
 
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Musisz być zalogowany, aby dodać ogłoszenie!");
+
     const d = {
         tytul: document.getElementById('t-tytul').value,
         kategoria: document.getElementById('t-kat').value,
         podkategoria: document.getElementById('t-podkat').value,
         cena: parseInt(document.getElementById('t-cena').value) || 0,
         opis: document.getElementById('t-opis').value,
-        lokalizacja: document.getElementById('t-lok').value
+        lokalizacja: document.getElementById('t-lok').value,
+        telefon: document.getElementById('t-tel').value, // NOWE
+        zdjecia: document.getElementById('t-foto').value // NOWE (link)
     };
 
     const { error } = await baza.from('ogloszenia').insert([d]);
@@ -54,13 +74,19 @@ async function laduj(f = null) {
     if (list && data) {
         list.innerHTML = data.map(o => `
             <div style="background:white; padding:20px; margin-bottom:15px; border-radius:10px; text-align:left; border:1px solid #ddd;">
+                ${o.zdjecia ? `<img src="${o.zdjecia}" class="karta-zdjecie" onerror="this.style.display='none'">` : ''}
                 <h3 style="margin:0;">${o.tytul}</h3>
-                <p style="color:#23e5db; font-weight:bold; font-size:1.2rem;">${o.cena} zł</p>
-                <small>📂 ${o.kategoria} > ${o.podkategoria || 'Inne'} | 📍 ${o.lokalizacja}</small>
+                <p style="color:#23e5db; font-weight:bold; font-size:1.2rem; margin:5px 0;">${o.cena} zł</p>
+                <p style="font-size:0.9rem; color:#555;">${o.opis}</p>
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; font-size:0.8rem; color:#888;">
+                    📍 ${o.lokalizacja} | 📂 ${o.kategoria} > ${o.podkategoria || 'Inne'} <br>
+                    ${o.telefon ? `📞 <b>Tel: ${o.telefon}</b>` : ''}
+                </div>
             </div>
         `).join('');
     }
 }
 
 window.filtruj = (k) => laduj(k);
+sprawdzSesje();
 laduj();
