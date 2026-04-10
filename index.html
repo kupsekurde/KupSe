@@ -2,19 +2,61 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KupSe.pl - Ogłoszenia</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>KupSe</h1>
-        <nav id="kategorie"></nav>
+        <div id="auth-status">
+            <button onclick="otworzAuth()">Zaloguj / Zarejestruj</button>
+        </div>
     </header>
 
-    <main id="app">
-        <h2>Najnowsze ogłoszenia</h2>
-        <div id="lista-ogloszen"></div>
-    </main>
+    <div class="container">
+        <nav id="kategorie"></nav>
+
+        <div style="text-align: center; margin: 20px;">
+            <button class="btn-main" onclick="sprawdzDostepDoDodawania()">+ Dodaj Ogłoszenie</button>
+        </div>
+
+        <section id="sekcja-auth" style="display:none;" class="formularz">
+            <h2 id="auth-tytul">Logowanie</h2>
+            <input type="email" id="auth-email" placeholder="Twój e-mail">
+            <input type="password" id="auth-haslo" placeholder="Hasło">
+            <button onclick="obslugaAuth()">Zatwierdź</button>
+            <p onclick="przepnijAuth()" style="cursor:pointer; text-decoration:underline;">Nie masz konta? Zarejestruj się</p>
+            <button onclick="zamknijAuth()" style="background:grey;">Anuluj</button>
+        </section>
+
+        <section id="sekcja-dodawania" style="display:none;" class="formularz">
+            <h2>Dodaj nowe ogłoszenie</h2>
+            <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia (np. iPhone 13)" required>
+            <textarea id="f-opis" placeholder="Opis przedmiotu..." rows="5"></textarea>
+            <input type="number" id="f-cena" placeholder="Cena (zł)" required>
+            <input type="text" id="f-lokalizacja" placeholder="Lokalizacja (np. Warszawa)">
+            <input type="tel" id="f-telefon" placeholder="Numer telefonu (9 cyfr)" maxlength="9" required>
+            
+            <select id="f-kategoria" onchange="zaladujPodkategorieFormularza()">
+                <option value="">Wybierz kategorię</option>
+            </select>
+            <select id="f-podkategoria">
+                <option value="">Najpierw wybierz kategorię</option>
+            </select>
+
+            <p>Zdjęcia (max 5, każde do 2MB):</p>
+            <input type="file" id="f-zdjecia" multiple accept="image/*">
+            
+            <button onclick="wyslijOgloszenie()">Opublikuj ogłoszenie</button>
+            <button onclick="zamknijDodawanie()" style="background: grey;">Anuluj</button>
+        </section>
+
+        <main id="app">
+            <h2>Najnowsze ogłoszenia</h2>
+            <div id="lista-ogloszen"></div>
+        </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
