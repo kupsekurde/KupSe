@@ -3,172 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe - Twój Portal Ogłoszeniowy</title>
+    <title>KupSe - Portal Ogłoszeniowy</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #23e5db;
-            --primary-dark: #1bcac2;
-            --bg: #f3f4f6;
+            --bg: #f3f4f7;
             --white: #ffffff;
-            --text: #1a1a1a;
+            --text: #111827;
             --gray: #6b7280;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
-        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
         /* NAVBAR */
         .navbar { 
             background: var(--white); 
-            padding: 8px 5%; 
+            padding: 5px 5%; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            box-shadow: var(--shadow); 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            position: sticky; top: 0; z-index: 1000;
         }
-        .nav-left { display: flex; align-items: center; gap: 25px; }
-        .logo img { height: 70px; cursor: pointer; transition: transform 0.2s; }
-        .logo img:hover { transform: scale(1.05); }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .main-logo { height: 60px; cursor: pointer; }
         
-        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
-        .nav-search input { 
-            padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 200px;
+        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
+        .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 180px; }
+        .city-input { border-left: 1px solid #ddd !important; width: 120px !important; }
+
+        .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
+
+        /* GUZIK SPRZEDAJSE */
+        .btn-add-ad { 
+            height: 65px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.1));
         }
-        .city-input { border-left: 1px solid #d1d5db !important; width: 130px !important; margin-left: 10px; padding-left: 15px !important; }
+        .btn-add-ad:hover { transform: scale(1.08) rotate(2deg); }
 
-        .nav-right { display: flex; align-items: center; gap: 20px; }
-        .user-email { font-weight: 600; font-size: 14px; color: #374151; }
-
-        /* PRZYCISKI */
-        button { 
-            padding: 10px 22px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 14px;
+        /* DROPDOWN MENU TWOJE KONTO */
+        .account-menu { position: relative; }
+        .btn-account { 
+            background: #eee; border: none; padding: 10px 20px; border-radius: 50px; 
+            font-weight: bold; cursor: pointer; transition: 0.3s;
         }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(35, 229, 219, 0.3); }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
-        .btn-logout { background: #fee2e2; color: #ef4444; }
-        .btn-logout:hover { background: #fecaca; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0; top: 45px;
+            background: white;
+            min-width: 180px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 10px;
+            z-index: 1001;
+            border: 1px solid #eee;
+        }
+        .dropdown-content.show { display: block; }
+        .user-info-mail { font-size: 12px; color: var(--gray); display: block; margin-bottom: 10px; padding: 5px; border-bottom: 1px solid #f0f0f0; }
+        .btn-logout-red { color: #dc3545; background: none; border: none; font-weight: bold; cursor: pointer; width: 100%; text-align: left; padding: 5px; }
 
-        /* KONTENER I FORMULARZ */
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
-        
-        .card { background: var(--white); padding: 30px; border-radius: 20px; box-shadow: var(--shadow); margin-bottom: 40px; border: 1px solid #f3f4f6; }
-        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: white; width: 90%; max-width: 600px; max-height: 90vh;
+            border-radius: 25px; padding: 30px; overflow-y: auto; position: relative;
+        }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: var(--gray); }
+
+        /* FORMULARZ */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .full { grid-column: span 2; }
-        
-        label { display: block; font-size: 11px; font-weight: 800; color: var(--gray); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        input, select, textarea { 
-            width: 100%; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: #f9fafb; transition: 0.2s;
-        }
-        input:focus { outline: none; border-color: var(--primary); background: #fff; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; box-sizing: border-box; background: #f9fafb; font-family: inherit; }
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 10px; }
 
-        /* LISTA OGŁOSZEŃ */
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
-        .ad-card { 
-            background: var(--white); border-radius: 20px; overflow: hidden; transition: 0.3s; border: 1px solid #f3f4f6; display: flex; flex-direction: column;
-        }
-        .ad-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .ad-img { width: 100%; height: 220px; object-fit: cover; }
-        .ad-info { padding: 18px; flex-grow: 1; }
-        .ad-price { font-size: 22px; font-weight: 900; color: #111827; margin: 4px 0 10px 0; }
-        .ad-title { font-size: 15px; font-weight: 600; height: 42px; overflow: hidden; color: #374151; line-height: 1.4; }
-        .ad-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); border-top: 1px solid #f3f4f6; padding-top: 12px; margin-top: auto; }
+        /* LISTA */
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; }
+        .ad-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; border: 1px solid #eee; }
+        .ad-img { width: 100%; height: 200px; object-fit: cover; }
+        .ad-body { padding: 15px; }
+        .ad-price { font-size: 20px; font-weight: 800; }
 
-        .auth-center { text-align: center; padding: 80px 20px; }
+        #auth-box { background: white; padding: 40px; border-radius: 25px; text-align: center; margin-bottom: 40px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
     <div class="nav-left">
-        <div class="logo"><img src="logo.png" alt="KupSe" onclick="location.reload()"></div>
+        <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="wyszukiwarka" placeholder="Czego dzisiaj szukamy?">
-            <input type="text" id="wyszukiwarka-miasto" class="city-input" placeholder="Miejscowość">
-            <button class="btn-primary" style="margin-left: 10px;" onclick="filtrujWszystko()">Szukaj</button>
+            <input type="text" id="find-text" placeholder="Szukaj...">
+            <input type="text" id="find-city" class="city-input" placeholder="Miasto">
+            <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer">OK</button>
         </div>
     </div>
-    <div class="nav-right" id="nav-user-panel">
-        <button class="btn-primary" onclick="document.getElementById('auth-section').scrollIntoView({behavior:'smooth'})">Zaloguj się</button>
+    <div class="nav-right" id="user-nav">
+        <button onclick="document.getElementById('auth-box').scrollIntoView()" class="btn-account">Zaloguj się</button>
     </div>
 </nav>
 
 <div class="container">
-    <div id="auth-section" class="auth-center">
-        <h1 style="font-size: 42px; margin-bottom: 10px;">Witaj w KupSe!</h1>
-        <p style="color: var(--gray); font-size: 18px; margin-bottom: 40px;">Miejsce, gdzie Twoje rzeczy znajdują nowy dom.</p>
-        <div style="max-width: 350px; margin: auto; background: white; padding: 30px; border-radius: 25px; box-shadow: var(--shadow);">
-            <label>Twój Email</label>
-            <input type="email" id="auth-email" placeholder="email@przyklad.pl">
-            <label style="margin-top: 15px;">Hasło</label>
-            <input type="password" id="auth-haslo" placeholder="••••••••">
-            <button class="btn-primary" style="width: 100%; margin-top: 25px;" onclick="wykonajAuth()">Zaloguj / Stwórz konto</button>
+    <div id="auth-box">
+        <h2>Witaj!</h2>
+        <div style="max-width:300px; margin:auto">
+            <input type="email" id="email" placeholder="Email" style="margin-bottom:10px">
+            <input type="password" id="pass" placeholder="Hasło">
+            <button onclick="loguj()" class="btn-submit">Zaloguj / Rejestracja</button>
         </div>
     </div>
 
-    <div id="form-dodawania" class="card" style="display: none;">
-        <h2 style="margin-top:0; font-size: 24px;">➕ Dodaj nowe ogłoszenie</h2>
-        <form onsubmit="dodajOgloszenieDB(event)" class="form-grid">
-            <div class="full">
-                <label>Co sprzedajesz?</label>
-                <input type="text" id="t-tytul" placeholder="np. Rower górski Scott, stan idealny" required>
-            </div>
-            <div>
-                <label>Kategoria</label>
-                <select id="t-kat" onchange="zmienPodkat()" required>
-                    <option value="">Wybierz główną</option>
+    <div id="modal-form" class="modal">
+        <div class="modal-box">
+            <span class="close-btn" onclick="zamknijModal()">&times;</span>
+            <h2 style="margin:0">Dodaj ogłoszenie</h2>
+            <form onsubmit="wyslijOgloszenie(event)" class="form-grid">
+                <input type="text" id="f-tytul" class="full" placeholder="Tytuł" required>
+                <select id="f-kat" onchange="updatePodkat()" required>
+                    <option value="">Kategoria...</option>
                     <option value="Motoryzacja">Motoryzacja</option>
-                    <option value="Nieruchomości">Nieruchomości</option>
                     <option value="Elektronika">Elektronika</option>
-                    <option value="Dom i Ogród">Dom i Ogród</option>
                     <option value="Moda">Moda</option>
-                    <option value="Rolnictwo">Rolnictwo</option>
-                    <option value="Zwierzęta">Zwierzęta</option>
-                    <option value="Dla Dzieci">Dla Dzieci</option>
-                    <option value="Sport i Hobby">Sport i Hobby</option>
-                    <option value="Muzyka i Edukacja">Muzyka i Edukacja</option>
-                    <option value="Usługi">Usługi</option>
-                    <option value="Praca">Praca</option>
+                    <option value="Dom i Ogród">Dom i Ogród</option>
                     <option value="Inne">Inne</option>
                 </select>
-            </div>
-            <div>
-                <label>Podkategoria</label>
-                <select id="t-podkat" required><option value="">Czekam na wybór kategorii...</option></select>
-            </div>
-            <div>
-                <label>Cena (PLN)</label>
-                <input type="number" id="t-cena" placeholder="0" required>
-            </div>
-            <div>
-                <label>Gdzie (Miasto)</label>
-                <input type="text" id="t-lok" placeholder="Twoja miejscowość" required>
-            </div>
-            <div class="full">
-                <label>Opis szczegółowy</label>
-                <textarea id="t-opis" rows="5" placeholder="Napisz coś więcej o przedmiocie..." required></textarea>
-            </div>
-            <div>
-                <label>Telefon kontaktowy</label>
-                <input type="tel" id="t-tel" placeholder="Numer dla kupujących" required>
-            </div>
-            <div>
-                <label>Dodaj zdjęcie</label>
-                <input type="file" id="t-plik" accept="image/*" required>
-            </div>
-            <button type="submit" id="btn-wyslij" class="btn-primary full" style="padding: 16px; font-size: 16px;">Opublikuj ogłoszenie</button>
-        </form>
+                <select id="f-podkat" required><option value="">Podkategoria...</option></select>
+                <input type="number" id="f-cena" placeholder="Cena (zł)" required>
+                <input type="text" id="f-lok" placeholder="Miasto" required>
+                <textarea id="f-opis" class="full" rows="3" placeholder="Opis..." required></textarea>
+                <input type="tel" id="f-tel" placeholder="Telefon" required>
+                <input type="file" id="f-plik" accept="image/*" required>
+                <button type="submit" id="btn-save" class="btn-submit full">Opublikuj</button>
+            </form>
+        </div>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <h2 style="margin: 0; font-size: 26px;">🔥 Najświeższe oferty</h2>
-        <div id="stats" style="color: var(--primary); font-weight: 800; background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow);"></div>
-    </div>
-
-    <div id="lista-ogloszen" class="ads-grid"></div>
+    <div id="lista" class="ads-grid"></div>
 </div>
 
 <script src="script.js"></script>
