@@ -1,6 +1,6 @@
 // KONFIGURACJA - WPISZ SWOJE DANE
-const SUPABASE_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
+const SUPABASE_URL = 'TWOJ_URL_Z_SUPABASE';
+const SUPABASE_KEY = 'TWOJ_ANON_KEY_Z_SUPABASE';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // TWOJE KATEGORIE
