@@ -9,11 +9,22 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
         .kontener { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        button { width: 100%; padding: 12px; background: #23e5db; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; transition: 0.3s; }
+        
+        /* Styl przycisków */
+        button { padding: 12px; background: #23e5db; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; transition: 0.3s; }
         button:hover { background: #1bcac2; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-pelny { width: 100%; }
+        .btn-maly { width: auto; padding: 0 20px; }
+        .btn-szary { background: #666; }
+        .btn-szary:hover { background: #444; }
+
         .auth-sekcja { margin-bottom: 30px; padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; }
+        
+        /* Sekcja wyszukiwania */
         .szukaj-sekcja { margin: 20px 0; padding: 15px; background: #eefbff; border-radius: 10px; border: 1px solid #d1f2f5; }
+        .szukaj-flex { display: flex; gap: 10px; }
+
         .ogloszenie-karta { background: white; border: 1px solid #eee; padding: 20px; margin-top: 15px; border-radius: 12px; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .ogloszenie-karta img { width: 100%; max-height: 450px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; }
         .cena { color: #23e5db; font-size: 1.5rem; font-weight: bold; margin: 10px 0; }
@@ -27,7 +38,7 @@
         <h3>Konto użytkownika</h3>
         <input type="email" id="auth-email" placeholder="Email">
         <input type="password" id="auth-haslo" placeholder="Hasło">
-        <button onclick="wykonajAuth()">Zaloguj / Zarejestruj się</button>
+        <button class="btn-pelny" onclick="wykonajAuth()">Zaloguj / Zarejestruj się</button>
     </div>
 
     <div id="form-dodawania" style="display: none;">
@@ -43,12 +54,12 @@
             </select>
             <select id="t-podkat" required><option value="">-- Wybierz podkategorię --</option></select>
             <input type="number" id="t-cena" placeholder="Cena (zł)" min="1" required>
-            <textarea id="t-opis" placeholder="Opisz przedmiot (stan, wady, zalety...)" rows="4" required></textarea>
+            <textarea id="t-opis" placeholder="Opisz przedmiot..." rows="4" required></textarea>
             <input type="text" id="t-lok" placeholder="Lokalizacja (Miasto)" required>
             <input type="tel" id="t-tel" placeholder="Twój numer telefonu" required>
-            <label style="display:block; text-align:left; font-size: 13px; color: #666;">Zdjęcie (wymagane):</label>
+            <label style="display:block; text-align:left; font-size: 12px; color: #666; margin-top: 5px;">Zdjęcie (wymagane):</label>
             <input type="file" id="t-plik" accept="image/*" required>
-            <button type="submit" id="btn-wyslij">Opublikuj ogłoszenie</button>
+            <button type="submit" id="btn-wyslij" class="btn-pelny">Opublikuj ogłoszenie</button>
         </form>
     </div>
 
@@ -56,7 +67,11 @@
 
     <div class="szukaj-sekcja">
         <h3 style="margin-top:0">Wyszukiwarka</h3>
-        <input type="text" id="wyszukiwarka" placeholder="Wpisz np. Samsung Note 10..." oninput="filtrujOgloszenia()">
+        <div class="szukaj-flex">
+            <input type="text" id="wyszukiwarka" placeholder="Wpisz np. Samsung Note 10..." onkeypress="sprawdzEnter(event)">
+            <button onclick="filtrujOgloszenia()" class="btn-maly">Szukaj</button>
+            <button onclick="resetujSzukanie()" class="btn-maly btn-szary">X</button>
+        </div>
     </div>
 
     <div id="lista-ogloszen">Ładowanie ogłoszeń...</div>
