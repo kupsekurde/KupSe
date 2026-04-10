@@ -1,78 +1,30 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>KupSe - Twoja Tablica</title>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f4; text-align: center; margin: 0; }
-        header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .kat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 20px; }
-        .kat-item { background: white; padding: 15px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; font-weight: bold; }
-        .form-box { display: none; background: white; padding: 20px; border: 1px solid #ccc; margin: 20px auto; width: 350px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, textarea, select { width: 90%; margin: 5px 0; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
-        button { background: #23e5db; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1 style="color:#23e5db; margin:0;">KupSe</h1>
-        <button onclick="window.otworzAuth()">Zaloguj / Zarejestruj</button>
-    </header>
+<div id="okno-dodawania" class="form-box">
+    <h3>Nowe Ogłoszenie</h3>
+    <input type="text" id="t-tytul" placeholder="Tytuł">
+    
+    <select id="t-kat" onchange="window.zmienPodkat()">
+        <option value="">Wybierz kategorię główną</option>
+        <option value="Nieruchomości">🏠 Nieruchomości</option>
+        <option value="Motoryzacja">🚗 Motoryzacja</option>
+        <option value="Dom i Ogród">🛋️ Dom i Ogród</option>
+        <option value="Elektronika">📱 Elektronika</option>
+        <option value="Moda">👕 Moda</option>
+        <option value="Rolnictwo">🚜 Rolnictwo</option>
+        <option value="Muzyka i Edukacja">🎸 Muzyka i Edukacja</option>
+        <option value="Sport i Hobby">🏀 Sport i Hobby</option>
+        <option value="Dla Dzieci">👶 Dla Dzieci</option>
+        <option value="Zdrowie i Uroda">💄 Zdrowie i Uroda</option>
+        <option value="Noclegi">🏨 Noclegi</option>
+        <option value="Antyki i Kolekcje">🎁 Antyki i Kolekcje</option>
+        <option value="Oddam za darmo">♻️ Oddam za darmo</option>
+    </select>
 
-    <div class="kat-grid">
-        <div onclick="window.filtruj('Nieruchomości')" class="kat-item">🏠 Nieruchomości</div>
-        <div onclick="window.filtruj('Motoryzacja')" class="kat-item">🚗 Motoryzacja</div>
-        <div onclick="window.filtruj('Dom i Ogród')" class="kat-item">🛋️ Dom i Ogród</div>
-        <div onclick="window.filtruj('Elektronika')" class="kat-item">📱 Elektronika</div>
-        <div onclick="window.filtruj('Moda')" class="kat-item">👕 Moda</div>
-        <div onclick="window.filtruj('Rolnictwo')" class="kat-item">🚜 Rolnictwo</div>
-        <div onclick="window.filtruj('Muzyka i Edukacja')" class="kat-item">🎸 Muzyka</div>
-        <div onclick="window.filtruj('Sport i Hobby')" class="kat-item">🏀 Sport</div>
-        <div onclick="window.filtruj('Dla Dzieci')" class="kat-item">👶 Dla Dzieci</div>
-        <div onclick="window.filtruj('Zdrowie i Uroda')" class="kat-item">💄 Zdrowie</div>
-        <div onclick="window.filtruj('Noclegi')" class="kat-item">🏨 Noclegi</div>
-        <div onclick="window.filtruj('Antyki i Kolekcje')" class="kat-item">🎁 Antyki</div>
-        <div onclick="window.filtruj('Oddam za darmo')" class="kat-item">♻️ Za darmo</div>
-    </div>
+    <select id="t-podkat">
+        <option value="">Najpierw wybierz główną</option>
+    </select>
 
-    <button style="font-size: 20px; padding: 15px 40px;" onclick="window.otworzDodawanie()">+ Dodaj Ogłoszenie</button>
-
-    <div id="lista-ogloszen" style="max-width:800px; margin: 20px auto;"></div>
-
-    <div id="sekcja-auth" class="form-box">
-        <h3>Logowanie / Rejestracja</h3>
-        <input type="email" id="auth-email" placeholder="Email">
-        <input type="password" id="auth-haslo" placeholder="Hasło">
-        <button onclick="window.wykonajAuth()">Zatwierdź</button>
-        <button onclick="this.parentElement.style.display='none'" style="background:none; color:red;">Zamknij</button>
-    </div>
-
-    <div id="okno-dodawania" class="form-box">
-        <h3>Nowe Ogłoszenie</h3>
-        <input type="text" id="t-tytul" placeholder="Tytuł">
-        <select id="t-kat">
-            <option value="Inne">Wybierz kategorię</option>
-            <option value="Nieruchomości">Nieruchomości</option>
-            <option value="Motoryzacja">Motoryzacja</option>
-            <option value="Dom i Ogród">Dom i Ogród</option>
-            <option value="Elektronika">Elektronika</option>
-            <option value="Moda">Moda</option>
-            <option value="Rolnictwo">Rolnictwo</option>
-            <option value="Muzyka i Edukacja">Muzyka i Edukacja</option>
-            <option value="Sport i Hobby">Sport i Hobby</option>
-            <option value="Dla Dzieci">Dla Dzieci</option>
-            <option value="Zdrowie i Uroda">Zdrowie i Uroda</option>
-            <option value="Noclegi">Noclegi</option>
-            <option value="Antyki i Kolekcje">Antyki i Kolekcje</option>
-            <option value="Oddam za darmo">Oddam za darmo</option>
-        </select>
-        <input type="number" id="t-cena" placeholder="Cena">
-        <textarea id="t-opis" placeholder="Opis"></textarea>
-        <input type="text" id="t-lok" placeholder="Lokalizacja">
-        <button onclick="window.dodajOgloszenieDB(event)">Dodaj</button>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    <input type="number" id="t-cena" placeholder="Cena">
+    <textarea id="t-opis" placeholder="Opis"></textarea>
+    <input type="text" id="t-lok" placeholder="Lokalizacja">
+    <button onclick="window.dodajOgloszenieDB(event)">Dodaj ogłoszenie</button>
+</div>
