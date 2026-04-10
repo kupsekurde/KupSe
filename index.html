@@ -2,93 +2,65 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>KupSe - Twoja Tablica</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mój Portal Ogłoszeniowy</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; margin: 0; text-align: center; }
-        header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .kat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 20px; }
-        .kat-item { background: white; padding: 15px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; font-weight: bold; display: flex; flex-direction: column; align-items: center; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
-        .form-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; margin: auto; position: relative; top: 50%; transform: translateY(-50%); box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-        input, textarea, select { width: 100%; margin: 8px 0; padding: 12px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
-        button { background: #23e5db; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 6px; width: 100%; margin-top: 10px; }
-        .btn-top { width: auto; background: #23e5db; color: #002f34; padding: 8px 15px; }
-        #user-info { color: #23e5db; font-weight: bold; margin-right: 10px; }
-        .karta { background: white; padding: 20px; margin: 0 auto 20px auto; border-radius: 10px; text-align: left; border: 1px solid #ddd; max-width: 800px; }
-        .karta-zdjecie { width: 100%; height: auto; max-height: 400px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; background: #f9f9f9; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; text-align: center; }
+        .kontener { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #23e5db; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 16px; }
+        button:disabled { background: #ccc; }
+        .auth-sekcja { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
+        .ogloszenie-karta { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; text-align: left; }
+        .ogloszenie-karta img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; }
+        .cena { color: #23e5db; font-size: 1.4rem; font-weight: bold; }
     </style>
 </head>
 <body>
-    <header>
-        <h1 style="color:#23e5db; margin:0; cursor:pointer;" onclick="location.reload()">KupSe</h1>
-        <div id="auth-status">
-            <button class="btn-top" onclick="document.getElementById('okno-auth').style.display='block'">Zaloguj / Zarejestruj</button>
-        </div>
-    </header>
 
-    <div class="kat-grid">
-        <div onclick="window.filtruj('Nieruchomości')" class="kat-item">🏠<span>Nieruchomości</span></div>
-        <div onclick="window.filtruj('Motoryzacja')" class="kat-item">🚗<span>Motoryzacja</span></div>
-        <div onclick="window.filtruj('Dom i Ogród')" class="kat-item">🛋️<span>Dom i Ogród</span></div>
-        <div onclick="window.filtruj('Elektronika')" class="kat-item">📱<span>Elektronika</span></div>
-        <div onclick="window.filtruj('Moda')" class="kat-item">👕<span>Moda</span></div>
-        <div onclick="window.filtruj('Rolnictwo')" class="kat-item">🚜<span>Rolnictwo</span></div>
-        <div onclick="window.filtruj('Muzyka i Edukacja')" class="kat-item">🎸<span>Muzyka</span></div>
-        <div onclick="window.filtruj('Sport i Hobby')" class="kat-item">⚽<span>Sport</span></div>
-        <div onclick="window.filtruj('Dla Dzieci')" class="kat-item">👶<span>Dla Dzieci</span></div>
-        <div onclick="window.filtruj('Zdrowie i Uroda')" class="kat-item">💄<span>Zdrowie</span></div>
-        <div onclick="window.filtruj('Noclegi')" class="kat-item">🏨<span>Noclegi</span></div>
-        <div onclick="window.filtruj('Antyki i Kolekcje')" class="kat-item">🎁<span>Antyki</span></div>
-        <div onclick="window.filtruj('Oddam za darmo')" class="kat-item">♻️<span>Za darmo</span></div>
+<div class="kontener">
+    <div class="auth-sekcja" id="auth-status">
+        <h3>Logowanie / Rejestracja</h3>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-haslo" placeholder="Hasło">
+        <button onclick="wykonajAuth()">Zaloguj / Stwórz konto</button>
     </div>
 
-    <button style="width: auto; font-size: 1.2rem; padding: 15px 40px; margin-bottom: 20px;" onclick="document.getElementById('okno-dodaj').style.display='block'">+ Dodaj Ogłoszenie</button>
-
-    <div id="lista-ogloszen"></div>
-
-    <div id="okno-auth" class="overlay">
-        <div class="form-box">
-            <h3>Logowanie / Rejestracja</h3>
-            <input type="email" id="auth-email" placeholder="Email">
-            <input type="password" id="auth-haslo" placeholder="Hasło">
-            <button onclick="window.wykonajAuth()">Zatwierdź</button>
-            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:none; color:red;">Zamknij</button>
-        </div>
-    </div>
-
-    <div id="okno-dodaj" class="overlay">
-        <div class="form-box">
-            <h3>Dodaj Nowe Ogłoszenie</h3>
-            <input type="text" id="t-tytul" placeholder="Tytuł">
-            <select id="t-kat" onchange="window.zmienPodkat()">
-                <option value="">Wybierz kategorię główną</option>
-                <option value="Nieruchomości">Nieruchomości</option>
+    <div id="form-dodawania" style="display: none;">
+        <h2>Dodaj nowe ogłoszenie</h2>
+        <form onsubmit="dodajOgloszenieDB(event)">
+            <input type="text" id="t-tytul" placeholder="Tytuł ogłoszenia" required>
+            
+            <select id="t-kat" onchange="zmienPodkat()" required>
+                <option value="">-- Wybierz kategorię --</option>
                 <option value="Motoryzacja">Motoryzacja</option>
-                <option value="Dom i Ogród">Dom i Ogród</option>
+                <option value="Nieruchomości">Nieruchomości</option>
                 <option value="Elektronika">Elektronika</option>
-                <option value="Moda">Moda</option>
-                <option value="Rolnictwo">Rolnictwo</option>
-                <option value="Muzyka i Edukacja">Muzyka i Edukacja</option>
-                <option value="Sport i Hobby">Sport i Hobby</option>
-                <option value="Dla Dzieci">Dla Dzieci</option>
-                <option value="Zdrowie i Uroda">Zdrowie i Uroda</option>
-                <option value="Noclegi">Noclegi</option>
-                <option value="Antyki i Kolekcje">Antyki i Kolekcje</option>
-                <option value="Oddam za darmo">Oddam za darmo</option>
+                <option value="Dom i Ogród">Dom i Ogród</option>
             </select>
-            <select id="t-podkat"><option value="">Wybierz podkategorię</option></select>
-            <input type="number" id="t-cena" placeholder="Cena">
-            <input type="text" id="t-tel" placeholder="Numer telefonu">
-            <label style="display:block; text-align:left; font-size:12px; margin-top:5px;">Wybierz zdjęcie z dysku:</label>
-            <input type="file" id="t-plik" accept="image/*">
-            <textarea id="t-opis" placeholder="Opis ogłoszenia" rows="4"></textarea>
-            <input type="text" id="t-lok" placeholder="Miasto / Lokalizacja">
-            <button id="btn-wyslij" onclick="window.dodajOgloszenieDB(event)">Opublikuj ogłoszenie</button>
-            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:none; color:gray;">Anuluj</button>
-        </div>
+
+            <select id="t-podkat" required>
+                <option value="">-- Najpierw wybierz kategorię --</option>
+            </select>
+
+            <input type="number" id="t-cena" placeholder="Cena (zł)" min="1" required>
+            <textarea id="t-opis" placeholder="Opis przedmiotu..." rows="4" required></textarea>
+            <input type="text" id="t-lok" placeholder="Lokalizacja" required>
+            <input type="tel" id="t-tel" placeholder="Numer telefonu" required>
+            
+            <label style="display:block; text-align:left; margin-top:10px;">Zdjęcie przedmiotu (wymagane):</label>
+            <input type="file" id="t-plik" accept="image/*" required>
+
+            <button type="submit" id="btn-wyslij">Opublikuj ogłoszenie</button>
+        </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <hr>
+    <h2>Najnowsze ogłoszenia</h2>
+    <div id="lista-ogloszen">Ładowanie...</div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
