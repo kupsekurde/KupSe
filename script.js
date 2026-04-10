@@ -2,9 +2,9 @@ const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 
 const baza = window.supabase.createClient(URL_S, KEY_S);
-let wszystkieOgloszenia = []; // Globalna lista do wyszukiwania
+let wszystkieOgloszenia = []; // Lista trzymana w pamięci do szybkiego szukania
 
-// 1. SESJA I AUTH
+// 1. OBSŁUGA SESJI
 async function sprawdzSesje() {
     const { data: { user } } = await baza.auth.getUser();
     const authDiv = document.getElementById('auth-status');
@@ -20,20 +20,20 @@ async function sprawdzSesje() {
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
-    if(!email || !password) return alert("Podaj dane!");
+    if(!email || !password) return alert("Podaj email i hasło!");
 
     const { error: logErr } = await baza.auth.signInWithPassword({ email, password });
     if (logErr) {
         const { error: regErr } = await baza.auth.signUp({ email, password });
         if (regErr) alert("Błąd: " + regErr.message);
-        else alert("Konto stworzone! Możesz się zalogować.");
+        else alert("Konto utworzone! Zaloguj się teraz.");
     }
     location.reload();
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// 2. KATEGORIE
+// 2. OBSŁUGA KATEGORII
 window.zmienPodkat = () => {
     const kategorie = {
         "Motoryzacja": ["Samochody", "Motocykle", "Części"],
@@ -49,21 +49,24 @@ window.zmienPodkat = () => {
     }
 };
 
-// 3. DODAWANIE Z WALIDACJĄ
+// 3. DODAWANIE OGŁOSZENIA
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-wyslij');
-    const tytul = document.getElementById('t-tytul').value.trim();
-    const kat = document.getElementById('t-kat').value;
-    const podkat = document.getElementById('t-podkat').value;
-    const cena = document.getElementById('t-cena').value;
-    const opis = document.getElementById('t-opis').value.trim();
-    const lok = document.getElementById('t-lok').value.trim();
-    const tel = document.getElementById('t-tel').value.trim();
     const plik = document.getElementById('t-plik').files[0];
+    
+    const dane = {
+        tytul: document.getElementById('t-tytul').value.trim(),
+        kat: document.getElementById('t-kat').value,
+        podkat: document.getElementById('t-podkat').value,
+        cena: document.getElementById('t-cena').value,
+        opis: document.getElementById('t-opis').value.trim(),
+        lok: document.getElementById('t-lok').value.trim(),
+        tel: document.getElementById('t-tel').value.trim()
+    };
 
-    if (!tytul || !kat || !podkat || !cena || !opis || !lok || !tel || !plik) {
-        return alert("🚨 Wszystkie pola są wymagane!");
+    if (!dane.tytul || !dane.kat || !dane.podkat || !dane.cena || !dane.opis || !dane.lok || !dane.tel || !plik) {
+        return alert("🚨 Wszystkie pola i zdjęcie są wymagane!");
     }
 
     btn.innerText = "Wysyłanie...";
@@ -77,12 +80,13 @@ window.dodajOgloszenieDB = async (e) => {
         const { data: urlData } = baza.storage.from('ZDJECIA').getPublicUrl(nazwaPliku);
         
         const { error: dbErr } = await baza.from('ogloszenia').insert([{
-            tytul, kategoria: kat, podkategoria: podkat, cena: parseInt(cena), 
-            opis, lokalizacja: lok, telefon: tel, zdjecia: urlData.publicUrl
+            tytul: dane.tytul, kategoria: dane.kat, podkategoria: dane.podkat, 
+            cena: parseInt(dane.cena), opis: dane.opis, lokalizacja: dane.lok, 
+            telefon: dane.tel, zdjecia: urlData.publicUrl
         }]);
 
         if (dbErr) throw dbErr;
-        alert("✅ Ogłoszenie dodane!");
+        alert("✅ Ogłoszenie dodane pomyślnie!");
         location.reload();
     } catch (err) {
         alert("Błąd: " + err.message);
@@ -91,7 +95,7 @@ window.dodajOgloszenieDB = async (e) => {
     }
 };
 
-// 4. ŁADOWANIE I WYSZUKIWANIE
+// 4. POBIERANIE I WYSZUKIWANIE
 async function ladujOgloszenia() {
     const { data, error } = await baza.from('ogloszenia').select('*').order('id', { ascending: false });
     if (error) return document.getElementById('lista-ogloszen').innerHTML = "Błąd bazy.";
@@ -103,27 +107,42 @@ async function ladujOgloszenia() {
 function renderuj(tablica) {
     const lista = document.getElementById('lista-ogloszen');
     if (tablica.length === 0) {
-        lista.innerHTML = "<h4>Nie znaleziono ogłoszeń.</h4>";
+        lista.innerHTML = "<h4>Nie znaleziono żadnych ogłoszeń.</h4>";
         return;
     }
     lista.innerHTML = tablica.map(o => `
         <div class="ogloszenie-karta">
-            ${o.zdjecia ? `<img src="${o.zdjecia}">` : ''}
+            ${o.zdjecia ? `<img src="${o.zdjecia}" alt="foto">` : ''}
             <h3>${o.tytul}</h3>
             <p class="cena">${o.cena} zł</p>
             <p>${o.opis}</p>
-            <small>📍 ${o.lokalizacja} | 📞 ${o.telefon} | 📂 ${o.kategoria}</small>
+            <div style="font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
+                📍 ${o.lokalizacja} | 📞 ${o.telefon} | 📂 ${o.kategoria} (${o.podkategoria})
+            </div>
         </div>
     `).join('');
 }
 
+// Obsługa przycisku Szukaj
 window.filtrujOgloszenia = () => {
-    const fraza = document.getElementById('wyszukiwarka').value.toLowerCase();
+    const fraza = document.getElementById('wyszukiwarka').value.toLowerCase().trim();
     const wynik = wszystkieOgloszenia.filter(o => 
         o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza)
     );
     renderuj(wynik);
 };
 
+// Obsługa klawisza Enter
+window.sprawdzEnter = (e) => {
+    if (e.key === 'Enter') filtrujOgloszenia();
+};
+
+// Przycisk X (Reset)
+window.resetujSzukanie = () => {
+    document.getElementById('wyszukiwarka').value = "";
+    renderuj(wszystkieOgloszenia);
+};
+
+// START
 sprawdzSesje();
 ladujOgloszenia();
