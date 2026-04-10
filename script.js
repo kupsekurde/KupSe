@@ -1,6 +1,6 @@
-// KONFIGURACJA - WPISZ SWOJE DANE
-const SUPABASE_URL = 'TWOJ_URL_Z_SUPABASE';
-const SUPABASE_KEY = 'TWOJ_ANON_KEY_Z_SUPABASE';
+// TWOJA KONFIGURACJA (JUŻ WPISANA)
+const SUPABASE_URL = 'https://zeymooitrdcbgrrpzhed.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_tTUBju7up_8DW05IAK4qHQ_bqknsG9VvR7CId3u_D_M-Y';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // TWOJE KATEGORIE
@@ -20,11 +20,10 @@ const daneKategorii = {
     "♻️ Oddam za darmo": ["Rzeczy gratis"]
 };
 
-let trybAuth = 'login'; // 'login' lub 'signup'
+let trybAuth = 'login';
 let zalogowanyUser = null;
 
 // --- FUNKCJE LOGOWANIA ---
-
 async function sprawdzSesje() {
     const { data } = await supabase.auth.getSession();
     zalogowanyUser = data.session?.user || null;
@@ -50,36 +49,18 @@ function przepnijAuth() {
 async function obslugaAuth() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
-
     if (trybAuth === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) alert("Błąd logowania: " + error.message);
-        else location.reload();
+        if (error) alert("Błąd: " + error.message); else location.reload();
     } else {
         const { error } = await supabase.auth.signUp({ email, password });
-        if (error) alert("Błąd rejestracji: " + error.message);
-        else alert("Zarejestrowano! Sprawdź e-mail (jeśli włączyłeś potwierdzenie) lub zaloguj się.");
+        if (error) alert("Błąd: " + error.message); else alert("Zarejestrowano! Zaloguj się.");
     }
 }
 
-async function wyloguj() {
-    await supabase.auth.signOut();
-    location.reload();
-}
+async function wyloguj() { await supabase.auth.signOut(); location.reload(); }
 
-// --- FUNKCJE OGŁOSZEŃ ---
-
-function sprawdzDostepDoDodawania() {
-    if (!zalogowanyUser) {
-        alert("Musisz się zalogować, aby dodać ogłoszenie!");
-        otworzAuth();
-    } else {
-        document.getElementById('sekcja-dodawania').style.display = 'block';
-    }
-}
-
-function zamknijDodawanie() { document.getElementById('sekcja-dodawania').style.display = 'none'; }
-
+// --- FUNKCJE KATEGORII I WIDOKU ---
 function wyswietlKategorie() {
     const kontener = document.getElementById('kategorie');
     kontener.innerHTML = '<div class="kategorie-grid"></div>';
@@ -97,13 +78,16 @@ function pokazPodkategorie(kat) {
     const kontener = document.getElementById('kategorie');
     let html = `<h2>${kat}</h2><button onclick="wyswietlKategorie()">Powrót</button><br><br>`;
     daneKategorii[kat].forEach(pod => {
-        html += `<button class="btn-pod" onclick="filtrujOgloszenia('${kat}', '${pod}')">${pod}</button>`;
+        html += `<button class="btn-pod" onclick="filtruj('${kat}', '${pod}')">${pod}</button>`;
     });
     kontener.innerHTML = html;
 }
 
+function filtruj(kat, pod) { alert("Tu będą ogłoszenia dla: " + pod); }
+
 function przygotujFormularz() {
     const selectKat = document.getElementById('f-kategoria');
+    if(!selectKat) return;
     Object.keys(daneKategorii).forEach(kat => {
         let opt = document.createElement('option');
         opt.value = kat; opt.innerText = kat;
@@ -124,7 +108,14 @@ function zaladujPodkategorieFormularza() {
     }
 }
 
-// Start systemu
+function sprawdzDostepDoDodawania() {
+    if (!zalogowanyUser) { alert("Zaloguj się najpierw!"); otworzAuth(); }
+    else { document.getElementById('sekcja-dodawania').style.display = 'block'; }
+}
+
+function zamknijDodawanie() { document.getElementById('sekcja-dodawania').style.display = 'none'; }
+
+// Start
 sprawdzSesje();
 wyswietlKategorie();
 przygotujFormularz();
