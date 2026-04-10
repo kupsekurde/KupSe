@@ -2,35 +2,77 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>KupSe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KupSe - Kategorie i Ogłoszenia</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; text-align: center; }
-        header { background: #002f34; padding: 20px; color: white; display: flex; justify-content: space-between; }
-        .form-box { display: none; background: white; padding: 20px; border: 1px solid #ccc; margin: 20px auto; width: 300px; border-radius: 8px; }
-        input, textarea { width: 90%; margin: 5px 0; padding: 8px; }
-        button { background: #23e5db; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f0f2f5; color: #333; }
+        header { background: #002f34; padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1000px; margin: auto; padding: 20px; text-align: center; }
+        
+        /* Styl kategorii */
+        .kat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 30px 0; }
+        .kat-item { background: white; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; border: 1px solid #ddd; transition: 0.3s; }
+        .kat-item:hover { border-color: #23e5db; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        /* Formularze */
+        .form-box { display: none; background: white; padding: 25px; border-radius: 12px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        
+        /* Przyciski */
+        .btn-main { background: #23e5db; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-auth { background: #002f34; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+
+        /* Lista ogłoszeń */
+        .ogl-karta { background: white; padding: 20px; margin: 15px auto; border-radius: 8px; border: 1px solid #ddd; text-align: left; max-width: 600px; }
     </style>
 </head>
 <body>
     <header>
-        <h1 style="color:#23e5db">KupSe</h1>
-        <button onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
+        <h1 style="margin:0; color:#23e5db; cursor:pointer;" onclick="location.reload()">KupSe</h1>
+        <div id="auth-status">
+            <button class="btn-auth" onclick="window.pokazAuth()">Zaloguj / Zarejestruj</button>
+        </div>
     </header>
 
-    <button style="margin-top: 50px;" onclick="window.otworzDodawanie()">+ Dodaj Ogłoszenie</button>
+    <div class="container">
+        <h2>Kategorie</h2>
+        <div id="lista-kategorii" class="kat-grid">
+            <div class="kat-item" onclick="filtruj('Nieruchomości')">🏠 Nieruchomości</div>
+            <div class="kat-item" onclick="filtruj('Motoryzacja')">🚗 Motoryzacja</div>
+            <div class="kat-item" onclick="filtruj('Elektronika')">📱 Elektronika</div>
+            <div class="kat-item" onclick="filtruj('Dom')">🛋️ Dom i Ogród</div>
+        </div>
+
+        <button class="btn-main" onclick="window.otworzDodawanie()">+ Dodaj Ogłoszenie</button>
+
+        <div id="lista-ogloszen">
+            <p>Ładowanie najnowszych ofert...</p>
+        </div>
+    </div>
 
     <div id="sekcja-auth" class="form-box">
+        <h3>Dołącz do KupSe</h3>
         <input type="email" id="auth-email" placeholder="E-mail">
         <input type="password" id="auth-haslo" placeholder="Hasło">
-        <button onclick="window.wykonajAuth()">Zarejestruj się</button>
+        <button class="btn-auth" style="width:100%" onclick="window.wykonajAuth()">Zarejestruj się / Zaloguj</button>
+        <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">Anuluj</button>
     </div>
 
     <div id="okno-dodawania" class="form-box">
-        <input type="text" id="t-tytul" placeholder="Tytuł">
-        <input type="number" id="t-cena" placeholder="Cena">
-        <textarea id="t-opis" placeholder="Opis"></textarea>
-        <input type="text" id="t-lok" placeholder="Lokalizacja">
-        <button onclick="window.dodajOgloszenieDB(event)">Opublikuj</button>
+        <h3>Co chcesz sprzedać?</h3>
+        <input type="text" id="t-tytul" placeholder="Tytuł ogłoszenia">
+        <input type="number" id="t-cena" placeholder="Cena (zł)">
+        <select id="t-kat">
+            <option value="Inne">Wybierz kategorię</option>
+            <option value="Nieruchomości">Nieruchomości</option>
+            <option value="Motoryzacja">Motoryzacja</option>
+            <option value="Elektronika">Elektronika</option>
+            <option value="Dom">Dom i Ogród</option>
+        </select>
+        <textarea id="t-opis" placeholder="Opis przedmiotu" rows="4"></textarea>
+        <input type="text" id="t-lok" placeholder="Miasto / Lokalizacja">
+        <button class="btn-main" style="width:100%" onclick="window.dodajOgloszenieDB(event)">Opublikuj Teraz</button>
+        <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">Zamknij</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
