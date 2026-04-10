@@ -136,7 +136,7 @@ window.filtruj = () => {
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    const plik = document.getElementById('f-plik').files[0];
+    const plik = document.getElementById('f-plik').files;
     btn.innerText = "Publikowanie..."; btn.disabled = true;
 
     const path = `${Date.now()}_img`;
