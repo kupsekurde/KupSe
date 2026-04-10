@@ -10,101 +10,145 @@
         :root { --primary: #23e5db; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; }
         
-        /* NAVBAR RESPONSIVE */
-        .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .main-logo { height: 40px; cursor: pointer; }
-        @media (min-width: 768px) { .main-logo { height: 60px; } }
+        /* NAVBAR */
+        .navbar { background: var(--white); padding: 5px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .main-logo { height: 60px; cursor: pointer; }
+        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
+        .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 150px; }
+        .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
 
-        .nav-search { display: flex; flex: 1; margin: 0 15px; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
-        .nav-search input { width: 100%; border: none; background: transparent; outline: none; padding: 8px; font-size: 14px; }
-
-        .nav-right { display: flex; align-items: center; gap: 10px; }
-
-        /* KATEGORIE - SCROLLOWANE NA TELEFONIE */
-        .cat-container { display: flex; gap: 15px; padding: 15px 5%; overflow-x: auto; scrollbar-width: none; background: white; border-bottom: 1px solid #eee; }
+        /* KATEGORIE - NOWOCZESNY LOOK */
+        .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
+        .cat-container { display: flex; justify-content: center; gap: 15px; padding: 20px 2%; overflow-x: auto; scrollbar-width: none; }
         .cat-container::-webkit-scrollbar { display: none; }
-        .cat-item { min-width: 70px; text-align: center; cursor: pointer; }
-        .cat-icon { width: 50px; height: 50px; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .cat-item span { font-size: 10px; font-weight: 700; display: block; margin-top: 5px; }
+        .cat-item { min-width: 90px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .cat-item:hover { transform: translateY(-3px); }
+        .cat-item span { font-size: 11px; font-weight: 700; color: #444; display: block; margin-top: 8px; }
+        .cat-icon { 
+            width: 60px; height: 60px; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); 
+            border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; 
+            margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0;
+        }
 
-        /* OGŁOSZENIA - SIATKA DOPASOWANA DO EKRANU */
-        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        @media (min-width: 768px) { .ads-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; } }
+        /* PODKATEGORIE */
+        .subcat-panel { 
+            display: none; background: #f8f9fa; padding: 15px 5%; justify-content: center; 
+            gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; animation: slideDown 0.3s ease;
+        }
+        .sub-pill { padding: 8px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .sub-pill:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .ad-card { background: white; border-radius: 15px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; }
-        .ad-img { width: 100%; height: 140px; object-fit: cover; }
-        @media (min-width: 768px) { .ad-img { height: 200px; } }
-        .ad-body { padding: 12px; }
-        .ad-price { font-size: 18px; font-weight: 800; }
-        .ad-title { font-size: 13px; margin: 5px 0; height: 34px; overflow: hidden; color: #444; }
+        /* OGŁOSZENIA */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+        .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; }
+        .ad-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .ad-img { width: 100%; height: 200px; object-fit: cover; }
+        .ad-body { padding: 15px; }
+        .ad-price { font-size: 22px; font-weight: 800; color: #000; }
+        .ad-title { font-size: 15px; font-weight: 600; color: #374151; margin: 8px 0; height: 40px; overflow: hidden; }
+        .ad-date { font-size: 12px; color: var(--gray); display: flex; justify-content: space-between; }
 
-        /* PRZYCISKI */
-        .btn-add-ad { height: 50px; cursor: pointer; transition: 0.3s; }
-        @media (min-width: 768px) { .btn-add-ad { height: 70px; } }
-        
-        .modal-box { background: white; width: 95%; max-width: 600px; border-radius: 20px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
+        /* MODALE */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 95%; max-width: 700px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 35px; cursor: pointer; line-height: 1; }
 
-        /* GALERIA W PODGLĄDZIE */
-        .gallery { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 15px; }
-        .gallery img { height: 150px; border-radius: 10px; cursor: pointer; }
+        /* MENU KONTO */
+        .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 15px; z-index: 1001; }
+        .show { display: block; }
+        .btn-account { background: #f3f4f6; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; }
+        .btn-add-ad { height: 70px; cursor: pointer; transition: 0.3s; }
 
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <img src="KupSe.jpg" class="main-logo" onclick="location.reload()">
-    <div class="nav-search">
-        <input type="text" id="find-text" placeholder="Szukaj...">
-        <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer">OK</button>
+    <div class="nav-left">
+        <img src="KupSe.png" class="main-logo" onclick="location.reload()">
+        <div class="nav-search">
+            <input type="text" id="find-text" placeholder="Szukaj na KupSe...">
+            <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer">OK</button>
+        </div>
     </div>
     <div class="nav-right" id="user-nav">
-        <button onclick="document.getElementById('auth-box').scrollIntoView()" style="padding:8px 15px; border-radius:20px; border:none; background:#eee; font-weight:bold; cursor:pointer">Logowanie</button>
+        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
     </div>
 </nav>
 
-<div id="category-bar" class="cat-container">
+<div class="cat-wrapper">
+    <div class="cat-container" id="category-bar">
+        <div class="cat-item" onclick="toggleSubcats('Motoryzacja')"><div class="cat-icon">🚗</div><span>Auto</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Nieruchomości')"><div class="cat-icon">🏠</div><span>Dom</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Elektronika')"><div class="cat-icon">💻</div><span>Elektronika</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dom i Ogród')"><div class="cat-icon">🌿</div><span>Ogród</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Moda')"><div class="cat-icon">👗</div><span>Moda</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Rolnictwo')"><div class="cat-icon">🚜</div><span>Rolnictwo</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Zwierzęta')"><div class="cat-icon">🐾</div><span>Zwierzęta</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dla Dzieci')"><div class="cat-icon">🧸</div><span>Dzieci</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Sport i Hobby')"><div class="cat-icon">⚽</div><span>Sport</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Muzyka i Edukacja')"><div class="cat-icon">📚</div><span>Nauka</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon">🛠️</div><span>Usługi</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon">💼</div><span>Praca</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon">✨</div><span>Inne</span></div>
     </div>
-<div id="subcat-panel" style="display:none; background:#eee; padding:10px; text-align:center; gap:10px; flex-wrap:wrap"></div>
+    <div id="subcat-panel" class="subcat-panel"></div>
+</div>
 
 <div class="container">
-    <div id="auth-box" class="hidden" style="text-align:center; margin-bottom:30px">
-        <div style="background:white; padding:20px; border-radius:15px; display:inline-block">
-            <input type="email" id="email" placeholder="Email"><br>
-            <input type="password" id="pass" placeholder="Hasło" style="margin:10px 0"><br>
-            <button onclick="loguj()" style="width:100%; padding:10px; background:var(--primary); border:none; border-radius:10px; font-weight:bold">Zaloguj</button>
+    <div id="auth-box" style="margin-bottom: 50px;">
+        <div style="max-width:320px; margin:auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+            <h3 style="margin-top:0">Witaj ponownie!</h3>
+            <input type="email" id="email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <input type="password" id="pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <button onclick="loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj / Rejestracja</button>
         </div>
     </div>
 
-    <h2 id="view-title">Najnowsze ogłoszenia</h2>
+    <h2 style="font-size: 28px; margin-bottom: 25px;">Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
 </div>
 
-<div id="modal-form" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center">
+<div id="modal-form" class="modal">
     <div class="modal-box">
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <h3>Dodaj ogłoszenie</h3>
-        <form onsubmit="wyslijOgloszenie(event)">
-            <input type="text" id="f-tytul" placeholder="Tytuł" style="width:100%; margin-bottom:10px" required>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px">
-                <select id="f-kat" onchange="updateFormSubcats()" required><option value="">Kategoria</option></select>
-                <select id="f-podkat" required><option value="">Podkategoria</option></select>
-                <input type="number" id="f-cena" placeholder="Cena" required>
-                <input type="text" id="f-lok" placeholder="Miasto" required>
-            </div>
-            <textarea id="f-opis" placeholder="Opis..." style="width:100%; height:80px; margin-bottom:10px" required></textarea>
-            <input type="tel" id="f-tel" placeholder="Telefon" style="width:100%; margin-bottom:10px" required>
-            <label style="font-size:12px; color:gray">Dodaj max 3 zdjęcia (max 5MB/szt):</label>
-            <input type="file" id="f-pliki" accept="image/*" multiple style="width:100%; margin-bottom:15px">
-            <button type="submit" id="btn-save" style="width:100%; padding:15px; background:var(--primary); border:none; border-radius:10px; font-weight:800; cursor:pointer">Opublikuj Ogłoszenie</button>
+        <h2 style="margin-top:0">Co chcesz sprzedać?</h2>
+        <form onsubmit="wyslijOgloszenie(event)" style="display:grid; grid-template-columns:1fr 1fr; gap:15px">
+            <input type="text" id="f-tytul" placeholder="Tytuł przedmiotu" style="grid-column:span 2; padding:15px; border-radius:12px; border:1px solid #ddd" required>
+            <select id="f-kat" onchange="updateFormSubcats()" style="padding:15px; border-radius:12px; border:1px solid #ddd" required>
+                <option value="">Kategoria</option>
+                <option value="Motoryzacja">Motoryzacja</option>
+                <option value="Nieruchomości">Nieruchomości</option>
+                <option value="Elektronika">Elektronika</option>
+                <option value="Dom i Ogród">Dom i Ogród</option>
+                <option value="Moda">Moda</option>
+                <option value="Rolnictwo">Rolnictwo</option>
+                <option value="Zwierzęta">Zwierzęta</option>
+                <option value="Dla Dzieci">Dla Dzieci</option>
+                <option value="Sport i Hobby">Sport i Hobby</option>
+                <option value="Muzyka i Edukacja">Muzyka i Edukacja</option>
+                <option value="Usługi">Usługi</option>
+                <option value="Praca">Praca</option>
+                <option value="Inne">Inne</option>
+            </select>
+            <select id="f-podkat" style="padding:15px; border-radius:12px; border:1px solid #ddd" required>
+                <option value="">Podkategoria</option>
+            </select>
+            <input type="number" id="f-cena" placeholder="Cena (zł)" style="padding:15px; border-radius:12px; border:1px solid #ddd" required>
+            <input type="text" id="f-lok" placeholder="Miasto" style="padding:15px; border-radius:12px; border:1px solid #ddd" required>
+            <textarea id="f-opis" placeholder="Opisz swój przedmiot..." style="grid-column:span 2; height:120px; padding:15px; border-radius:12px; border:1px solid #ddd" required></textarea>
+            <input type="tel" id="f-tel" placeholder="Nr telefonu" style="padding:15px; border-radius:12px; border:1px solid #ddd" required>
+            <input type="file" id="f-plik" accept="image/*" style="padding:10px" required>
+            <button type="submit" id="btn-save" style="grid-column:span 2; background:var(--primary); color:white; border:none; padding:18px; border-radius:15px; font-weight:800; cursor:pointer; font-size:16px">Opublikuj na KupSe</button>
         </form>
     </div>
 </div>
 
-<div id="modal-view" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center">
+<div id="modal-view" class="modal">
     <div class="modal-box" id="view-content"></div>
 </div>
 
