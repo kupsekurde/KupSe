@@ -2,147 +2,133 @@ const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 
 const baza = window.supabase.createClient(URL_S, KEY_S);
-let wszystkieOgloszenia = []; // Lista trzymana w pamięci do szybkiego szukania
+let wszystkieOgloszenia = [];
 
-// 1. OBSŁUGA SESJI
+// 1. SYSTEM KATEGORII (PEŁNE 13)
+const KAT_MAPA = {
+    "Motoryzacja": ["Samochody osobowe", "Motocykle", "Dostawcze", "Części"],
+    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
+    "Elektronika": ["Telefony", "Laptopy", "Konsole", "TV"],
+    "Dom i Ogród": ["Meble", "Ogród", "Budownictwo"],
+    "Moda": ["Ubrania", "Buty", "Dodatki"],
+    "Rolnictwo": ["Ciągniki", "Maszyny", "Produkty"],
+    "Zwierzęta": ["Psy", "Koty", "Akcesoria"],
+    "Dla Dzieci": ["Wózki", "Zabawki", "Ubranka"],
+    "Sport i Hobby": ["Rowery", "Siłownia", "Kolekcje"],
+    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Korepetycje"],
+    "Usługi": ["Budowlane", "Naprawa", "Zdrowie"],
+    "Praca": ["Pełny etat", "Dodatkowa", "Za granicą"],
+    "Inne": ["Oddam za darmo", "Zamiana", "Różne"]
+};
+
+window.zmienPodkat = () => {
+    const glowna = document.getElementById('t-kat').value;
+    const pod = document.getElementById('t-podkat');
+    pod.innerHTML = '<option value="">-- Podkategoria --</option>';
+    if (KAT_MAPA[glowna]) KAT_MAPA[glowna].forEach(p => pod.innerHTML += `<option value="${p}">${p}</option>`);
+};
+
+// 2. AUTH & NAVBAR
 async function sprawdzSesje() {
     const { data: { user } } = await baza.auth.getUser();
-    const authDiv = document.getElementById('auth-status');
-    const formDiv = document.getElementById('form-dodawania');
+    const navPanel = document.getElementById('nav-user-panel');
+    const authBox = document.getElementById('auth-section');
+    const formBox = document.getElementById('form-dodawania');
 
     if (user) {
-        authDiv.innerHTML = `<p>Witaj, <b>${user.email}</b>!</p>
-            <button onclick="wyloguj()" style="background:#666; width:auto; padding:8px 20px;">Wyloguj się</button>`;
-        formDiv.style.display = "block";
+        navPanel.innerHTML = `
+            <span class="user-email">${user.email}</span>
+            <button class="btn-logout" onclick="wyloguj()">Wyloguj</button>
+        `;
+        authBox.style.display = "none";
+        formBox.style.display = "block";
     }
 }
 
 window.wykonajAuth = async () => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-haslo').value;
-    if(!email || !password) return alert("Podaj email i hasło!");
-
-    const { error: logErr } = await baza.auth.signInWithPassword({ email, password });
-    if (logErr) {
+    const { error } = await baza.auth.signInWithPassword({ email, password });
+    if (error) {
         const { error: regErr } = await baza.auth.signUp({ email, password });
         if (regErr) alert("Błąd: " + regErr.message);
-        else alert("Konto utworzone! Zaloguj się teraz.");
+        else alert("Konto założone! Zaloguj się.");
     }
     location.reload();
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// 2. OBSŁUGA KATEGORII
-window.zmienPodkat = () => {
-    const kategorie = {
-        "Motoryzacja": ["Samochody", "Motocykle", "Części"],
-        "Nieruchomości": ["Mieszkania", "Domy", "Działki"],
-        "Elektronika": ["Telefony", "Komputery", "RTV"],
-        "Dom i Ogród": ["Meble", "Ogród", "Dekoracje"]
-    };
-    const glowna = document.getElementById('t-kat').value;
-    const pod = document.getElementById('t-podkat');
-    pod.innerHTML = '<option value="">-- Wybierz podkategorię --</option>';
-    if (kategorie[glowna]) {
-        kategorie[glowna].forEach(p => pod.innerHTML += `<option value="${p}">${p}</option>`);
-    }
-};
-
-// 3. DODAWANIE OGŁOSZENIA
+// 3. DODAWANIE
 window.dodajOgloszenieDB = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-wyslij');
     const plik = document.getElementById('t-plik').files[0];
-    
-    const dane = {
-        tytul: document.getElementById('t-tytul').value.trim(),
-        kat: document.getElementById('t-kat').value,
-        podkat: document.getElementById('t-podkat').value,
-        cena: document.getElementById('t-cena').value,
-        opis: document.getElementById('t-opis').value.trim(),
-        lok: document.getElementById('t-lok').value.trim(),
-        tel: document.getElementById('t-tel').value.trim()
-    };
-
-    if (!dane.tytul || !dane.kat || !dane.podkat || !dane.cena || !dane.opis || !dane.lok || !dane.tel || !plik) {
-        return alert("🚨 Wszystkie pola i zdjęcie są wymagane!");
-    }
-
-    btn.innerText = "Wysyłanie...";
-    btn.disabled = true;
+    btn.innerText = "Wysyłanie..."; btn.disabled = true;
 
     try {
         const nazwaPliku = `${Date.now()}_${plik.name.replace(/\s/g, '_')}`;
-        const { error: storageErr } = await baza.storage.from('ZDJECIA').upload(nazwaPliku, plik);
-        if (storageErr) throw storageErr;
-
-        const { data: urlData } = baza.storage.from('ZDJECIA').getPublicUrl(nazwaPliku);
+        await baza.storage.from('ZDJECIA').upload(nazwaPliku, plik);
+        const { data: url } = baza.storage.from('ZDJECIA').getPublicUrl(nazwaPliku);
         
-        const { error: dbErr } = await baza.from('ogloszenia').insert([{
-            tytul: dane.tytul, kategoria: dane.kat, podkategoria: dane.podkat, 
-            cena: parseInt(dane.cena), opis: dane.opis, lokalizacja: dane.lok, 
-            telefon: dane.tel, zdjecia: urlData.publicUrl
+        await baza.from('ogloszenia').insert([{
+            tytul: document.getElementById('t-tytul').value,
+            kategoria: document.getElementById('t-kat').value,
+            podkategoria: document.getElementById('t-podkat').value,
+            cena: parseInt(document.getElementById('t-cena').value),
+            opis: document.getElementById('t-opis').value,
+            lokalizacja: document.getElementById('t-lok').value,
+            telefon: document.getElementById('t-tel').value,
+            zdjecia: url.publicUrl
         }]);
-
-        if (dbErr) throw dbErr;
-        alert("✅ Ogłoszenie dodane pomyślnie!");
         location.reload();
-    } catch (err) {
-        alert("Błąd: " + err.message);
-        btn.disabled = false;
-        btn.innerText = "Opublikuj ogłoszenie";
-    }
+    } catch (err) { alert(err.message); btn.disabled = false; }
 };
 
-// 4. POBIERANIE I WYSZUKIWANIE
+// 4. ŁADOWANIE I WYSZUKIWANIE (MIASTO + TEKST)
 async function ladujOgloszenia() {
     const { data, error } = await baza.from('ogloszenia').select('*').order('id', { ascending: false });
-    if (error) return document.getElementById('lista-ogloszen').innerHTML = "Błąd bazy.";
-    
+    if (error) return;
     wszystkieOgloszenia = data;
     renderuj(wszystkieOgloszenia);
 }
 
+window.filtrujWszystko = () => {
+    const fraza = document.getElementById('wyszukiwarka').value.toLowerCase();
+    const miasto = document.getElementById('wyszukiwarka-miasto').value.toLowerCase();
+    
+    const wynik = wszystkieOgloszenia.filter(o => {
+        const pasujeTekst = o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
+        const pasujeMiasto = o.lokalizacja.toLowerCase().includes(miasto);
+        return pasujeTekst && pasujeMiasto;
+    });
+
+    document.getElementById('view-title').innerText = fraza ? `Wyniki dla: ${fraza}` : "Najnowsze ogłoszenia";
+    renderuj(wynik);
+};
+
 function renderuj(tablica) {
     const lista = document.getElementById('lista-ogloszen');
-    if (tablica.length === 0) {
-        lista.innerHTML = "<h4>Nie znaleziono żadnych ogłoszeń.</h4>";
-        return;
-    }
+    document.getElementById('stats').innerText = `Znaleziono: ${tablica.length}`;
+    if (tablica.length === 0) { lista.innerHTML = "<h3>Brak ogłoszeń w tej lokalizacji.</h3>"; return; }
+    
     lista.innerHTML = tablica.map(o => `
-        <div class="ogloszenie-karta">
-            ${o.zdjecia ? `<img src="${o.zdjecia}" alt="foto">` : ''}
-            <h3>${o.tytul}</h3>
-            <p class="cena">${o.cena} zł</p>
-            <p>${o.opis}</p>
-            <div style="font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
-                📍 ${o.lokalizacja} | 📞 ${o.telefon} | 📂 ${o.kategoria} (${o.podkategoria})
+        <div class="ad-card">
+            <img src="${o.zdjecia || 'https://via.placeholder.com/300'}" alt="foto">
+            <div class="ad-body">
+                <div class="ad-title">${o.tytul}</div>
+                <div class="ad-price">${o.cena.toLocaleString()} zł</div>
+                <div class="ad-footer">
+                    <span>📍 ${o.lokalizacja}</span>
+                    <span>📞 ${o.telefon}</span>
+                </div>
             </div>
         </div>
     `).join('');
 }
 
-// Obsługa przycisku Szukaj
-window.filtrujOgloszenia = () => {
-    const fraza = document.getElementById('wyszukiwarka').value.toLowerCase().trim();
-    const wynik = wszystkieOgloszenia.filter(o => 
-        o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza)
-    );
-    renderuj(wynik);
-};
+window.resetujWszystko = () => { location.reload(); };
+window.scrollToAuth = () => { document.getElementById('auth-section').scrollIntoView({behavior: 'smooth'}); };
 
-// Obsługa klawisza Enter
-window.sprawdzEnter = (e) => {
-    if (e.key === 'Enter') filtrujOgloszenia();
-};
-
-// Przycisk X (Reset)
-window.resetujSzukanie = () => {
-    document.getElementById('wyszukiwarka').value = "";
-    renderuj(wszystkieOgloszenia);
-};
-
-// START
 sprawdzSesje();
 ladujOgloszenia();
