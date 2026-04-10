@@ -3,101 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe - Portal Ogłoszeniowy</title>
+    <title>KupSe - Twój Portal</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #23e5db;
-            --bg: #f3f4f7;
-            --white: #ffffff;
-            --text: #111827;
-            --gray: #6b7280;
-        }
-
+        :root { --primary: #23e5db; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
         /* NAVBAR */
-        .navbar { 
-            background: var(--white); 
-            padding: 5px 5%; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-            position: sticky; top: 0; z-index: 1000;
-        }
+        .navbar { background: var(--white); padding: 5px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .main-logo { height: 60px; cursor: pointer; }
-        
         .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
-        .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 180px; }
-        .city-input { border-left: 1px solid #ddd !important; width: 120px !important; }
-
+        .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 150px; }
         .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
 
-        /* GUZIK SPRZEDAJSE */
-        .btn-add-ad { 
-            height: 65px; 
-            cursor: pointer; 
-            transition: 0.3s; 
-            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.1));
-        }
-        .btn-add-ad:hover { transform: scale(1.08) rotate(2deg); }
+        /* KATEGORIE MINIATURKI */
+        .cat-container { display: flex; justify-content: center; gap: 20px; padding: 30px 5%; flex-wrap: wrap; background: var(--white); margin-bottom: 20px; }
+        .cat-item { text-align: center; cursor: pointer; transition: 0.3s; width: 80px; }
+        .cat-item:hover { transform: translateY(-5px); color: var(--primary); }
+        .cat-icon { width: 50px; height: 50px; background: #f0f0f0; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 8px; }
 
-        /* DROPDOWN MENU TWOJE KONTO */
-        .account-menu { position: relative; }
-        .btn-account { 
-            background: #eee; border: none; padding: 10px 20px; border-radius: 50px; 
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0; top: 45px;
-            background: white;
-            min-width: 180px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border-radius: 12px;
-            padding: 10px;
-            z-index: 1001;
-            border: 1px solid #eee;
-        }
-        .dropdown-content.show { display: block; }
-        .user-info-mail { font-size: 12px; color: var(--gray); display: block; margin-bottom: 10px; padding: 5px; border-bottom: 1px solid #f0f0f0; }
-        .btn-logout-red { color: #dc3545; background: none; border: none; font-weight: bold; cursor: pointer; width: 100%; text-align: left; padding: 5px; }
-
-        /* MODAL */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            z-index: 2000;
-            justify-content: center; align-items: center;
-        }
-        .modal-box {
-            background: white; width: 90%; max-width: 600px; max-height: 90vh;
-            border-radius: 25px; padding: 30px; overflow-y: auto; position: relative;
-        }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: var(--gray); }
-
-        /* FORMULARZ */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .full { grid-column: span 2; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; box-sizing: border-box; background: #f9fafb; font-family: inherit; }
-        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 10px; }
-
-        /* LISTA */
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; }
-        .ad-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; border: 1px solid #eee; }
-        .ad-img { width: 100%; height: 200px; object-fit: cover; }
+        /* OGŁOSZENIA */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .ad-card { background: white; border-radius: 16px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
+        .ad-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .ad-img { width: 100%; height: 180px; object-fit: cover; }
         .ad-body { padding: 15px; }
-        .ad-price { font-size: 20px; font-weight: 800; }
+        .ad-price { font-size: 18px; font-weight: 800; color: #000; }
+        .ad-date { font-size: 11px; color: var(--gray); margin-top: 5px; }
 
-        #auth-box { background: white; padding: 40px; border-radius: 25px; text-align: center; margin-bottom: 40px; }
+        /* MODALE */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 24px; padding: 25px; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; }
+
+        /* DROPDOWN MENU */
+        .dropdown-content { display: none; position: absolute; right: 0; top: 50px; background: white; min-width: 180px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-radius: 12px; padding: 10px; z-index: 1001; }
+        .show { display: block; }
+        
+        .btn-account { background: #eee; border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .btn-add-ad { height: 60px; cursor: pointer; transition: 0.3s; }
         .hidden { display: none; }
     </style>
 </head>
@@ -107,9 +54,8 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="find-text" placeholder="Szukaj...">
-            <input type="text" id="find-city" class="city-input" placeholder="Miasto">
-            <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer">OK</button>
+            <input type="text" id="find-text" placeholder="Czego szukasz?">
+            <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer">Szukaj</button>
         </div>
     </div>
     <div class="nav-right" id="user-nav">
@@ -117,42 +63,57 @@
     </div>
 </nav>
 
+<div class="cat-container" id="category-bar">
+    <div class="cat-item" onclick="filtrujPoKat('')"><div class="cat-icon">🏠</div><span>Wszystko</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Motoryzacja')"><div class="cat-icon">🚗</div><span>Auto</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Elektronika')"><div class="cat-icon">📱</div><span>Elektronika</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Moda')"><div class="cat-icon">👕</div><span>Moda</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Dom i Ogród')"><div class="cat-icon">🛋️</div><span>Dom</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Zwierzęta')"><div class="cat-icon">🐶</div><span>Zwierzęta</span></div>
+    <div class="cat-item" onclick="filtrujPoKat('Inne')"><div class="cat-icon">📦</div><span>Inne</span></div>
+</div>
+
 <div class="container">
     <div id="auth-box">
-        <h2>Witaj!</h2>
-        <div style="max-width:300px; margin:auto">
-            <input type="email" id="email" placeholder="Email" style="margin-bottom:10px">
-            <input type="password" id="pass" placeholder="Hasło">
-            <button onclick="loguj()" class="btn-submit">Zaloguj / Rejestracja</button>
+        <div style="max-width:300px; margin:auto; background:white; padding:20px; border-radius:20px;">
+            <h3>Zaloguj się</h3>
+            <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd">
+            <input type="password" id="pass" placeholder="Hasło" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd">
+            <button onclick="loguj()" style="width:100%; background:var(--primary); border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer">Wejdź</button>
         </div>
     </div>
 
-    <div id="modal-form" class="modal">
-        <div class="modal-box">
-            <span class="close-btn" onclick="zamknijModal()">&times;</span>
-            <h2 style="margin:0">Dodaj ogłoszenie</h2>
-            <form onsubmit="wyslijOgloszenie(event)" class="form-grid">
-                <input type="text" id="f-tytul" class="full" placeholder="Tytuł" required>
-                <select id="f-kat" onchange="updatePodkat()" required>
-                    <option value="">Kategoria...</option>
-                    <option value="Motoryzacja">Motoryzacja</option>
-                    <option value="Elektronika">Elektronika</option>
-                    <option value="Moda">Moda</option>
-                    <option value="Dom i Ogród">Dom i Ogród</option>
-                    <option value="Inne">Inne</option>
-                </select>
-                <select id="f-podkat" required><option value="">Podkategoria...</option></select>
-                <input type="number" id="f-cena" placeholder="Cena (zł)" required>
-                <input type="text" id="f-lok" placeholder="Miasto" required>
-                <textarea id="f-opis" class="full" rows="3" placeholder="Opis..." required></textarea>
-                <input type="tel" id="f-tel" placeholder="Telefon" required>
-                <input type="file" id="f-plik" accept="image/*" required>
-                <button type="submit" id="btn-save" class="btn-submit full">Opublikuj</button>
-            </form>
-        </div>
-    </div>
-
+    <h2>Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
+</div>
+
+<div id="modal-form" class="modal">
+    <div class="modal-box">
+        <span class="close-btn" onclick="zamknijModal()">&times;</span>
+        <h2>Dodaj ogłoszenie</h2>
+        <form onsubmit="wyslijOgloszenie(event)" style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <input type="text" id="f-tytul" placeholder="Tytuł" style="grid-column:span 2" required>
+            <select id="f-kat" required>
+                <option value="Inne">Wybierz kategorię</option>
+                <option value="Motoryzacja">Motoryzacja</option>
+                <option value="Elektronika">Elektronika</option>
+                <option value="Moda">Moda</option>
+                <option value="Dom i Ogród">Dom i Ogród</option>
+                <option value="Zwierzęta">Zwierzęta</option>
+            </select>
+            <input type="number" id="f-cena" placeholder="Cena" required>
+            <input type="text" id="f-lok" placeholder="Miasto" required>
+            <textarea id="f-opis" placeholder="Opis" style="grid-column:span 2; height:100px" required></textarea>
+            <input type="tel" id="f-tel" placeholder="Telefon" required>
+            <input type="file" id="f-plik" accept="image/*" required>
+            <button type="submit" id="btn-save" style="grid-column:span 2; background:var(--primary); border:none; padding:15px; border-radius:10px; font-weight:bold; cursor:pointer">Opublikuj</button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-view" class="modal">
+    <div class="modal-box" id="view-content">
+        </div>
 </div>
 
 <script src="script.js"></script>
