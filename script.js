@@ -7,22 +7,22 @@ let aktualnaGaleria = [];
 let aktualnyIndex = 0;
 
 const MAPA_KATEGORII = {
-    "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony"],
-    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
-    "Elektronika": ["Telefony", "Laptopy", "Gry i Konsole", "RTV"],
-    "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Dekoracje"],
-    "Moda": ["Ubrania", "Buty", "Biżuteria", "Akcesoria"],
-    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Produkty rolne"],
-    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Akcesoria"],
-    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Turystyka", "Wędkarstwo"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty"],
-    "Usługi": ["Budowlane", "Uroda", "Transport", "IT"],
-    "Praca": ["Pełny etat", "Dodatkowa", "Staże"],
-    "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
+    "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony", "Dostawcze", "Ciężarowe"],
+    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura", "Wynajem"],
+    "Elektronika": ["Telefony", "Laptopy", "Gry i Konsole", "RTV", "Fotografia"],
+    "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Dekoracje", "Budowa"],
+    "Moda": ["Ubrania", "Buty", "Biżuteria", "Akcesoria", "Ślubne"],
+    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Produkty rolne", "Przyczepy"],
+    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Ryby", "Akcesoria dla zwierząt"],
+    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka", "Fotele", "Dla niemowląt"],
+    "Sport i Hobby": ["Rowery", "Siłownia", "Turystyka", "Wędkarstwo", "Kolekcje"],
+    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty", "Korepetycje"],
+    "Usługi": ["Budowlane", "Uroda", "Transport", "IT", "Naprawa"],
+    "Praca": ["Pełny etat", "Dodatkowa", "Staże", "Praca za granicą"],
+    "Inne": ["Za darmo", "Zamiana", "Różne"]
 };
 
-// --- FUNKCJA KOMPRESJI ZDJĘĆ ---
+// --- KOMPRESJA ---
 async function kompresujZdjecie(plik) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -32,30 +32,20 @@ async function kompresujZdjecie(plik) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200; // Maksymalna szerokość zdjęcia
+                const MAX_WIDTH = 1200;
                 let width = img.width;
                 let height = img.height;
-
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-
-                // Zamiana na format JPEG z jakością 70% (bardzo mała waga, dobra jakość)
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/jpeg', 0.7);
+                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
             };
         };
     });
 }
 
-// --- LOGOWANIE I AUTH ---
+// --- LOGOWANIE ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     if (user) {
@@ -82,12 +72,9 @@ window.loguj = async () => {
     location.reload();
 };
 
-window.wyloguj = async () => { 
-    await baza.auth.signOut(); 
-    location.reload(); 
-};
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// --- OBSŁUGA OGŁOSZEŃ ---
+// --- OGŁOSZENIA ---
 async function pobierz() {
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
@@ -112,10 +99,14 @@ function render(lista) {
     `).join('');
 }
 
-// --- MODAL SZCZEGÓŁÓW I LIGHTBOX ---
-window.pokazSzczegoly = (id) => {
+// --- MODAL SZCZEGÓŁÓW (Z BLOKADĄ KONTAKTU) ---
+window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const box = document.getElementById('view-content');
+    
+    // Sprawdzenie usera
+    const { data: { user } } = await baza.auth.getUser();
+
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualnyIndex = 0;
 
@@ -124,6 +115,25 @@ window.pokazSzczegoly = (id) => {
              style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:2px solid #eee" 
              onclick="document.getElementById('main-img').src='${imgUrl}'; aktualnyIndex = ${index}; event.stopPropagation();">
     `).join('');
+
+    // Logika kontaktu
+    let kontaktHtml = "";
+    if (user) {
+        kontaktHtml = `
+            <a href="tel:${o.telefon}" style="display:block; text-align:center; background:var(--primary); color:white; padding:18px; border-radius:15px; text-decoration:none; font-weight:800; font-size:18px; margin-bottom:10px">📞 Zadzwoń: ${o.telefon}</a>
+            <button onclick="alert('System wiadomości wkrótce!')" style="width:100%; background:#111; color:#fff; padding:15px; border-radius:15px; border:none; font-weight:700; cursor:pointer">Napisz wiadomość</button>
+        `;
+    } else {
+        kontaktHtml = `
+            <div style="background:#fff4f4; border:2px dashed #ef4444; padding:20px; border-radius:15px; text-align:center">
+                <p style="margin:0 0 10px 0; font-weight:700; color:#b91c1c">Dane kontaktowe są ukryte</p>
+                <button onclick="zamknijModal(); document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" 
+                        style="background:#ef4444; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:800; cursor:pointer">
+                    Zaloguj się, aby zobaczyć
+                </button>
+            </div>
+        `;
+    }
 
     box.innerHTML = `
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
@@ -142,51 +152,32 @@ window.pokazSzczegoly = (id) => {
                 <p style="color:gray">📍 Lokalizacja: ${o.lokalizacja}</p>
                 <p style="color:gray">📂 Kategoria: ${o.kategoria} (${o.podkategoria})</p>
                 <div style="background:#f1f5f9; padding:20px; border-radius:15px; margin:20px 0; line-height:1.6">${o.opis}</div>
-                <a href="tel:${o.telefon}" style="display:block; text-align:center; background:#111; color:#fff; padding:18px; border-radius:15px; text-decoration:none; font-weight:800; font-size:18px">📞 Zadzwoń: ${o.telefon}</a>
+                ${kontaktHtml}
             </div>
         </div>
     `;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.openLightbox = () => {
-    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
-    document.getElementById('lightbox').style.display = 'flex';
-};
-
-window.changeLightbox = (dir) => {
-    aktualnyIndex += dir;
-    if (aktualnyIndex >= aktualnaGaleria.length) aktualnyIndex = 0;
-    if (aktualnyIndex < 0) aktualnyIndex = aktualnaGaleria.length - 1;
-    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
-};
-
-// --- DODAWANIE OGŁOSZEŃ (Z KOMPRESJĄ) ---
+// --- DODAWANIE ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
     const pliki = document.getElementById('f-plik').files;
-
     if (pliki.length > 5) { alert("Max 5 zdjęć."); return; }
-
     btn.innerText = "Kompresja i wysyłka...";
     btn.disabled = true;
 
     try {
         const urlList = [];
         for (let i = 0; i < pliki.length; i++) {
-            // WYWOŁANIE KOMPRESJI
-            const skompresowanyPlik = await kompresujZdjecie(pliki[i]);
-            
+            const skompresowany = await kompresujZdjecie(pliki[i]);
             const path = `${Date.now()}_${i}_img.jpg`;
-            const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, skompresowanyPlik);
-            
-            if (uploadError) throw uploadError;
+            await baza.storage.from('zdjecia').upload(path, skompresowany);
             const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
             urlList.push(u.publicUrl);
         }
-
-        const { error: insertError } = await baza.from('ogloszenia').insert([{
+        await baza.from('ogloszenia').insert([{
             tytul: document.getElementById('f-tytul').value,
             kategoria: document.getElementById('f-kat').value,
             podkategoria: document.getElementById('f-podkat').value,
@@ -196,49 +187,42 @@ window.wyslijOgloszenie = async (e) => {
             telefon: document.getElementById('f-tel').value,
             zdjecia: urlList
         }]);
-
-        if (insertError) throw insertError;
         location.reload();
-    } catch (err) {
-        alert("Błąd: " + err.message);
-        btn.innerText = "Opublikuj na KupSe";
-        btn.disabled = false;
-    }
+    } catch (err) { alert("Błąd: " + err.message); btn.innerText = "Opublikuj"; btn.disabled = false; }
 };
 
 // --- POMOCNICZE ---
+window.openLightbox = () => {
+    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
+    document.getElementById('lightbox').style.display = 'flex';
+};
+window.changeLightbox = (dir) => {
+    aktualnyIndex += dir;
+    if (aktualnyIndex >= aktualnaGaleria.length) aktualnyIndex = 0;
+    if (aktualnyIndex < 0) aktualnyIndex = aktualnaGaleria.length - 1;
+    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
+};
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 window.zamknijModal = () => {
     document.getElementById('modal-form').style.display = 'none';
     document.getElementById('modal-view').style.display = 'none';
 };
-
 window.updateFormSubcats = () => {
     const kat = document.getElementById('f-kat').value;
     const p = document.getElementById('f-podkat');
     p.innerHTML = '<option value="">Podkategoria</option>';
-    if(MAPA_KATEGORII[kat]) {
-        MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
-    }
+    if(MAPA_KATEGORII[kat]) MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
 };
-
 window.toggleSubcats = (kat) => {
     const panel = document.getElementById('subcat-panel');
     if (panel.dataset.active === kat && panel.style.display === 'flex') {
-        panel.style.display = 'none';
-        render(daneOgloszen);
-        return;
+        panel.style.display = 'none'; render(daneOgloszen); return;
     }
     render(daneOgloszen.filter(o => o.kategoria === kat));
     panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${p}')">${p}</div>`).join('') + `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
-    panel.style.display = 'flex';
-    panel.dataset.active = kat;
+    panel.style.display = 'flex'; panel.dataset.active = kat;
 };
-
-window.filtrujPoPodkat = (kat, pod) => {
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
-};
-
+window.filtrujPoPodkat = (kat, pod) => render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
 window.filtruj = () => {
     const t = document.getElementById('find-text').value.toLowerCase();
     render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(t) || o.opis.toLowerCase().includes(t)));
