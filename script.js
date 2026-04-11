@@ -22,11 +22,43 @@ const MAPA_KATEGORII = {
     "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
 };
 
-// --- LOGOWANIE I AUTH (SCALONE I NAPRAWIONE) ---
+// --- FUNKCJA KOMPRESJI ZDJĘĆ ---
+async function kompresujZdjecie(plik) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(plik);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200; // Maksymalna szerokość zdjęcia
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Zamiana na format JPEG z jakością 70% (bardzo mała waga, dobra jakość)
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.7);
+            };
+        };
+    });
+}
+
+// --- LOGOWANIE I AUTH ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     if (user) {
-        // Podmieniamy pasek nawigacji na wersję dla zalogowanych (Twoja stara wersja)
         document.getElementById('user-nav').innerHTML = `
             <img src="SprzedajSe.png" class="btn-add-ad" onclick="otworzModal()">
             <div class="account-menu">
@@ -37,7 +69,6 @@ async function sprawdzUzytkownika() {
                 </div>
             </div>
         `;
-        // Chowamy okno logowania (używając Twojej klasy .hidden)
         const authBox = document.getElementById('auth-box');
         if(authBox) authBox.classList.add('hidden');
     }
@@ -85,8 +116,6 @@ function render(lista) {
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const box = document.getElementById('view-content');
-    
-    // Zapamiętujemy zdjęcia do galerii
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualnyIndex = 0;
 
@@ -132,7 +161,7 @@ window.changeLightbox = (dir) => {
     document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
 };
 
-// --- DODAWANIE OGŁOSZEŃ ---
+// --- DODAWANIE OGŁOSZEŃ (Z KOMPRESJĄ) ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -140,14 +169,18 @@ window.wyslijOgloszenie = async (e) => {
 
     if (pliki.length > 5) { alert("Max 5 zdjęć."); return; }
 
-    btn.innerText = "Publikowanie...";
+    btn.innerText = "Kompresja i wysyłka...";
     btn.disabled = true;
 
     try {
         const urlList = [];
         for (let i = 0; i < pliki.length; i++) {
-            const path = `${Date.now()}_${i}_img`;
-            const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, pliki[i]);
+            // WYWOŁANIE KOMPRESJI
+            const skompresowanyPlik = await kompresujZdjecie(pliki[i]);
+            
+            const path = `${Date.now()}_${i}_img.jpg`;
+            const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, skompresowanyPlik);
+            
             if (uploadError) throw uploadError;
             const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
             urlList.push(u.publicUrl);
@@ -211,6 +244,5 @@ window.filtruj = () => {
     render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(t) || o.opis.toLowerCase().includes(t)));
 };
 
-// Start aplikacji
 sprawdzUzytkownika();
 pobierz();
