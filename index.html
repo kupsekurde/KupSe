@@ -10,16 +10,15 @@
         :root { --primary: #23e5db; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; }
         .navbar { background: var(--white); padding: 5px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .nav-left { display: flex; align-items: center; gap: 20px; }
         .main-logo { height: 60px; cursor: pointer; }
         .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
         .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 150px; }
-        .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
-
+        
         .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
-        .cat-container { display: flex; justify-content: center; gap: 15px; padding: 20px 2%; overflow-x: auto; scrollbar-width: none; }
+        .cat-container { display: flex; justify-content: flex-start; gap: 15px; padding: 20px 5%; overflow-x: auto; scrollbar-width: none; }
         .cat-item { min-width: 90px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .cat-icon { width: 60px; height: 60px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; }
+        .cat-icon { width: 70px; height: 70px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; overflow: hidden; }
+        .cat-icon img { width: 80%; height: 80%; object-fit: contain; }
         .cat-item span { font-size: 11px; font-weight: 700; display: block; margin-top: 8px; color: #444; }
 
         .subcat-panel { display: none; background: #f8f9fa; padding: 15px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
@@ -32,15 +31,13 @@
         .ad-body { padding: 15px; }
         .ad-price { font-size: 22px; font-weight: 800; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-box { background: white; width: 95%; max-width: 700px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
-        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 35px; cursor: pointer; z-index: 10; color: #9ca3af; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 40px; cursor: pointer; z-index: 2100; color: #111; line-height: 1; }
 
         .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 20px; z-index: 1001; }
         .show { display: block; }
         .btn-account { background: #f3f4f6; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; }
-        
-        .pass-info { font-size: 11px; color: #6b7280; margin-top: 5px; text-align: left; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .hidden { display: none; }
     </style>
 </head>
@@ -50,7 +47,7 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="find-text" placeholder="Szukaj...">
+            <input type="text" id="find-text" placeholder="Czego szukasz?">
             <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer">OK</button>
         </div>
     </div>
@@ -60,48 +57,44 @@
 </nav>
 
 <div class="cat-wrapper">
-    <div class="cat-container" id="category-bar">
-        <div class="cat-item" onclick="toggleSubcats('Motoryzacja')"><div class="cat-icon">🚗</div><span>Motoryzacja</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Nieruchomości')"><div class="cat-icon">🏠</div><span>Dom</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Elektronika')"><div class="cat-icon">💻</div><span>Elektronika</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Dom i Ogród')"><div class="cat-icon">🌿</div><span>Ogród</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Moda')"><div class="cat-icon">👗</div><span>Moda</span></div>
-        <div class="cat-item" onclick="toggleSubcats(' Rolnictwo')"><div class="cat-icon">🚜</div><span>Rolnictwo</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Zwierzęta')"><div class="cat-icon">🐾</div><span>Zwierzęta</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Dla Dzieci')"><div class="cat-icon">🧸</div><span>Dzieci</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Sport i Hobby')"><div class="cat-icon">⚽</div><span>Sport</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Muzyka i Edukacja')"><div class="cat-icon">📚</div><span>Nauka</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon">🛠️</div><span>Usługi</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon">💼</div><span>Praca</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon">✨</div><span>Inne</span></div>
+    <div class="cat-container">
+        <div class="cat-item" onclick="toggleSubcats('Motoryzacja')"><div class="cat-icon"><img src="cat-moto.png"></div><span>Motoryzacja</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dom')"><div class="cat-icon"><img src="cat-dom.png"></div><span>Dom</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Elektronika')"><div class="cat-icon"><img src="cat-elektronika.png"></div><span>Elektronika</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Ogród')"><div class="cat-icon"><img src="cat-ogrod.png"></div><span>Ogród</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Moda')"><div class="cat-icon"><img src="cat-moda.png"></div><span>Moda</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Rolnictwo')"><div class="cat-icon"><img src="cat-rolnictwo.png"></div><span>Rolnictwo</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Zwierzęta')"><div class="cat-icon"><img src="cat-zwierzeta.png"></div><span>Zwierzęta</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dzieci')"><div class="cat-icon"><img src="cat-dzieci.png"></div><span>Dzieci</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Sport')"><div class="cat-icon"><img src="cat-sport.png"></div><span>Sport</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Nauka')"><div class="cat-icon"><img src="cat-nauka.png"></div><span>Nauka</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon"><img src="cat-uslugi.png"></div><span>Usługi</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon"><img src="cat-praca.png"></div><span>Praca</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon"><img src="cat-inne.png"></div><span>Inne</span></div>
     </div>
     <div id="subcat-panel" class="subcat-panel"></div>
 </div>
 
 <div class="container">
-    <div id="auth-box" style="margin-bottom: 50px;">
-        <div id="login-view" style="max-width:320px; margin:auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
-            <h3 style="margin-top:0">Zaloguj się</h3>
+    <div id="auth-box">
+        <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3>Logowanie</h3>
             <input type="email" id="email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
             <input type="password" id="pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
-            <button onclick="loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white; margin-bottom:10px">Zaloguj</button>
-            <p style="font-size:13px">Nie masz konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+            <button onclick="loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
+            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
-
-        <div id="register-view" class="hidden" style="max-width:320px; margin:auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
-            <h3 style="margin-top:0">Rejestracja</h3>
-            <input type="text" id="reg-nick" placeholder="Twoja nazwa" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3>Rejestracja</h3>
+            <input type="text" id="reg-nick" placeholder="Nazwa" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
             <input type="email" id="reg-email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
-            <input type="password" id="reg-pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:5px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
-            <div class="pass-info">
-                Hasło musi mieć: 8+ znaków, Wielką literę, Cyfrę oraz Znak specjalny.
-            </div>
-            <button onclick="zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white; margin: 15px 0 10px 0">Zarejestruj się</button>
+            <input type="password" id="reg-pass" placeholder="Hasło (min. 8 znaków)" style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <button onclick="zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
             <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
         </div>
     </div>
 
-    <h2 style="font-size: 28px; margin-bottom: 25px;">Najnowsze ogłoszenia</h2>
+    <h2 style="margin-top:40px">Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
 </div>
 
@@ -112,11 +105,11 @@
         <form onsubmit="wyslijOgloszenie(event)" style="display:grid; gap:15px">
             <input type="text" id="f-tytul" placeholder="Tytuł" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
             <select id="f-kat" onchange="updateFormSubcats()" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-                <option value="">Kategoria</option>
+                <option value="">Wybierz kategorię</option>
                 <option value="Motoryzacja">Motoryzacja</option>
-                <option value="Nieruchomości">Nieruchomości</option>
+                <option value="Dom">Dom</option>
                 <option value="Elektronika">Elektronika</option>
-                <option value="Dom i Ogród">Dom i Ogród</option>
+                <option value="Ogród">Ogród</option>
                 <option value="Moda">Moda</option>
                 <option value="Inne">Inne</option>
             </select>
@@ -131,14 +124,8 @@
     </div>
 </div>
 
-<div id="modal-view" class="modal"><div class="modal-box" id="view-content" style="max-width:900px"></div></div>
-<div id="modal-messages" class="modal">
-    <div class="modal-box" style="max-width:500px">
-        <span class="close-btn" onclick="document.getElementById('modal-messages').style.display='none'">&times;</span>
-        <h2>Twoje Wiadomości</h2>
-        <div id="messages-list"></div>
-    </div>
-</div>
+<div id="modal-view" class="modal"><div class="modal-box" id="view-content"></div></div>
+<div id="modal-messages" class="modal"><div class="modal-box" id="msg-content" style="max-width:500px"></div></div>
 
 <script src="script.js"></script>
 </body>
