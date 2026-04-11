@@ -3,116 +3,78 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
-let aktualnaGaleria = []; 
-let aktualnyIndex = 0;
-
 const MAPA_KATEGORII = {
-    "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony", "Dostawcze", "Ciężarowe"],
-    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura", "Wynajem"],
-    "Elektronika": ["Telefony", "Laptopy", "Gry i Konsole", "RTV", "Fotografia"],
-    "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Dekoracje", "Budowa"],
-    "Moda": ["Ubrania", "Buty", "Biżuteria", "Akcesoria", "Ślubne"],
-    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Produkty rolne", "Przyczepy"],
-    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Ryby", "Akcesoria dla zwierząt"],
-    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka", "Fotele", "Dla niemowląt"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Turystyka", "Wędkarstwo", "Kolekcje"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty", "Korepetycje"],
-    "Usługi": ["Budowlane", "Uroda", "Transport", "IT", "Naprawa"],
-    "Praca": ["Pełny etat", "Dodatkowa", "Staże", "Praca za granicą"],
-    "Inne": ["Za darmo", "Zamiana", "Różne"]
+    "Motoryzacja": ["Samochody", "Motocykle", "Części"],
+    "Nieruchomości": ["Mieszkania", "Domy", "Działki"],
+    "Elektronika": ["Telefony", "Laptopy", "Konsole"],
+    "Dom i Ogród": ["Meble", "Narzędzia"],
+    "Moda": ["Ubrania", "Buty"],
+    "Inne": ["Różne"]
 };
 
-// --- KOMPRESJA ---
-async function kompresujZdjecie(plik) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(plik);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200;
-                let width = img.width;
-                let height = img.height;
-                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                canvas.width = width; canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
-            };
-        };
-    });
-}
-
-// --- LOGOWANIE I POWIADOMIENIA ---
+// --- AUTH & NAV ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     if (user) {
-        // Sprawdzamy czy są nieprzeczytane wiadomości
-        const { count } = await baza.from('wiadomosci')
-            .select('*', { count: 'exact', head: true })
-            .eq('receiver_email', user.email)
-            .eq('przeczytane', false);
-
-        const nick = user.user_metadata.display_name || user.email;
-        const kropka = count > 0 ? `<span style="background:red; width:10px; height:10px; border-radius:50%; display:inline-block; margin-left:5px"></span>` : "";
+        const { count } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('receiver_email', user.email).eq('przeczytane', false);
+        const nick = user.user_metadata.display_name || "Użytkownik";
+        const kropka = count > 0 ? `<span style="background:red; width:8px; height:8px; border-radius:50%; display:inline-block; margin-left:5px"></span>` : "";
 
         document.getElementById('user-nav').innerHTML = `
-            <img src="SprzedajSe.png" class="btn-add-ad" onclick="otworzModal()">
+            <img src="KupSe.png" class="btn-add-ad" onclick="otworzModal()" style="margin-right:10px">
             <div class="account-menu">
                 <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">
-                    Witaj, ${nick} ${kropka}
+                    Twoje Konto ${kropka} ▾
                 </button>
                 <div id="drop" class="dropdown-content">
-                    <span style="font-size:12px; color:gray; font-weight:bold">${user.email}</span><hr>
-                    <button onclick="alert('Twoje wiadomości: wkrótce panel odbierania!')" style="border:none; background:none; cursor:pointer; padding:10px 0; width:100%; text-align:left">Wiadomości (${count})</button>
+                    <div style="font-weight:800; font-size:16px">${nick}</div>
+                    <div style="color:gray; font-size:11px; margin-bottom:10px">${user.email}</div>
+                    <hr style="border:0; border-top:1px solid #eee">
+                    <button onclick="otworzWiadomosci()" style="border:none; background:none; cursor:pointer; padding:10px 0; width:100%; text-align:left; font-weight:600">Wiadomości (${count})</button>
                     <button onclick="wyloguj()" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:800; padding:10px 0; width:100%; text-align:left">Wyloguj się</button>
                 </div>
             </div>
         `;
-        const authBox = document.getElementById('auth-box');
-        if(authBox) authBox.classList.add('hidden');
+        document.getElementById('auth-box').classList.add('hidden');
     }
 }
 
-// Dodanie pola LOGIN do logowania/rejestracji
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-    const nick = prompt("Podaj swój login/imię (tylko przy nowej rejestracji):");
+    const { error } = await baza.auth.signInWithPassword({ email, password });
+    if (error) alert(error.message); else location.reload();
+};
 
-    const { data, error } = await baza.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-        // Jeśli nie ma konta, rejestrujemy z metadanymi (loginem)
-        await baza.auth.signUp({ 
-            email, 
-            password, 
-            options: { data: { display_name: nick || "Użytkownik" } } 
-        });
-    }
-    location.reload();
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    const nick = document.getElementById('reg-nick').value;
+    const { error } = await baza.auth.signUp({ email, password, options: { data: { display_name: nick } } });
+    if (error) alert(error.message); else { alert("Zarejestrowano! Zaloguj się."); location.reload(); }
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
 // --- WIADOMOŚCI ---
-window.wyslijWiadomosc = async (odbiorcaEmail) => {
+window.otworzWiadomosci = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    const { data: listy } = await baza.from('wiadomosci').select('*').eq('receiver_email', user.email).order('created_at', { ascending: false });
+    const kontener = document.getElementById('messages-list');
+    kontener.innerHTML = listy.length ? listy.map(m => `
+        <div style="padding:10px; border-bottom:1px solid #eee; background:${m.przeczytane ? '#fff' : '#f0f9ff'}">
+            <small>${m.sender_email}</small><div>${m.tresc}</div>
+            <button onclick="wyslijWiadomosc('${m.sender_email}')" style="font-size:10px">Odpowiedz</button>
+        </div>`).join('') : "Brak wiadomości";
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('receiver_email', user.email);
+    document.getElementById('modal-messages').style.display = 'flex';
+};
+
+window.wyslijWiadomosc = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Zaloguj się!");
-    
-    const tresc = prompt("Wpisz treść wiadomości:");
-    if (!tresc) return;
-
-    const { error } = await baza.from('wiadomosci').insert([{
-        sender_email: user.email,
-        receiver_email: odbiorcaEmail,
-        tresc: tresc
-    }]);
-
-    if (!error) alert("Wiadomość wysłana!");
-    else alert("Błąd wysyłki.");
+    const tresc = prompt("Treść:");
+    if (tresc) await baza.from('wiadomosci').insert([{ sender_email: user.email, receiver_email: odbiorca, tresc }]);
 };
 
 // --- OGŁOSZENIA ---
@@ -123,121 +85,71 @@ async function pobierz() {
 }
 
 function render(lista) {
-    const kontener = document.getElementById('lista');
-    if(!lista.length) { kontener.innerHTML = "<p>Brak ogłoszeń.</p>"; return; }
-    kontener.innerHTML = lista.map(o => `
+    document.getElementById('lista').innerHTML = lista.map(o => `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <img class="ad-img" src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" alt="foto">
+            <img class="ad-img" src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}">
             <div class="ad-body">
-                <div class="ad-price">${o.cena.toLocaleString()} zł</div>
+                <div class="ad-price">${o.cena} zł</div>
                 <div class="ad-title">${o.tytul}</div>
-                <div class="ad-date">
-                    <span>📍 ${o.lokalizacja}</span>
-                    <span>${new Date(o.created_at).toLocaleDateString()}</span>
-                </div>
+                <div class="ad-date"><span>📍 ${o.lokalizacja}</span></div>
             </div>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
-// --- MODAL SZCZEGÓŁÓW ---
 window.pokazSzczegoly = async (id) => {
-    const o = daneOgloszen.find(item => item.id === id);
-    const box = document.getElementById('view-content');
+    const o = daneOgloszen.find(i => i.id === id);
     const { data: { user } } = await baza.auth.getUser();
+    let kontakt = user ? `<a href="tel:${o.telefon}" style="display:block; background:var(--primary); padding:15px; text-align:center; border-radius:10px; text-decoration:none; color:white; font-weight:800; margin-bottom:10px">Zadzwoń: ${o.telefon}</a>
+    <button onclick="wyslijWiadomosc('${o.email_autora}')" style="width:100%; padding:15px; border-radius:10px; border:none; background:#111; color:white; font-weight:800; cursor:pointer">Wyślij wiadomość</button>` 
+    : `<div style="color:red; font-weight:800; text-align:center">Zaloguj się, aby zobaczyć kontakt</div>`;
 
-    aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    aktualnyIndex = 0;
-
-    const miniaturkiHtml = aktualnaGaleria.map((imgUrl, index) => `
-        <img src="${imgUrl}" style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer" onclick="document.getElementById('main-img').src='${imgUrl}'; aktualnyIndex = ${index};">
-    `).join('');
-
-    let kontaktHtml = "";
-    if (user) {
-        kontaktHtml = `
-            <a href="tel:${o.telefon}" style="display:block; text-align:center; background:var(--primary); color:white; padding:18px; border-radius:15px; text-decoration:none; font-weight:800; font-size:18px; margin-bottom:10px">📞 Zadzwoń: ${o.telefon}</a>
-            <button onclick="wyslijWiadomosc('${o.email_autora || 'test@test.pl'}')" style="width:100%; background:#111; color:#fff; padding:15px; border-radius:15px; border:none; font-weight:700; cursor:pointer">Napisz wiadomość</button>
-        `;
-    } else {
-        kontaktHtml = `<div style="background:#fff4f4; border:2px dashed #ef4444; padding:20px; border-radius:15px; text-align:center">
-            <p style="color:#b91c1c; font-weight:700">Zaloguj się, aby zobaczyć kontakt</p>
-        </div>`;
-    }
-
-    box.innerHTML = `
+    document.getElementById('view-content').innerHTML = `
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:10px">
-            <div>
-                <img id="main-img" src="${aktualnaGaleria[0]}" style="width:100%; border-radius:20px; cursor:zoom-in" onclick="openLightbox()">
-                <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap">${miniaturkiHtml}</div>
-            </div>
-            <div>
-                <h1>${o.tytul}</h1>
-                <h2 style="color:var(--primary)">${o.cena.toLocaleString()} zł</h2>
-                <div style="background:#f1f5f9; padding:20px; border-radius:15px; margin:20px 0">${o.opis}</div>
-                ${kontaktHtml}
-            </div>
-        </div>
-    `;
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+            <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" style="width:100%; border-radius:15px">
+            <div><h1>${o.tytul}</h1><h2 style="color:var(--primary)">${o.cena} zł</h2><p>${o.opis}</p>${kontakt}</div>
+        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-// --- DODAWANIE ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const { data: { user } } = await baza.auth.getUser();
     const btn = document.getElementById('btn-save');
+    btn.innerText = "Wysyłanie..."; btn.disabled = true;
     const pliki = document.getElementById('f-plik').files;
-    btn.innerText = "Wysyłanie...";
-    btn.disabled = true;
-
-    try {
-        const urlList = [];
-        for (let i = 0; i < pliki.length; i++) {
-            const skompresowany = await kompresujZdjecie(pliki[i]);
-            const path = `${Date.now()}_${i}.jpg`;
-            await baza.storage.from('zdjecia').upload(path, skompresowany);
-            const { data: u } = baza.storage.from('zdjedcia').getPublicUrl(path);
-            urlList.push(u.publicUrl);
-        }
-        await baza.from('ogloszenia').insert([{
-            tytul: document.getElementById('f-tytul').value,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value,
-            cena: parseInt(document.getElementById('f-cena').value),
-            opis: document.getElementById('f-opis').value,
-            lokalizacja: document.getElementById('f-lok').value,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: urlList,
-            email_autora: user.email // Ważne dla systemu wiadomości!
-        }]);
-        location.reload();
-    } catch (err) { alert(err.message); btn.disabled = false; }
+    const urls = [];
+    for (let i = 0; i < pliki.length; i++) {
+        const path = `img_${Date.now()}_${i}.jpg`;
+        await baza.storage.from('zdjecia').upload(path, pliki[i]);
+        urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
+    }
+    await baza.from('ogloszenia').insert([{
+        tytul: document.getElementById('f-tytul').value,
+        cena: parseInt(document.getElementById('f-cena').value),
+        opis: document.getElementById('f-opis').value,
+        lokalizacja: document.getElementById('f-lok').value,
+        telefon: document.getElementById('f-tel').value,
+        zdjecia: urls, email_autora: user.email,
+        kategoria: document.getElementById('f-kat').value,
+        podkategoria: document.getElementById('f-podkat').value
+    }]);
+    location.reload();
 };
 
-// --- RESZTA FUNKCJI (Lightbox, Modal itp. - bez zmian) ---
-window.openLightbox = () => { document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex]; document.getElementById('lightbox').style.display = 'flex'; };
-window.changeLightbox = (dir) => { aktualnyIndex = (aktualnyIndex + dir + aktualnaGaleria.length) % aktualnaGaleria.length; document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex]; };
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
-window.zamknijModal = () => { document.getElementById('modal-form').style.display = 'none'; document.getElementById('modal-view').style.display = 'none'; };
+window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
 window.updateFormSubcats = () => {
-    const kat = document.getElementById('f-kat').value;
+    const k = document.getElementById('f-kat').value;
     const p = document.getElementById('f-podkat');
     p.innerHTML = '<option value="">Podkategoria</option>';
-    if(MAPA_KATEGORII[kat]) MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
+    if(MAPA_KATEGORII[k]) MAPA_KATEGORII[k].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
 };
-window.toggleSubcats = (kat) => {
+window.toggleSubcats = (k) => {
     const panel = document.getElementById('subcat-panel');
-    if (panel.dataset.active === kat && panel.style.display === 'flex') { panel.style.display = 'none'; render(daneOgloszen); return; }
-    render(daneOgloszen.filter(o => o.kategoria === kat));
-    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${p}')">${p}</div>`).join('') + `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
-    panel.style.display = 'flex'; panel.dataset.active = kat;
-};
-window.filtrujPoPodkat = (kat, pod) => render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
-window.filtruj = () => {
-    const t = document.getElementById('find-text').value.toLowerCase();
-    render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(t) || o.opis.toLowerCase().includes(t)));
+    render(daneOgloszen.filter(o => o.kategoria === k));
+    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()">Reset</button>`;
+    panel.style.display = 'flex';
 };
 
 sprawdzUzytkownika();
