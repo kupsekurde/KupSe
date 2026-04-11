@@ -1,5 +1,5 @@
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const KEY_S = 'TWÓJ_KEY';
+const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
@@ -9,6 +9,44 @@ window.otworzModal = () => document.getElementById('modal-form').style.display =
 window.zamknijModal = () => {
     document.getElementById('modal-form').style.display = 'none';
     document.getElementById('modal-view').style.display = 'none';
+};
+
+// ================= AUTH =================
+async function sprawdzUzytkownika() {
+    const { data: { user } } = await baza.auth.getUser();
+
+    if (user) {
+        document.getElementById('user-nav').innerHTML = `
+            <img src="SprzedajSe.jpg" class="btn-add-ad" onclick="otworzModal()">
+            <div class="account-menu">
+                <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">Twoje konto</button>
+                <div id="drop" class="dropdown-content">
+                    <span style="font-size:12px; color:gray; font-weight:bold">${user.email}</span><hr>
+                    <button onclick="wyloguj()" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:800; padding:10px 0; width:100%; text-align:left">Wyloguj się</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('auth-box').classList.add('hidden');
+    }
+}
+
+window.loguj = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
+
+    const { error } = await baza.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        await baza.auth.signUp({ email, password });
+    }
+
+    location.reload();
+};
+
+window.wyloguj = async () => {
+    await baza.auth.signOut();
+    location.reload();
 };
 
 // ================= BAZA =================
@@ -154,4 +192,5 @@ window.wyslijOgloszenie = async (e) => {
 };
 
 // ================= START =================
+sprawdzUzytkownika();
 pobierz();
