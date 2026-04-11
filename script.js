@@ -3,8 +3,8 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
-let aktualnaGaleria = []; // Pamięć zdjęć dla lightboxa
-let aktualnyIndex = 0;    // Numer obecnie wyświetlanego zdjęcia
+let aktualnaGaleria = []; 
+let aktualnyIndex = 0;
 
 const MAPA_KATEGORII = {
     "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony"],
@@ -13,60 +13,69 @@ const MAPA_KATEGORII = {
     "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Dekoracje"],
     "Moda": ["Ubrania", "Buty", "Biżuteria", "Akcesoria"],
     "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Produkty rolne"],
-    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Ryby"],
+    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Akcesoria"],
     "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Wędkarstwo"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Korepetycje"],
-    "Usługi": ["Budowlane", "Sprzątanie", "Uroda"],
-    "Praca": ["Pełny etat", "Dodatkowa", "Praktyki"],
-    "Inne": ["Różne"]
+    "Sport i Hobby": ["Rowery", "Siłownia", "Turystyka", "Wędkarstwo"],
+    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty"],
+    "Usługi": ["Budowlane", "Uroda", "Transport", "IT"],
+    "Praca": ["Pełny etat", "Dodatkowa", "Staże"],
+    "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
 };
 
-// --- LOGOWANIE I AUTH ---
-async function loguj() {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('pass').value;
-    const { data, error } = await baza.auth.signUp({ email, password: pass });
-    if (error) {
-        const { data: d2, error: e2 } = await baza.auth.signInWithPassword({ email, password: pass });
-        if (e2) alert("Błąd: " + e2.message);
-        else location.reload();
-    } else {
-        alert("Zarejestrowano! Sprawdź email lub zaloguj się.");
-        location.reload();
+// --- LOGOWANIE I AUTH (SCALONE I NAPRAWIONE) ---
+async function sprawdzUzytkownika() {
+    const { data: { user } } = await baza.auth.getUser();
+    if (user) {
+        // Podmieniamy pasek nawigacji na wersję dla zalogowanych (Twoja stara wersja)
+        document.getElementById('user-nav').innerHTML = `
+            <img src="SprzedajSe.png" class="btn-add-ad" onclick="otworzModal()">
+            <div class="account-menu">
+                <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">Twoje konto</button>
+                <div id="drop" class="dropdown-content">
+                    <span style="font-size:12px; color:gray; font-weight:bold">${user.email}</span><hr>
+                    <button onclick="wyloguj()" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:800; padding:10px 0; width:100%; text-align:left">Wyloguj się</button>
+                </div>
+            </div>
+        `;
+        // Chowamy okno logowania (używając Twojej klasy .hidden)
+        const authBox = document.getElementById('auth-box');
+        if(authBox) authBox.classList.add('hidden');
     }
 }
 
-async function sprawdzSesje() {
-    const { data: { session } } = await baza.auth.getSession();
-    const nav = document.getElementById('user-nav');
-    if (session) {
-        nav.innerHTML = `
-            <img src="SprzedajSe.png" class="btn-add-ad" onclick="otworzDodawanie()">
-            <button onclick="baza.auth.signOut().then(()=>location.reload())" class="btn-account">Wyloguj</button>
-        `;
-    }
-}
+window.loguj = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
+    const { error } = await baza.auth.signInWithPassword({ email, password });
+    if (error) await baza.auth.signUp({ email, password });
+    location.reload();
+};
+
+window.wyloguj = async () => { 
+    await baza.auth.signOut(); 
+    location.reload(); 
+};
 
 // --- OBSŁUGA OGŁOSZEŃ ---
-async function pobierzOgloszenia() {
-    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    if (!error) {
-        daneOgloszen = data;
-        render(data);
-    }
+async function pobierz() {
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    render(daneOgloszen);
 }
 
 function render(lista) {
     const kontener = document.getElementById('lista');
-    if (!lista.length) { kontener.innerHTML = "<p>Brak ogłoszeń.</p>"; return; }
+    if(!lista.length) { kontener.innerHTML = "<p>Brak ogłoszeń.</p>"; return; }
     kontener.innerHTML = lista.map(o => `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img class="ad-img" src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" alt="foto">
             <div class="ad-body">
                 <div class="ad-price">${o.cena.toLocaleString()} zł</div>
                 <div class="ad-title">${o.tytul}</div>
-                <div class="ad-date"><span>${o.lokalizacja}</span></div>
+                <div class="ad-date">
+                    <span>📍 ${o.lokalizacja}</span>
+                    <span>${new Date(o.created_at).toLocaleDateString()}</span>
+                </div>
             </div>
         </div>
     `).join('');
@@ -77,7 +86,7 @@ window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const box = document.getElementById('view-content');
     
-    // Obsługa tablicy zdjęć (nowe) lub stringa (stare ogłoszenia)
+    // Zapamiętujemy zdjęcia do galerii
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualnyIndex = 0;
 
@@ -129,7 +138,7 @@ window.wyslijOgloszenie = async (e) => {
     const btn = document.getElementById('btn-save');
     const pliki = document.getElementById('f-plik').files;
 
-    if (pliki.length > 5) { alert("Możesz dodać maksymalnie 5 zdjęć."); return; }
+    if (pliki.length > 5) { alert("Max 5 zdjęć."); return; }
 
     btn.innerText = "Publikowanie...";
     btn.disabled = true;
@@ -137,7 +146,7 @@ window.wyslijOgloszenie = async (e) => {
     try {
         const urlList = [];
         for (let i = 0; i < pliki.length; i++) {
-            const path = `${Date.now()}_${i}`;
+            const path = `${Date.now()}_${i}_img`;
             const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, pliki[i]);
             if (uploadError) throw uploadError;
             const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
@@ -165,41 +174,43 @@ window.wyslijOgloszenie = async (e) => {
 };
 
 // --- POMOCNICZE ---
-window.otworzDodawanie = () => document.getElementById('modal-form').style.display = 'flex';
+window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 window.zamknijModal = () => {
     document.getElementById('modal-form').style.display = 'none';
     document.getElementById('modal-view').style.display = 'none';
 };
 
+window.updateFormSubcats = () => {
+    const kat = document.getElementById('f-kat').value;
+    const p = document.getElementById('f-podkat');
+    p.innerHTML = '<option value="">Podkategoria</option>';
+    if(MAPA_KATEGORII[kat]) {
+        MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+};
+
 window.toggleSubcats = (kat) => {
     const panel = document.getElementById('subcat-panel');
-    if (panel.dataset.current === kat && panel.style.display === 'flex') {
+    if (panel.dataset.active === kat && panel.style.display === 'flex') {
         panel.style.display = 'none';
         render(daneOgloszen);
-    } else {
-        panel.innerHTML = MAPA_KATEGORII[kat].map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-        panel.style.display = 'flex';
-        panel.dataset.current = kat;
-        render(daneOgloszen.filter(o => o.kategoria === kat));
+        return;
     }
+    render(daneOgloszen.filter(o => o.kategoria === kat));
+    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${p}')">${p}</div>`).join('') + `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
+    panel.style.display = 'flex';
+    panel.dataset.active = kat;
 };
 
 window.filtrujPoPodkat = (kat, pod) => {
     render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
 };
 
-window.updateFormSubcats = () => {
-    const kat = document.getElementById('f-kat').value;
-    const s = document.getElementById('f-podkat');
-    s.innerHTML = '<option value="">Podkategoria</option>';
-    if (kat) MAPA_KATEGORII[kat].forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`);
-};
-
 window.filtruj = () => {
-    const txt = document.getElementById('find-text').value.toLowerCase();
-    render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(txt) || o.opis.toLowerCase().includes(txt)));
+    const t = document.getElementById('find-text').value.toLowerCase();
+    render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(t) || o.opis.toLowerCase().includes(t)));
 };
 
 // Start aplikacji
-sprawdzSesje();
-pobierzOgloszenia();
+sprawdzUzytkownika();
+pobierz();
