@@ -42,7 +42,7 @@ window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
     const { error } = await baza.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message); else location.reload();
+    if (error) alert("Błąd logowania: " + error.message); else location.reload();
 };
 
 window.zarejestruj = async () => {
@@ -50,22 +50,26 @@ window.zarejestruj = async () => {
     const password = document.getElementById('reg-pass').value;
     const nick = document.getElementById('reg-nick').value;
     const { error } = await baza.auth.signUp({ email, password, options: { data: { display_name: nick } } });
-    if (error) alert(error.message); else alert("Sprawdź email!");
+    if (error) alert("Błąd rejestracji: " + error.message); else alert("Sprawdź email!");
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
 // --- RENDERING ---
 async function pobierz() {
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    if(error) console.error("Błąd pobierania:", error);
     daneOgloszen = data || [];
     render(daneOgloszen);
 }
 
 function render(lista) {
     document.getElementById('lista').innerHTML = lista.map(o => {
-        let foto = 'https://via.placeholder.com/300x200';
-        if (o.zdjecia) foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0];
+        let foto = 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
+        if (o.zdjecia) {
+            if (Array.isArray(o.zdjecia) && o.zdjecia.length > 0) foto = o.zdjecia[0];
+            else if (typeof o.zdjecia === 'string') foto = o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0];
+        }
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img class="ad-img" src="${foto}">
@@ -114,34 +118,56 @@ window.pokazSzczegoly = async (id) => {
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-// --- FUNKCJE ---
+// --- KLUCZOWA NAPRAWA DODAWANIA ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const { data: { user } } = await baza.auth.getUser();
-    const btn = document.getElementById('btn-save'); btn.innerText = "Wysyłanie..."; btn.disabled = true;
+    if(!user) return alert("Musisz być zalogowany!");
+
+    const btn = document.getElementById('btn-save');
+    btn.innerText = "Wysyłanie...";
+    btn.disabled = true;
     
-    const pliki = document.getElementById('f-plik').files;
-    const urls = [];
-    for (let i = 0; i < pliki.length; i++) {
-        const path = `img_${Date.now()}_${i}.jpg`;
-        await baza.storage.from('zdjecia').upload(path, pliki[i]);
-        urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
+    try {
+        const pliki = document.getElementById('f-plik').files;
+        const urls = [];
+
+        for (let i = 0; i < pliki.length; i++) {
+            const ext = pliki[i].name.split('.').pop();
+            const path = `${Date.now()}_${i}.${ext}`;
+            const { data: upData, error: upError } = await baza.storage.from('zdjecia').upload(path, pliki[i]);
+            
+            if (upError) throw new Error("Błąd uploadu zdjęcia: " + upError.message);
+            urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
+        }
+
+        const { error: insError } = await baza.from('ogloszenia').insert([{
+            tytul: document.getElementById('f-tytul').value,
+            cena: parseInt(document.getElementById('f-cena').value),
+            opis: document.getElementById('f-opis').value,
+            lokalizacja: document.getElementById('f-lok').value,
+            telefon: document.getElementById('f-tel').value,
+            zdjecia: urls,
+            email_autora: user.email,
+            kategoria: document.getElementById('f-kat').value,
+            podkategoria: document.getElementById('f-podkat').value
+        }]);
+
+        if (insError) throw insError;
+
+        alert("Dodano ogłoszenie!");
+        location.reload();
+
+    } catch (err) {
+        alert("BŁĄD: " + err.message);
+        btn.innerText = "Dodaj ogłoszenie";
+        btn.disabled = false;
     }
-    await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        cena: parseInt(document.getElementById('f-cena').value),
-        opis: document.getElementById('f-opis').value,
-        lokalizacja: document.getElementById('f-lok').value,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: urls, email_autora: user.email,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value
-    }]);
-    location.reload();
 };
 
 window.wyslijWiadomosc = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
+    if(!user) return alert("Zaloguj się!");
     const msg = prompt("Twoja wiadomość:");
     if (msg) {
         await baza.from('wiadomosci').insert([{ sender_email: user.email, receiver_email: odbiorca, tresc: msg }]);
@@ -155,7 +181,11 @@ window.otworzWiadomosci = async () => {
     document.getElementById('msg-content').innerHTML = `
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
         <h2>Wiadomości</h2>
-        ${data.map(m => `<div style="padding:10px; border-bottom:1px solid #eee"><b>${m.sender_email}</b>: ${m.tresc}</div>`).join('') || 'Brak wiadomości'}
+        <div style="max-height:400px; overflow-y:auto">
+            ${data.map(m => `<div style="padding:15px; border-bottom:1px solid #eee; background:#f9f9f9; margin-bottom:5px; border-radius:10px">
+                <small>${m.sender_email}</small><br>${m.tresc}
+            </div>`).join('') || 'Brak wiadomości'}
+        </div>
     `;
     document.getElementById('modal-messages').style.display = 'flex';
     await baza.from('wiadomosci').update({przeczytane: true}).eq('receiver_email', user.email);
@@ -164,7 +194,6 @@ window.otworzWiadomosci = async () => {
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
-// Kliknięcie w tło zamyka modal
 window.onclick = (e) => { if (e.target.classList.contains('modal')) zamknijModal(); };
 
 window.updateFormSubcats = () => {
@@ -177,7 +206,7 @@ window.updateFormSubcats = () => {
 window.toggleSubcats = (k) => {
     const panel = document.getElementById('subcat-panel');
     render(daneOgloszen.filter(o => o.kategoria === k));
-    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()" style="background:none; border:none; cursor:pointer">X</button>`;
+    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-weight:bold">X</button>`;
     panel.style.display = 'flex';
 };
 
