@@ -61,7 +61,7 @@ window.pokazSzczegoly = (id) => {
     box.innerHTML = `
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:10px">
-            <img src="${o.zdjecia}" style="width:100%; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1)">
+            <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" style="width:100%; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1)">
             <div>
                 <h1 style="margin:0; font-size:32px">${o.tytul}</h1>
                 <h2 style="color:var(--primary); font-size:28px; margin:10px 0">${o.cena.toLocaleString()} zł</h2>
@@ -115,7 +115,7 @@ function render(lista) {
     if(!lista.length) { kontener.innerHTML = "<p>Brak ogłoszeń.</p>"; return; }
     kontener.innerHTML = lista.map(o => `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <img class="ad-img" src="${o.zdjecia}" alt="foto">
+            <img class="ad-img" src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" alt="foto">
             <div class="ad-body">
                 <div class="ad-price">${o.cena.toLocaleString()} zł</div>
                 <div class="ad-title">${o.tytul}</div>
