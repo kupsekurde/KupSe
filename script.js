@@ -136,24 +136,54 @@ window.filtruj = () => {
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    const plik = document.getElementById('f-plik').files[0];
-    btn.innerText = "Publikowanie..."; btn.disabled = true;
+    const pliki = document.getElementById('f-plik').files;
 
-    const path = `${Date.now()}\_img`;
-    await baza.storage.from('ZDJECIA').upload(path, plik);
-    const { data: u } = baza.storage.from('ZDJECIA').getPublicUrl(path);
+    // Sprawdzenie limitu zdjęć
+    if (pliki.length > 5) {
+        alert("Możesz dodać maksymalnie 5 zdjęć.");
+        return;
+    }
 
-    await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
-        cena: parseInt(document.getElementById('f-cena').value),
-        opis: document.getElementById('f-opis').value,
-        lokalizacja: document.getElementById('f-lok').value,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: u.publicUrl
-    }]);
-    location.reload();
+    btn.innerText = "Publikowanie..."; 
+    btn.disabled = true;
+
+    try {
+        const urlList = [];
+
+        // Pętla przesyłająca każde zdjęcie
+        for (let i = 0; i < pliki.length; i++) {
+            const plik = pliki[i];
+            const path = `${Date.now()}_${i}_img`;
+            
+            // Wysyłamy do bucketu 'zdjecia' (małymi literami!)
+            const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, plik);
+            if (uploadError) throw uploadError;
+
+            const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
+            urlList.push(u.publicUrl);
+        }
+
+        // Wstawienie danych do tabeli (zdjecia to teraz tablica urlList)
+        const { error: insertError } = await baza.from('ogloszenia').insert([{
+            tytul: document.getElementById('f-tytul').value,
+            kategoria: document.getElementById('f-kat').value,
+            podkategoria: document.getElementById('f-podkat').value,
+            cena: parseInt(document.getElementById('f-cena').value),
+            opis: document.getElementById('f-opis').value,
+            lokalizacja: document.getElementById('f-lok').value,
+            telefon: document.getElementById('f-tel').value,
+            zdjecia: urlList 
+        }]);
+
+        if (insertError) throw insertError;
+        location.reload();
+
+    } catch (err) {
+        console.error("Błąd:", err);
+        alert("Wystąpił błąd: " + err.message);
+        btn.innerText = "Opublikuj na KupSe";
+        btn.disabled = false;
+    }
 };
 
 sprawdzUzytkownika();
