@@ -58,10 +58,26 @@ window.filtrujPoPodkat = (kat, pod) => {
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const box = document.getElementById('view-content');
+    
+    // Sprawdzamy, czy mamy tablicę zdjęć, czy pojedynczy tekst
+    const galeria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    
+    // Generujemy HTML dla miniaturek
+    const miniaturkiHtml = galeria.map(imgUrl => `
+        <img src="${imgUrl}" 
+             style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:2px solid #eee" 
+             onclick="document.getElementById('main-img').src='${imgUrl}'">
+    `).join('');
+
     box.innerHTML = `
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:10px">
-            <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" style="width:100%; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1)">
+            <div>
+                <img id="main-img" src="${galeria[0]}" style="width:100%; border-radius:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1)">
+                <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap">
+                    ${miniaturkiHtml}
+                </div>
+            </div>
             <div>
                 <h1 style="margin:0; font-size:32px">${o.tytul}</h1>
                 <h2 style="color:var(--primary); font-size:28px; margin:10px 0">${o.cena.toLocaleString()} zł</h2>
