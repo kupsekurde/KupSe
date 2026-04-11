@@ -8,44 +8,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #23e5db; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
-        
-        .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .main-logo { height: 50px; cursor: pointer; }
-        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 20px; border-radius: 50px; border: 1px solid #e5e7eb; }
-        .nav-search input { border: none; background: transparent; outline: none; padding: 8px; width: 200px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; }
+        .navbar { background: var(--white); padding: 5px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .main-logo { height: 60px; cursor: pointer; }
+        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
+        .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 150px; }
+        .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
 
-        .cat-wrapper { background: white; border-bottom: 1px solid #eee; padding: 15px 0; }
-        .cat-container { display: flex; justify-content: center; gap: 20px; overflow-x: auto; scrollbar-width: none; padding: 0 10px; }
-        .cat-item { min-width: 80px; text-align: center; cursor: pointer; }
-        .cat-icon { width: 70px; height: 70px; background: #f9fafb; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; border: 1px solid #f0f0f0; transition: 0.2s; overflow: hidden; }
-        .cat-icon img { width: 85%; height: 85%; object-fit: contain; }
-        .cat-item:hover .cat-icon { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .cat-item span { font-size: 12px; font-weight: 600; color: #4b5563; }
+        .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
+        .cat-container { display: flex; justify-content: center; gap: 15px; padding: 20px 2%; overflow-x: auto; scrollbar-width: none; }
+        .cat-item { min-width: 90px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .cat-icon { width: 60px; height: 60px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; }
+        .cat-item span { font-size: 11px; font-weight: 700; display: block; margin-top: 8px; color: #444; }
 
-        .subcat-panel { display: none; background: #fff; padding: 15px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #eee; }
-        .sub-pill { padding: 8px 16px; background: #f3f4f6; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #e5e7eb; }
+        .subcat-panel { display: none; background: #f8f9fa; padding: 15px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
+        .sub-pill { padding: 8px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
-        .ad-card { background: white; border-radius: 15px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
-        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .ad-img { width: 100%; height: 180px; object-fit: cover; background: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+        .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; }
+        .ad-img { width: 100%; height: 200px; object-fit: cover; }
         .ad-body { padding: 15px; }
-        .ad-price { font-size: 20px; font-weight: 800; color: #111; }
-        .ad-title { font-size: 15px; margin: 5px 0; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ad-price { font-size: 22px; font-weight: 800; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-box { background: white; width: 90%; max-width: 800px; border-radius: 20px; padding: 30px; position: relative; max-height: 90vh; overflow-y: auto; }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #9ca3af; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 95%; max-width: 700px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 35px; cursor: pointer; z-index: 10; color: #9ca3af; }
 
-        .pass-info { font-size: 11px; color: #6b7280; background: #f9fafb; padding: 10px; border-radius: 10px; margin-top: 5px; text-align: left; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; }
-        .hidden { display: none; }
-        
-        /* Dropdown menu */
-        .dropdown-content { display: none; position: absolute; right: 0; top: 50px; background: white; min-width: 200px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-radius: 12px; padding: 15px; z-index: 1001; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 20px; z-index: 1001; }
         .show { display: block; }
+        .btn-account { background: #f3f4f6; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; }
+        
+        .pass-info { font-size: 11px; color: #6b7280; margin-top: 5px; text-align: left; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -54,58 +50,58 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="find-text" placeholder="Szukaj ogłoszenia...">
-            <button onclick="filtruj()" style="background:none; border:none; cursor:pointer; font-weight:bold; color:var(--primary)">SZUKAJ</button>
+            <input type="text" id="find-text" placeholder="Szukaj...">
+            <button onclick="filtruj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer">OK</button>
         </div>
     </div>
     <div class="nav-right" id="user-nav">
-        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-main">Zaloguj się</button>
+        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
     </div>
 </nav>
 
 <div class="cat-wrapper">
-    <div class="cat-container">
-        <div class="cat-item" onclick="toggleSubcats('Motoryzacja')"><div class="cat-icon"><img src="cat-moto.png"></div><span>Motoryzacja</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Dom')"><div class="cat-icon"><img src="cat-dom.png"></div><span>Dom</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Elektronika')"><div class="cat-icon"><img src="cat-elektronika.png"></div><span>Elektronika</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Ogród')"><div class="cat-icon"><img src="cat-ogrod.png"></div><span>Ogród</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Moda')"><div class="cat-icon"><img src="cat-moda.png"></div><span>Moda</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Rolnictwo')"><div class="cat-icon"><img src="cat-rolnictwo.png"></div><span>Rolnictwo</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Zwierzęta')"><div class="cat-icon"><img src="cat-zwierzeta.png"></div><span>Zwierzęta</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Dzieci')"><div class="cat-icon"><img src="cat-dzieci.png"></div><span>Dzieci</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Sport')"><div class="cat-icon"><img src="cat-sport.png"></div><span>Sport</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Nauka')"><div class="cat-icon"><img src="cat-nauka.png"></div><span>Nauka</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon"><img src="cat-uslugi.png"></div><span>Usługi</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon"><img src="cat-praca.png"></div><span>Praca</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon"><img src="cat-inne.png"></div><span>Inne</span></div>
+    <div class="cat-container" id="category-bar">
+        <div class="cat-item" onclick="toggleSubcats('Motoryzacja')"><div class="cat-icon">🚗</div><span>Motoryzacja</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Nieruchomości')"><div class="cat-icon">🏠</div><span>Dom</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Elektronika')"><div class="cat-icon">💻</div><span>Elektronika</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dom i Ogród')"><div class="cat-icon">🌿</div><span>Ogród</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Moda')"><div class="cat-icon">👗</div><span>Moda</span></div>
+        <div class="cat-item" onclick="toggleSubcats(' Rolnictwo')"><div class="cat-icon">🚜</div><span>Rolnictwo</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Zwierzęta')"><div class="cat-icon">🐾</div><span>Zwierzęta</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Dla Dzieci')"><div class="cat-icon">🧸</div><span>Dzieci</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Sport i Hobby')"><div class="cat-icon">⚽</div><span>Sport</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Muzyka i Edukacja')"><div class="cat-icon">📚</div><span>Nauka</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon">🛠️</div><span>Usługi</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon">💼</div><span>Praca</span></div>
+        <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon">✨</div><span>Inne</span></div>
     </div>
+    <div id="subcat-panel" class="subcat-panel"></div>
 </div>
-<div id="subcat-panel" class="subcat-panel"></div>
 
 <div class="container">
-    <div id="auth-box">
-        <div id="login-view" style="max-width:350px; margin: 20px auto; background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align:center;">
-            <h3>Zaloguj się</h3>
-            <input type="email" id="email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box">
-            <input type="password" id="pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box">
-            <button onclick="loguj()" class="btn-main" style="width:100%">Zaloguj</button>
-            <p style="font-size:13px; margin-top:15px">Nie masz konta? <a href="javascript:void(0)" onclick="switchAuth('register')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+    <div id="auth-box" style="margin-bottom: 50px;">
+        <div id="login-view" style="max-width:320px; margin:auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="margin-top:0">Zaloguj się</h3>
+            <input type="email" id="email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <input type="password" id="pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <button onclick="loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white; margin-bottom:10px">Zaloguj</button>
+            <p style="font-size:13px">Nie masz konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
 
-        <div id="register-view" class="hidden" style="max-width:350px; margin: 20px auto; background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align:center;">
-            <h3>Załóż konto</h3>
-            <input type="text" id="reg-nick" placeholder="Nazwa użytkownika" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box">
-            <input type="email" id="reg-email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box">
-            <input type="password" id="reg-pass" placeholder="Mocne hasło" style="width:100%; padding:12px; margin-bottom:5px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box">
+        <div id="register-view" class="hidden" style="max-width:320px; margin:auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="margin-top:0">Rejestracja</h3>
+            <input type="text" id="reg-nick" placeholder="Twoja nazwa" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <input type="email" id="reg-email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
+            <input type="password" id="reg-pass" placeholder="Hasło" style="width:100%; padding:12px; margin-bottom:5px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box">
             <div class="pass-info">
                 Hasło musi mieć: 8+ znaków, Wielką literę, Cyfrę oraz Znak specjalny.
             </div>
-            <button onclick="zarejestruj()" class="btn-main" style="width:100%; margin-top:15px; background:#111">Zarejestruj się</button>
-            <p style="font-size:13px; margin-top:15px">Masz już konto? <a href="javascript:void(0)" onclick="switchAuth('login')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+            <button onclick="zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white; margin: 15px 0 10px 0">Zarejestruj się</button>
+            <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
         </div>
     </div>
 
-    <h2 style="margin-top:40px">Najnowsze ogłoszenia</h2>
+    <h2 style="font-size: 28px; margin-bottom: 25px;">Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
 </div>
 
@@ -113,37 +109,33 @@
     <div class="modal-box">
         <span class="close-btn" onclick="zamknijModal()">&times;</span>
         <h2>Dodaj ogłoszenie</h2>
-        <form onsubmit="wyslijOgloszenie(event)" style="display:grid; gap:12px">
+        <form onsubmit="wyslijOgloszenie(event)" style="display:grid; gap:15px">
             <input type="text" id="f-tytul" placeholder="Tytuł" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-                <select id="f-kat" onchange="updateFormSubcats()" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-                    <option value="">Kategoria</option>
-                    <option value="Motoryzacja">Motoryzacja</option>
-                    <option value="Dom">Dom</option>
-                    <option value="Elektronika">Elektronika</option>
-                    <option value="Ogród">Ogród</option>
-                    <option value="Moda">Moda</option>
-                    <option value="Inne">Inne</option>
-                </select>
-                <select id="f-podkat" required style="padding:12px; border-radius:8px; border:1px solid #ddd"><option value="">Podkategoria</option></select>
-            </div>
+            <select id="f-kat" onchange="updateFormSubcats()" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
+                <option value="">Kategoria</option>
+                <option value="Motoryzacja">Motoryzacja</option>
+                <option value="Nieruchomości">Nieruchomości</option>
+                <option value="Elektronika">Elektronika</option>
+                <option value="Dom i Ogród">Dom i Ogród</option>
+                <option value="Moda">Moda</option>
+                <option value="Inne">Inne</option>
+            </select>
+            <select id="f-podkat" required style="padding:12px; border-radius:8px; border:1px solid #ddd"><option value="">Podkategoria</option></select>
             <input type="number" id="f-cena" placeholder="Cena (zł)" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-            <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-            <textarea id="f-opis" placeholder="Opis przedmiotu..." required style="height:100px; padding:12px; border-radius:8px; border:1px solid #ddd"></textarea>
-            <input type="tel" id="f-tel" placeholder="Nr telefonu" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
-            <label style="font-size:12px; color:gray">Zdjęcia:</label>
+            <input type="text" id="f-lok" placeholder="Miasto" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
+            <textarea id="f-opis" placeholder="Opis..." required style="height:100px; padding:12px; border-radius:8px; border:1px solid #ddd"></textarea>
+            <input type="tel" id="f-tel" placeholder="Telefon" required style="padding:12px; border-radius:8px; border:1px solid #ddd">
             <input type="file" id="f-plik" accept="image/*" multiple required>
-            <button type="submit" id="btn-save" class="btn-main">Opublikuj ogłoszenie</button>
+            <button type="submit" id="btn-save" style="background:var(--primary); padding:15px; border:none; border-radius:10px; font-weight:800; cursor:pointer">Dodaj ogłoszenie</button>
         </form>
     </div>
 </div>
 
 <div id="modal-view" class="modal"><div class="modal-box" id="view-content" style="max-width:900px"></div></div>
-
 <div id="modal-messages" class="modal">
     <div class="modal-box" style="max-width:500px">
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <h2>Wiadomości</h2>
+        <span class="close-btn" onclick="document.getElementById('modal-messages').style.display='none'">&times;</span>
+        <h2>Twoje Wiadomości</h2>
         <div id="messages-list"></div>
     </div>
 </div>
