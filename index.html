@@ -18,7 +18,7 @@
         .nav-search input { padding: 10px; border: none; background: transparent; outline: none; font-size: 14px; width: 150px; }
         .nav-right { display: flex; align-items: center; gap: 15px; position: relative; }
 
-        /* KATEGORIE - NOWOCZESNY LOOK */
+        /* KATEGORIE */
         .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
         .cat-container { display: flex; justify-content: center; gap: 15px; padding: 20px 2%; overflow-x: auto; scrollbar-width: none; }
         .cat-container::-webkit-scrollbar { display: none; }
@@ -54,6 +54,48 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
         .modal-box { background: white; width: 95%; max-width: 700px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
         .close-btn { position: absolute; top: 20px; right: 25px; font-size: 35px; cursor: pointer; line-height: 1; }
+
+        /* STYL DLA POWIĘKSZONEGO ZDJĘCIA (LIGHTBOX) */
+        .lightbox {
+            display: none; 
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); 
+            justify-content: center;
+            align-items: center;
+        }
+        .lightbox-img { 
+            max-width: 90%; 
+            max-height: 80vh; 
+            border-radius: 10px; 
+            border: 3px solid white; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .l-btn {
+            position: absolute; 
+            color: white; 
+            font-size: 50px; 
+            cursor: pointer;
+            background: none; 
+            border: none;
+            user-select: none;
+            padding: 20px;
+            transition: 0.2s;
+        }
+        .l-btn:hover { color: var(--primary); }
+        .l-prev { left: 20px; } 
+        .l-next { right: 20px; } 
+        .l-close { 
+            top: 20px; 
+            right: 25px; 
+            font-size: 60px; 
+            color: white; 
+            cursor: pointer; 
+            position: absolute; 
+            line-height: 1;
+        }
 
         /* MENU KONTO */
         .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 15px; z-index: 1001; }
@@ -150,6 +192,13 @@
 
 <div id="modal-view" class="modal">
     <div class="modal-box" id="view-content"></div>
+</div>
+
+<div id="lightbox" class="lightbox">
+    <span class="l-close" onclick="document.getElementById('lightbox').style.display='none'">&times;</span>
+    <button class="l-btn l-prev" onclick="changeLightbox(-1)">&#10094;</button>
+    <img id="lightbox-img" class="lightbox-img" src="">
+    <button class="l-btn l-next" onclick="changeLightbox(1)">&#10095;</button>
 </div>
 
 <script src="script.js"></script>
