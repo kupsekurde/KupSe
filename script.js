@@ -21,82 +21,77 @@ const MAPA_KATEGORII = {
     "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
 };
 
-// --- LOGOWANIE (NAPRAWIONE) ---
+// --- LOGOWANIE I REJESTRACJA ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-
-    if (!email || !password) {
-        alert("Wpisz email i hasło!");
-        return;
-    }
-
-    // Próba logowania
-    const { data, error } = await baza.auth.signInWithPassword({ email, password });
-
+    if (!email || !password) return alert("Wpisz email i hasło!");
+    const { error } = await baza.auth.signInWithPassword({ email, password });
     if (error) {
-        // Jeśli nie ma konta, próba rejestracji
-        const { error: signUpError } = await baza.auth.signUp({ email, password });
-        if (signUpError) {
-            alert("Błąd: " + signUpError.message);
-        } else {
-            alert("Zarejestrowano! Sprawdź maila lub zaloguj się ponownie.");
-        }
-    } else {
-        location.reload(); // Zalogowano pomyślnie
-    }
+        const { error: sErr } = await baza.auth.signUp({ email, password });
+        if (sErr) alert(sErr.message); else alert("Zarejestrowano! Zaloguj się.");
+    } else location.reload();
 };
 
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+
+// --- OBSŁUGA MENU "MOJE KONTO" ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    const authBox = document.getElementById('auth-box');
-
     if (user && nav) {
         nav.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
                 <div style="position:relative">
                     <button class="btn-account" onclick="toggleUserMenu(event)">Moje Konto ▼</button>
-                    <div id="drop-menu" class="dropdown-content" style="display:none; position:absolute; right:0; top:55px; background:white; min-width:200px; z-index:5000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; padding: 10px;">
-                        <span style="font-size:11px; color:gray; padding:5px; display:block; border-bottom:1px solid #eee">Zalogowany: <b>${user.email}</b></span>
-                        <button class="d-btn" onclick="alert('Moje ogłoszenia')">Moje ogłoszenia</button>
-                        <button class="d-btn" onclick="wyloguj()" style="color:#ef4444; font-weight:bold; border-top:1px solid #eee; margin-top:5px">Wyloguj się</button>
+                    <div id="drop-menu" style="display:none; position:absolute; right:0; top:50px; background:white; min-width:200px; z-index:9999; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:10px; border:1px solid #eee;">
+                        <div style="font-size:10px; color:gray; padding:5px; border-bottom:1px solid #f0f0f0; margin-bottom:5px;">${user.email}</div>
+                        <button class="d-btn" onclick="alert('Moje ogłoszenia')">📝 Moje ogłoszenia</button>
+                        <button class="d-btn" onclick="alert('Wiadomości')">✉️ Wiadomości</button>
+                        <button class="d-btn" onclick="alert('Ulubione')">❤️ Ulubione</button>
+                        <button class="d-btn" onclick="wyloguj()" style="color:red; border-top:1px solid #f0f0f0; margin-top:5px;">🚪 Wyloguj</button>
                     </div>
                 </div>
-                <img src="SprzedajSe.png" onclick="otworzModal()" style="height: 40px; width: auto; cursor:pointer; object-fit: contain;" alt="Dodaj">
+                <img src="SprzedajSe.png" onclick="otworzModal()" style="height: 40px; width: auto; cursor:pointer;" alt="Sprzedaj">
             </div>
         `;
-        if (authBox) authBox.style.display = 'none'; // Ukryj formularz logowania jeśli zalogowany
+        if(document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
     }
 }
 
 window.toggleUserMenu = (e) => {
     e.stopPropagation();
-    const menu = document.getElementById('drop-menu');
-    if(menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    const m = document.getElementById('drop-menu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
-window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
-
-// --- RESZTA FUNKCJI (POBIERANIE I RENDERING) ---
+// --- POBIERANIE I RENDERING (4 W RZĘDZIE) ---
 async function pobierz() {
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
-    render(daneOgloszen.slice(0, 12));
+    render(daneOgloszen.slice(0, 12)); // Startowo 12 najnowszych
 }
 
 function render(lista) {
     const kontener = document.getElementById('lista');
     if(!kontener) return;
+    
+    // WYMUSZAMY GRID W KODZIE
+    kontener.style.display = "grid";
+    kontener.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
+    kontener.style.gap = "20px";
+
     kontener.innerHTML = lista.map(o => {
         let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia) : 'https://via.placeholder.com/300';
         return `
-            <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-                <img class="ad-img" src="${foto}">
-                <div class="ad-body">
-                    <div class="ad-price">${o.cena.toLocaleString()} zł</div>
-                    <div class="ad-title">${o.tytul}</div>
-                    <div style="font-size: 11px; color: #777; margin-top: 8px;">
+            <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:10px; border:1px solid #eee; overflow:hidden; cursor:pointer;">
+                <div style="width:100%; height:180px; overflow:hidden">
+                    <img src="${foto}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="padding:12px;">
+                    <div style="font-weight:bold; color:#ff4f00; font-size:16px;">${o.cena.toLocaleString()} zł</div>
+                    <div style="font-size:14px; margin:5px 0; color:#333; height:38px; overflow:hidden;">${o.tytul}</div>
+                    <div style="font-size:10px; color:#999; margin-top:8px;">
                         📍 ${o.lokalizacja} | ${new Date(o.created_at).toLocaleDateString()}
                     </div>
                 </div>
@@ -105,37 +100,37 @@ function render(lista) {
     }).join('');
 }
 
-// --- WIADOMOŚCI I SZCZEGÓŁY (BEZ ZMIAN) ---
+// --- PODKATEGORIE (OBSŁUGA SELECTA) ---
+window.updateFormSubcats = () => {
+    const kat = document.getElementById('f-kat').value;
+    const p = document.getElementById('f-podkat');
+    if(!p) return;
+    p.innerHTML = '<option value="">Wybierz podkategorię</option>';
+    if(MAPA_KATEGORII[kat]) {
+        MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+};
+
+// --- SZCZEGÓŁY I KONTAKT ---
 window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const { data: { user } } = await baza.auth.getUser();
     const box = document.getElementById('view-content');
-    
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    
+
     const kontaktHtml = user ? `
-        <a href="tel:${o.telefon}" class="btn-account" style="display:block; text-align:center; background:#111; color:white; text-decoration:none; padding:15px; margin-bottom:10px; border-radius:10px;">📞 ZADZWOŃ: ${o.telefon}</a>
-        <button onclick="otworzOknoWiadomosci('${o.email_autora}', ${o.id}, '${o.tytul}')" style="width:100%; padding:15px; background:#ff4f00; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:800;">✉ WYŚLIJ WIADOMOŚĆ</button>
-    ` : `
-        <div style="background:#fff3cd; padding:15px; border-radius:10px; text-align:center; font-size:13px; border:1px solid #ffeeba; color: #856404;">
-            Zaloguj się, aby zobaczyć numer i wysłać wiadomość.
-        </div>
-    `;
+        <button onclick="otworzWiadomosc('${o.email_autora}', '${o.tytul}', ${o.id})" style="width:100%; padding:15px; background:#ff4f00; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">WYŚLIJ WIADOMOŚĆ</button>
+        <p style="text-align:center; margin-top:10px; font-weight:bold;">📞 ${o.telefon}</p>
+    ` : `<div style="background:#eee; padding:10px; border-radius:8px; text-align:center; font-size:12px;">Zaloguj się, aby zobaczyć kontakt</div>`;
 
     box.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <div style="font-size:25px; cursor:pointer; color:#ccc;">❤</div>
-            <span onclick="zamknijModal()" style="font-size:30px; cursor:pointer;">&times;</span>
-        </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div>
-                <img id="main-img" src="${aktualnaGaleria[0]}" style="width:100%; border-radius:10px; height:250px; object-fit:cover;">
-            </div>
+            <img src="${aktualnaGaleria[0]}" style="width:100%; border-radius:10px; max-height:300px; object-fit:contain; background:#f9f9f9;">
             <div>
                 <h2 style="margin:0">${o.tytul}</h2>
                 <h1 style="color:#ff4f00; margin:10px 0">${o.cena.toLocaleString()} zł</h1>
-                <p style="font-size:11px; color:gray;">📍 ${o.lokalizacja}</p>
-                <div style="margin:15px 0; font-size:14px; color:#444;">${o.opis}</div>
+                <p style="font-size:11px; color:gray;">Kategoria: ${o.kategoria} / ${o.podkategoria}</p>
+                <div style="margin:15px 0; font-size:14px; color:#444; line-height:1.4">${o.opis}</div>
                 ${kontaktHtml}
             </div>
         </div>
@@ -143,27 +138,32 @@ window.pokazSzczegoly = async (id) => {
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.otworzOknoWiadomosci = (odbiorca, oglId, tytul) => {
-    const div = document.createElement('div');
-    div.id = "msg-overlay";
-    div.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; align-items:center; justify-content:center;";
-    div.innerHTML = `
-        <div style="background:white; padding:25px; border-radius:15px; width:320px;">
-            <h4 style="margin:0">Wyślij wiadomość</h4>
-            <textarea id="msg-text" style="width:100%; height:80px; margin:10px 0; padding:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
-            <button onclick="wyslijWiadomoscDoBazy('${odbiorca}', ${oglId})" style="width:100%; padding:10px; background:#ff4f00; color:white; border:none; border-radius:8px;">Wyślij</button>
-            <button onclick="document.getElementById('msg-overlay').remove()" style="width:100%; margin-top:5px; background:none; border:none; cursor:pointer;">Anuluj</button>
-        </div>
-    `;
-    document.body.appendChild(div);
+window.otworzWiadomosc = (odb, tytul, oId) => {
+    const msg = prompt("Napisz do sprzedającego ws. " + tytul);
+    if(msg) {
+        baza.auth.getUser().then(({data}) => {
+            baza.from('wiadomosci').insert([{ 
+                nadawca: data.user.email, 
+                odbiorca: odb, 
+                tresc: msg, 
+                ogloszenie_id: oId 
+            }]).then(() => alert("Wysłano wiadomość!"));
+        });
+    }
 };
 
-window.wyslijWiadomoscDoBazy = async (odb, oId) => {
-    const txt = document.getElementById('msg-text').value;
-    const { data: { user } } = await baza.auth.getUser();
-    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca: odb, tresc: txt, ogloszenie_id: oId }]);
-    alert("Wysłano!");
-    document.getElementById('msg-overlay').remove();
+// --- FILTRY KATEGORII (Zdejmują limit 12) ---
+window.toggleSubcats = (kat) => {
+    const filtr = daneOgloszen.filter(o => o.kategoria === kat);
+    render(filtr); // Pokazuje wszystko z tej kategorii
+    const panel = document.getElementById('subcat-panel');
+    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPod('${kat}', '${p}')">${p}</div>`).join('') + 
+                      `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
+    panel.style.display = 'flex';
+};
+
+window.filtrujPod = (kat, pod) => {
+    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
 };
 
 window.zamknijModal = () => {
@@ -172,6 +172,15 @@ window.zamknijModal = () => {
 };
 
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
+
+// Zamykanie wszystkiego
+window.onclick = (e) => {
+    if (!e.target.closest('.btn-account')) {
+        const m = document.getElementById('drop-menu');
+        if(m) m.style.display = 'none';
+    }
+    if (e.target.className === 'modal') zamknijModal();
+};
 
 sprawdzUzytkownika();
 pobierz();
