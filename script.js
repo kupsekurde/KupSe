@@ -99,7 +99,7 @@ window.updateFormSubcats = () => {
         listaPodkategorii.map(p => `<option value="${p}">${p}</option>`).join('');
 };
 
-// --- SZCZEGÓŁY OGŁOSZENIA (POWIĘKSZANIE ZDJĘCIA) ---
+// --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -121,7 +121,7 @@ window.pokazSzczegoly = (id) => {
                 </div>
                 <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
                     ${aktualneFotki.map((img, i) => `
-                        <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'var(--primary)' : '#ddd'}">
+                        <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'orange' : '#ddd'}">
                     `).join('')}
                 </div>
             </div>
@@ -130,9 +130,11 @@ window.pokazSzczegoly = (id) => {
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja}</p>
                 <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-                <div style="font-size:14px; color:#555; white-space:pre-line;">${o.opis}</div>
-                <div style="margin-top:20px; padding:15px; background:#f5f5f5; border-radius:10px;">
-                    📞 <b>${o.telefon || 'Brak numeru'}</b>
+                <div style="margin:15px 0;">📞 <b>${o.telefon || 'Brak numeru'}</b></div>
+                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                <div style="margin-top:20px;">
+                    <h3>Opis</h3>
+                    <p style="white-space:pre-line; color:#555;">${o.opis}</p>
                 </div>
             </div>
         </div>
@@ -150,8 +152,24 @@ window.ustawFoto = (idx) => {
     const mainImg = document.getElementById('mainFoto');
     if (mainImg) mainImg.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((img, i) => {
-        img.style.borderColor = i === idx ? 'var(--primary)' : '#ddd';
+        img.style.borderColor = i === idx ? 'orange' : '#ddd';
     });
+};
+
+// --- SYSTEM WIADOMOŚCI ---
+window.wyslijWiadomosc = async (odbiorca, tytul) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby wysłać wiadomość!");
+    
+    const tresc = prompt(`Wiadomość w sprawie: ${tytul}`, "Dzień dobry, czy ogłoszenie jest aktualne?");
+    if (tresc) {
+        const { error } = await baza.from('wiadomosci').insert([{ 
+            nadawca: user.email, 
+            odbiorca: odbiorca, 
+            tresc: tresc 
+        }]);
+        if (error) alert("Błąd wysyłania: " + error.message); else alert("Wiadomość została wysłana!");
+    }
 };
 
 // --- DODAWANIE OGŁOSZEŃ ---
@@ -192,7 +210,6 @@ window.wyslijOgloszenie = async (e) => {
     if (error) { 
         alert("Błąd: " + error.message); 
         btn.disabled = false; 
-        btn.innerText = "Opublikuj ogłoszenie";
     } else { 
         alert("Dodano ogłoszenie!"); 
         location.reload(); 
@@ -262,7 +279,6 @@ window.usunOgloszenie = async (id) => {
 window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
 window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
-// --- START ---
 async function init() {
     await sprawdzUzytkownika();
     await pobierz();
