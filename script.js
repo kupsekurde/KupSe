@@ -96,15 +96,18 @@ window.addEventListener('click', (e) => {
 window.szukaj = () => {
     const fraza = document.getElementById('find-text').value.toLowerCase().trim();
     const lok = document.getElementById('find-loc').value.toLowerCase().trim();
+    const teraz = new Date();
+    const limit = 1000 * 60 * 60 * 24 * 28;
 
     const wyniki = daneOgloszen.filter(o => {
         const tytulOk = o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
         const lokOk = o.lokalizacja.toLowerCase().includes(lok);
-        return tytulOk && lokOk;
+        const aktywny = (teraz - new Date(o.created_at)) < limit;
+        return tytulOk && lokOk && aktywny;
     });
     
     document.getElementById('subcat-panel').style.display = 'none';
-    document.getElementById('grid-title').innerText = `Wyniki wyszukiwania (${wyniki.length})`;
+    document.getElementById('grid-title').innerText = (fraza || lok) ? `Wyniki (${wyniki.length})` : "Najnowsze ogłoszenia";
     render(wyniki);
 };
 
@@ -391,8 +394,7 @@ window.toggleUlubione = async (e, id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    // Po zmianie ulubionych nie odświeżamy całej listy, tylko re-renderujemy to co jest
-    // Aby nie gubić kontekstu 12 najnowszych, po prostu przerysujemy aktualną listę.
+    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 };
 
 window.pokazUlubione = () => {
@@ -405,13 +407,10 @@ window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     p.style.display = 'flex';
     p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-    // Filtr kategorii nie zmienia nagłówka "12 najnowszych", pokaże po prostu wyniki pod spodem
-    document.getElementById('grid-title').innerText = `Kategoria: ${kat}`;
     render(daneOgloszen.filter(o => o.kategoria === kat));
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
-    document.getElementById('grid-title').innerText = `${kat} > ${podkat}`;
     render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat));
 };
 
@@ -425,42 +424,28 @@ window.updateFormSubcats = (formPrefix = 'f-') => {
 
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
-// Zmodyfikowana funkcja renderowania - wymusza 4 kolumny
 function render(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
-    
-    // Ustawiamy styl siatki na sztywne 4 kolumny dla dużych ekranów
-    k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(4, 1fr)'; 
-    k.style.gap = '20px';
-
     k.innerHTML = lista.map(o => `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="position:relative; cursor:pointer; background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); transition:transform 0.2s;">
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="position:relative;">
             <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
                 ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
             </div>
             <img src="${o.zdjecia[0]}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
-                <b style="font-size:18px; color:var(--primary);">${o.cena} zł</b>
-                <div style="font-size:14px; margin-top:5px; height:40px; overflow:hidden; color:#333; font-weight:600; line-height:1.3;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray; margin-top:8px; display:flex; align-items:center; gap:4px;">
-                    📍 ${o.lokalizacja}
-                </div>
+                <b style="font-size:16px;">${o.cena} zł</b>
+                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden; color:#333;">${o.tytul}</div>
+                <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
             </div>
         </div>`).join('');
 }
 
 async function init() {
     await sprawdzUzytkownika();
-    // Pobieramy wszystko, posortowane od najnowszego
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
-
-    // Na start pokazujemy tylko 12 najnowszych (3 rzędy po 4 sztuki)
-    document.getElementById('grid-title').innerText = "Najnowsze ogłoszenia (TOP 12)";
-    const najnowsze12 = daneOgloszen.slice(0, 12);
-    render(najnowsze12);
+    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 }
 
 init();
