@@ -1,22 +1,25 @@
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
+const KEY_S = 'TU_WKLEJ_SWÓJ_KLUCZ';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
 let aktualnaGaleria = [];
-let odbiorcaMsg = null;
+let mojeUlubione = [];
 
 // --- LOGOWANIE ---
 window.loguj = async () => {
-    const email = emailEl.value;
-    const password = passEl.value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
 
     const { error } = await baza.auth.signInWithPassword({ email, password });
 
     if (error) {
-        await baza.auth.signUp({ email, password });
-        alert("Zarejestrowano!");
-    } else location.reload();
+        const { error: e2 } = await baza.auth.signUp({ email, password });
+        if (e2) alert(e2.message);
+        else alert("Zarejestrowano!");
+    } else {
+        location.reload();
+    }
 };
 
 window.wyloguj = async () => {
@@ -24,25 +27,52 @@ window.wyloguj = async () => {
     location.reload();
 };
 
-// --- MENU ---
+// --- USER ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
+
+    const auth = document.getElementById('auth-box');
+    if (user && auth) auth.style.display = 'none';
+
+    if (user) {
+        const { data } = await baza
+            .from('ulubione')
+            .select('*')
+            .eq('user_email', user.email);
+
+        mojeUlubione = data.map(x => x.ogloszenie_id);
+    }
+
     const nav = document.getElementById('user-nav');
 
     if (user && nav) {
         nav.innerHTML = `
-        <div style="margin-left:auto; position:relative;">
-            <button onclick="toggleUserMenu(event)" 
-                style="background:#ff4f00;color:white;padding:10px;border:none;border-radius:8px;">
-                ${user.email} ▼
-            </button>
+        <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+            
+            <div style="position:relative">
+                <button onclick="toggleUserMenu(event)" 
+                    style="background:#ff4f00;color:white;padding:10px;border:none;border-radius:8px;">
+                    Moje konto ▼
+                </button>
 
-            <div id="drop-menu" style="display:none; position:absolute; right:0; background:white; padding:15px;">
-                <div>📝 Moje ogłoszenia</div>
-                <div>✉️ Wiadomości</div>
-                <div>❤️ Ulubione</div>
-                <div onclick="wyloguj()" style="color:red;">🚪 Wyloguj</div>
+                <div id="drop-menu" style="
+                    display:none;
+                    position:absolute;
+                    right:0;
+                    top:45px;
+                    background:white;
+                    padding:10px;
+                    border-radius:10px;
+                    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+                ">
+                    <div onclick="alert('Moje ogłoszenia')" style="padding:8px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="alert('Wiadomości')" style="padding:8px; cursor:pointer;">✉️ Wiadomości</div>
+                    <div onclick="pokazUlubione()" style="padding:8px; cursor:pointer;">❤️ Ulubione</div>
+                    <div onclick="wyloguj()" style="padding:8px; cursor:pointer; color:red;">🚪 Wyloguj</div>
+                </div>
             </div>
+
+            <img src="SprzedajSe.png" onclick="otworzModal()" style="height:40px; cursor:pointer;">
         </div>
         `;
     }
@@ -72,12 +102,15 @@ function render(lista, limit = false) {
 
     kontener.innerHTML = dane.map(o => {
         let foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia;
+        const liked = mojeUlubione.includes(o.id);
 
         return `
         <div onclick="pokazSzczegoly(${o.id})" style="position:relative; border:1px solid #eee; border-radius:10px;">
             
-            <button onclick="event.stopPropagation(); toggleUlubione(${o.id})"
-            style="position:absolute; top:5px; right:5px;">❤️</button>
+            <div onclick="event.stopPropagation(); toggleUlubione(${o.id})"
+                style="position:absolute; top:5px; right:5px; font-size:20px; cursor:pointer;">
+                ${liked ? '❤️' : '🤍'}
+            </div>
 
             <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:10px;">
@@ -94,57 +127,35 @@ window.toggleUlubione = async (id) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Zaloguj się");
 
-    const { data } = await baza
-        .from('ulubione')
-        .select('*')
-        .eq('user_email', user.email)
-        .eq('ogloszenie_id', id);
+    if (mojeUlubione.includes(id)) {
+        await baza.from('ulubione').delete()
+            .eq('user_email', user.email)
+            .eq('ogloszenie_id', id);
 
-    if (data.length) {
-        await baza.from('ulubione').delete().eq('id', data[0].id);
-        alert("Usunięto");
+        mojeUlubione = mojeUlubione.filter(x => x !== id);
     } else {
-        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
-        alert("Dodano ❤️");
+        await baza.from('ulubione').insert([{
+            user_email: user.email,
+            ogloszenie_id: id
+        }]);
+
+        mojeUlubione.push(id);
     }
+
+    render(daneOgloszen, true);
 };
 
-// 🔎 FILTR
-window.filtruj = () => {
-    const t = search.value.toLowerCase();
-    const minV = Number(min.value) || 0;
-    const maxV = Number(max.value) || Infinity;
-
-    const wynik = daneOgloszen.filter(o =>
-        o.tytul.toLowerCase().includes(t) &&
-        o.cena >= minV &&
-        o.cena <= maxV
-    );
-
-    render(wynik, false);
+window.pokazUlubione = () => {
+    render(daneOgloszen.filter(o => mojeUlubione.includes(o.id)));
 };
 
-// 💬 WIADOMOŚCI
-window.otworzWiadomosc = (email) => {
-    odbiorcaMsg = email;
-    document.getElementById('msg-modal').style.display = 'flex';
+// --- PODKATEGORIE ---
+window.toggleSubcats = (kat) => {
+    const filtr = daneOgloszen.filter(o => o.kategoria === kat);
+    render(filtr, false);
 };
 
-window.wyslijMsg = async () => {
-    const txt = document.getElementById('msg-text').value;
-    const { data: { user } } = await baza.auth.getUser();
-
-    await baza.from('wiadomosci').insert([{
-        nadawca: user.email,
-        odbiorca: odbiorcaMsg,
-        tresc: txt
-    }]);
-
-    alert("Wysłano!");
-    msgModal.style.display = 'none';
-};
-
-// 📄 SZCZEGÓŁY
+// --- SZCZEGÓŁY ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     const box = document.getElementById('view-content');
@@ -152,27 +163,46 @@ window.pokazSzczegoly = (id) => {
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
 
     const mini = aktualnaGaleria.map((img,i)=>`
-        <img src="${img}" onclick="zmienFoto(${i})" style="width:50px;">
+        <img src="${img}" onclick="zmienFoto(${i})" style="width:60px; cursor:pointer;">
     `).join('');
 
     box.innerHTML = `
     <img id="mainFoto" src="${aktualnaGaleria[0]}" onclick="powiekszFoto()" style="width:100%;">
-    <div>${mini}</div>
+    <div style="display:flex; gap:10px;">${mini}</div>
     <h2>${o.tytul}</h2>
     <h1>${o.cena} zł</h1>
-    <button onclick="otworzWiadomosc('${o.email_autora}')">Napisz</button>
+    <p>${o.opis}</p>
     `;
 
-    modalView.style.display = 'flex';
+    document.getElementById('modal-view').style.display = 'flex';
 };
 
-// 🖼 GALERIA
+// --- GALERIA ---
 window.zmienFoto = (i) => {
-    mainFoto.src = aktualnaGaleria[i];
+    document.getElementById('mainFoto').src = aktualnaGaleria[i];
 };
 
 window.powiekszFoto = () => {
-    window.open(mainFoto.src);
+    window.open(document.getElementById('mainFoto').src);
+};
+
+// --- MODALE ---
+window.otworzModal = () => {
+    document.getElementById('modal-form').style.display = 'flex';
+};
+
+window.zamknijModal = () => {
+    document.getElementById('modal-form').style.display = 'none';
+    document.getElementById('modal-view').style.display = 'none';
+};
+
+window.onclick = (e) => {
+    if (!e.target.closest('button')) {
+        const m = document.getElementById('drop-menu');
+        if (m) m.style.display = 'none';
+    }
+
+    if (e.target.className === 'modal') zamknijModal();
 };
 
 // --- START ---
