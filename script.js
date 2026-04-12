@@ -3,23 +3,39 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
-let aktualnaGaleria = [];
 let mojeUlubione = [];
 
-// --- LOGOWANIE ---
+// Dane podkategorii
+const SUB_DATA = {
+    'Motoryzacja': ['Samochody', 'Motocykle', 'Części'],
+    'Dom': ['Meble', 'Ogrzewanie', 'Dekoracje'],
+    'Elektronika': ['Telefony', 'Laptopy', 'Konsole'],
+    'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe'],
+    'Moda': ['Ubrania', 'Buty', 'Dodatki'],
+    'Rolnictwo': ['Traktory', 'Maszyny', 'Zwierzęta hodowlane'],
+    'Zwierzęta': ['Psy', 'Koty', 'Akcesoria'],
+    'Dzieci': ['Zabawki', 'Wózki', 'Ubranka'],
+    'Sport': ['Rowery', 'Siłownia', 'Turystyka'],
+    'Nauka': ['Książki', 'Korepetycje', 'Instrumenty'],
+    'Usługi': ['Budowlane', 'Transport', 'Naprawa'],
+    'Inne': ['Różne']
+};
+
+// --- LOGOWANIE I REJESTRACJA ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-
     const { error } = await baza.auth.signInWithPassword({ email, password });
+    if (error) alert("Błąd logowania: " + error.message);
+    else location.reload();
+};
 
-    if (error) {
-        const { error: e2 } = await baza.auth.signUp({ email, password });
-        if (e2) alert(e2.message);
-        else alert("Zarejestrowano!");
-    } else {
-        location.reload();
-    }
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    const { error } = await baza.auth.signUp({ email, password });
+    if (error) alert("Błąd: " + error.message);
+    else alert("Zarejestrowano! Możesz się teraz zalogować.");
 };
 
 window.wyloguj = async () => {
@@ -27,54 +43,24 @@ window.wyloguj = async () => {
     location.reload();
 };
 
-// --- USER ---
+// --- USER STATUS ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
-
-    const auth = document.getElementById('auth-box');
-    if (user && auth) auth.style.display = 'none';
-
     if (user) {
-        const { data } = await baza
-            .from('ulubione')
-            .select('*')
-            .eq('user_email', user.email);
-
-        mojeUlubione = data.map(x => x.ogloszenie_id);
-    }
-
-    const nav = document.getElementById('user-nav');
-
-    if (user && nav) {
+        document.getElementById('auth-box').style.display = 'none';
+        const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
+        
+        const nav = document.getElementById('user-nav');
         nav.innerHTML = `
-        <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-            
-            <div style="position:relative">
-                <button onclick="toggleUserMenu(event)" 
-                    style="background:#ff4f00;color:white;padding:10px;border:none;border-radius:8px;">
-                    Moje konto ▼
-                </button>
-
-                <div id="drop-menu" style="
-                    display:none;
-                    position:absolute;
-                    right:0;
-                    top:45px;
-                    background:white;
-                    padding:10px;
-                    border-radius:10px;
-                    box-shadow:0 8px 20px rgba(0,0,0,0.2);
-                ">
-                    <div onclick="alert('Moje ogłoszenia')" style="padding:8px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="alert('Wiadomości')" style="padding:8px; cursor:pointer;">✉️ Wiadomości</div>
-                    <div onclick="pokazUlubione()" style="padding:8px; cursor:pointer;">❤️ Ulubione</div>
-                    <div onclick="wyloguj()" style="padding:8px; cursor:pointer; color:red;">🚪 Wyloguj</div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Moje Konto ▼</button>
+                <div id="drop-menu" style="display:none; position:absolute; top:60px; right:5%; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.1); border-radius:10px; padding:10px; z-index:1001;">
+                    <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
+                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red;">Wyloguj</div>
                 </div>
-            </div>
-
-            <img src="SprzedajSe.png" onclick="otworzModal()" style="height:40px; cursor:pointer;">
-        </div>
-        `;
+                <button onclick="otworzModal()" style="background:#111; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer;">+ Dodaj</button>
+            </div>`;
     }
 }
 
@@ -84,111 +70,104 @@ window.toggleUserMenu = (e) => {
     m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
-// --- POBIERANIE ---
+// --- POBIERANIE I RENDEROWANIE ---
 async function pobierz() {
-    const { data } = await baza
-        .from('ogloszenia')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
     render(daneOgloszen, true);
 }
 
-// --- RENDER ---
 function render(lista, limit = false) {
     const kontener = document.getElementById('lista');
     const dane = limit ? lista.slice(0, 12) : lista;
-
+    
     kontener.innerHTML = dane.map(o => {
-        let foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia;
+        const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjecia || 'https://via.placeholder.com/300');
         const liked = mojeUlubione.includes(o.id);
-
         return `
-        <div onclick="pokazSzczegoly(${o.id})" style="position:relative; border:1px solid #eee; border-radius:10px;">
-            
-            <div onclick="event.stopPropagation(); toggleUlubione(${o.id})"
-                style="position:absolute; top:5px; right:5px; font-size:20px; cursor:pointer;">
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
+            <div onclick="event.stopPropagation(); toggleUlubione(${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; font-size:20px; cursor:pointer; background:rgba(255,255,255,0.8); border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center;">
                 ${liked ? '❤️' : '🤍'}
             </div>
-
             <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
-            <div style="padding:10px;">
-                <b>${o.cena} zł</b>
-                <div>${o.tytul}</div>
+            <div style="padding:15px;">
+                <b style="font-size:18px;">${o.cena} zł</b>
+                <div style="color:#555; margin-top:5px;">${o.tytul}</div>
+                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja || 'Polska'}</div>
             </div>
-        </div>
-        `;
+        </div>`;
     }).join('');
 }
 
-// ❤️ ULUBIONE
-window.toggleUlubione = async (id) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się");
-
-    if (mojeUlubione.includes(id)) {
-        await baza.from('ulubione').delete()
-            .eq('user_email', user.email)
-            .eq('ogloszenie_id', id);
-
-        mojeUlubione = mojeUlubione.filter(x => x !== id);
-    } else {
-        await baza.from('ulubione').insert([{
-            user_email: user.email,
-            ogloszenie_id: id
-        }]);
-
-        mojeUlubione.push(id);
-    }
-
-    render(daneOgloszen, true);
-};
-
-window.pokazUlubione = () => {
-    render(daneOgloszen.filter(o => mojeUlubione.includes(o.id)));
-};
-
-// --- PODKATEGORIE ---
+// --- FILTROWANIE I PODKATEGORIE ---
 window.toggleSubcats = (kat) => {
+    const panel = document.getElementById('subcat-panel');
+    const subs = SUB_DATA[kat] || [];
+    panel.style.display = 'flex';
+    panel.innerHTML = subs.map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    
     const filtr = daneOgloszen.filter(o => o.kategoria === kat);
-    render(filtr, false);
+    document.getElementById('grid-title').innerText = "Kategoria: " + kat;
+    render(filtr);
 };
 
-// --- SZCZEGÓŁY ---
+window.filtrujPoPodkat = (kat, podkat) => {
+    const filtr = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    render(filtr);
+};
+
+window.filtruj = () => {
+    const txt = document.getElementById('find-text').value.toLowerCase();
+    const wyniki = daneOgloszen.filter(o => o.tytul.toLowerCase().includes(txt) || (o.opis && o.opis.toLowerCase().includes(txt)));
+    render(wyniki);
+};
+
+// --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     const box = document.getElementById('view-content');
-
-    aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-
-    const mini = aktualnaGaleria.map((img,i)=>`
-        <img src="${img}" onclick="zmienFoto(${i})" style="width:60px; cursor:pointer;">
-    `).join('');
+    const fotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
 
     box.innerHTML = `
-    <img id="mainFoto" src="${aktualnaGaleria[0]}" onclick="powiekszFoto()" style="width:100%;">
-    <div style="display:flex; gap:10px;">${mini}</div>
-    <h2>${o.tytul}</h2>
-    <h1>${o.cena} zł</h1>
-    <p>${o.opis}</p>
+        <span class="close-btn" onclick="zamknijModal()">&times;</span>
+        <h2 style="margin-top:0;">${o.tytul}</h2>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div style="flex:1.5; min-width:300px;">
+                <img id="mainFoto" src="${fotki[0]}" style="width:100%; border-radius:15px; height:400px; object-fit:cover;">
+                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;">
+                    ${fotki.map((f, i) => `<img src="${f}" onclick="document.getElementById('mainFoto').src='${f}'" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #ddd;">`).join('')}
+                </div>
+            </div>
+            <div style="flex:1; min-width:250px; background:#f9f9f9; padding:20px; border-radius:15px;">
+                <h1 style="color:var(--primary); margin:0;">${o.cena} zł</h1>
+                <p style="color:gray;">📍 ${o.lokalizacja || 'Nie podano'}</p>
+                <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+                <div style="font-weight:bold; margin-bottom:10px;">Dane kontaktowe:</div>
+                <div style="font-size:18px; color:#111; margin-bottom:15px;">📞 ${o.telefon || 'Brak numeru'}</div>
+                <button onclick="alert('Funkcja wiadomości wkrótce!')" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">Wyślij wiadomość</button>
+            </div>
+        </div>
+        <div style="margin-top:30px;">
+            <h3>Opis</h3>
+            <p style="white-space:pre-line; line-height:1.6; color:#333;">${o.opis || 'Brak opisu.'}</p>
+        </div>
     `;
-
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-// --- GALERIA ---
-window.zmienFoto = (i) => {
-    document.getElementById('mainFoto').src = aktualnaGaleria[i];
-};
+// --- FUNKCJE POMOCNICZE ---
+window.toggleUlubione = async (id) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby dodać do ulubionych!");
 
-window.powiekszFoto = () => {
-    window.open(document.getElementById('mainFoto').src);
-};
-
-// --- MODALE ---
-window.otworzModal = () => {
-    document.getElementById('modal-form').style.display = 'flex';
+    if (mojeUlubione.includes(id)) {
+        await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
+        mojeUlubione = mojeUlubione.filter(x => x !== id);
+    } else {
+        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
+        mojeUlubione.push(id);
+    }
+    render(daneOgloszen);
 };
 
 window.zamknijModal = () => {
@@ -197,14 +176,13 @@ window.zamknijModal = () => {
 };
 
 window.onclick = (e) => {
-    if (!e.target.closest('button')) {
-        const m = document.getElementById('drop-menu');
-        if (m) m.style.display = 'none';
-    }
-
     if (e.target.className === 'modal') zamknijModal();
+    const m = document.getElementById('drop-menu');
+    if (m && !e.target.closest('button')) m.style.display = 'none';
 };
 
-// --- START ---
+window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
+
+// START
 sprawdzUzytkownika();
 pobierz();
