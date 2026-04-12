@@ -49,12 +49,11 @@ async function sprawdzUzytkownika() {
     if (user && nav) {
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
         
-        // Pobieranie liczby NIEPRZECZYTANYCH wiadomości
         const { count: msgCount } = await baza
             .from('wiadomosci')
             .select('*', { count: 'exact', head: true })
             .eq('odbiorca', user.email)
-            .eq('przeczytane', false); // Filtr na nowe wiadomości
+            .eq('przeczytane', false);
 
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
@@ -75,7 +74,7 @@ async function sprawdzUzytkownika() {
                         <span>✉️ Wiadomości</span>
                         <span id="menu-msg-count">${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}</span>
                     </div>
-                    <div onclick="alert('Ulubione: ' + mojeUlubione.length)" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
+                    <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
@@ -84,14 +83,12 @@ async function sprawdzUzytkownika() {
     }
 }
 
-// Obsługa otwierania menu
 window.toggleUserMenu = (e) => { 
     e.stopPropagation(); 
     const m = document.getElementById('drop-menu'); 
     if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
 };
 
-// Zamykanie menu po kliknięciu poza obszar
 window.addEventListener('click', (e) => {
     const menu = document.getElementById('drop-menu');
     const btn = document.getElementById('menu-btn');
@@ -107,26 +104,16 @@ window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
 
-    // Po otwarciu skrzynki oznaczamy wiadomości jako PRZECZYTANE w bazie
-    await baza.from('wiadomosci')
-        .update({ przeczytane: true })
-        .eq('odbiorca', user.email)
-        .eq('przeczytane', false);
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('przeczytane', false);
 
-    // Usuwamy licznik z widoku (UI)
     const badge = document.getElementById('msg-badge');
     const menuCount = document.getElementById('menu-msg-count');
     if (badge) badge.remove();
     if (menuCount) menuCount.innerHTML = '';
 
-    const { data: msg, error } = await baza
-        .from('wiadomosci')
-        .select('*')
-        .eq('odbiorca', user.email)
-        .order('created_at', { ascending: false });
+    const { data: msg } = await baza.from('wiadomosci').select('*').eq('odbiorca', user.email).order('created_at', { ascending: false });
 
     const content = document.getElementById('view-content');
-    
     let htmlMsg = msg && msg.length > 0 
         ? msg.map(m => `
             <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
@@ -137,13 +124,7 @@ window.pokazSkrzynke = async () => {
         `).join('')
         : '<p style="text-align:center; color:gray; padding:20px;">Brak otrzymanych wiadomości.</p>';
 
-    content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2 style="margin-bottom:20px;">Skrzynka odbiorcza</h2>
-        <div style="max-height:65vh; overflow-y:auto; padding-right:5px;">
-            ${htmlMsg}
-        </div>`;
-        
+    content.innerHTML = `<button class="close-btn" onclick="zamknijModal()">&times;</button><h2 style="margin-bottom:20px;">Skrzynka odbiorcza</h2><div style="max-height:65vh; overflow-y:auto; padding-right:5px;">${htmlMsg}</div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
@@ -154,15 +135,43 @@ window.wyslijWiadomosc = async (odbiorca, tytul) => {
 
     const tresc = prompt(`Wiadomość do: ${odbiorca}\nTemat: ${tytul}`, "Dzień dobry, czy oferta jest aktualna?");
     if (tresc) {
-        const { error } = await baza.from('wiadomosci').insert([{ 
-            nadawca: user.email, 
-            odbiorca: odbiorca, 
-            tresc: tresc,
-            przeczytane: false // Domyślnie nowa wiadomość jest nieprzeczytana
-        }]);
+        const { error } = await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca: odbiorca, tresc: tresc, przeczytane: false }]);
         if (error) alert("Błąd wysyłania: " + error.message); 
         else alert("Wiadomość została wysłana!");
     }
+};
+
+// --- SYSTEM ULUBIONYCH ---
+window.toggleUlubione = async (e, id) => {
+    e.stopPropagation();
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby dodawać do ulubionych!");
+
+    const index = mojeUlubione.indexOf(id);
+    if (index > -1) {
+        const { error } = await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
+        if (!error) mojeUlubione.splice(index, 1);
+    } else {
+        const { error } = await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
+        if (!error) mojeUlubione.push(id);
+    }
+    
+    // Odśwież widok bez przeładowania strony
+    render(daneOgloszen, document.getElementById('subcat-panel').style.display === 'none');
+    sprawdzUzytkownika(); // Aktualizacja licznika w menu
+    
+    // Jeśli modal szczegółów jest otwarty, odśwież serce w modalu
+    const heartBtn = document.getElementById('modal-heart');
+    if (heartBtn) {
+        const isFav = mojeUlubione.includes(id);
+        heartBtn.innerHTML = isFav ? '❤️' : '🤍';
+    }
+};
+
+window.pokazUlubione = () => {
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
+    render(ulubioneLista, false);
+    document.getElementById('subcat-panel').style.display = 'none';
 };
 
 // --- SZCZEGÓŁY OGŁOSZENIA I GALERIA ---
@@ -172,6 +181,7 @@ window.pokazSzczegoly = (id) => {
     
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
+    const isFav = mojeUlubione.includes(o.id);
 
     const modalContent = document.getElementById('view-content');
     modalContent.innerHTML = `
@@ -180,6 +190,7 @@ window.pokazSzczegoly = (id) => {
             <div style="flex:1.5; min-width:300px;">
                 <div style="position:relative; background:#000; border-radius:15px; overflow:hidden; height:400px; display:flex; align-items:center; justify-content:center;">
                     <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in;" onclick="window.open(this.src)">
+                    <button id="modal-heart" onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:15px; right:15px; background:white; border:none; width:45px; height:45px; border-radius:50%; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);">${isFav ? '❤️' : '🤍'}</button>
                     ${aktualneFotki.length > 1 ? `
                         <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">◀</button>
                         <button onclick="zmienFoto(1)" style="position:absolute; right:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▶</button>
@@ -196,6 +207,7 @@ window.pokazSzczegoly = (id) => {
                 <h1 style="color:var(--primary); margin-bottom:15px;">${o.cena} zł</h1>
                 <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:15px;">
                     <p>📍 Lokalizacja: <b>${o.lokalizacja}</b></p>
+                    <p>🕒 Dodano: <b>${new Date(o.created_at).toLocaleString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}</b></p>
                     <p>📞 Telefon: <b>${o.telefon || 'Nie podano'}</b></p>
                 </div>
                 <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul.replace(/'/g, "\\'")}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:16px; font-weight:bold; cursor:pointer; margin-bottom:20px;">Wyślij wiadomość</button>
@@ -307,20 +319,29 @@ function render(lista, glowna = false) {
     const k = document.getElementById('lista');
     if (!k) return;
     const d = glowna ? lista.slice(0, 12) : lista;
-    k.innerHTML = d.map(o => `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
+    k.innerHTML = d.map(o => {
+        const isFav = mojeUlubione.includes(o.id);
+        const dataStr = new Date(o.created_at).toLocaleString('pl-PL', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+        return `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="position:relative;">
+            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                ${isFav ? '❤️' : '🤍'}
+            </div>
             <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
                 <b>${o.cena} zł</b>
                 <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray; margin-top:5px;">📍 ${o.lokalizacja}</div>
+                <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between;">
+                    <span>📍 ${o.lokalizacja}</span>
+                    <span>🕒 ${dataStr}</span>
+                </div>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
-// Kliknięcie w tło modala zamyka go
 window.onclick = (e) => { 
     if (e.target.className === 'modal') zamknijModal(); 
 };
@@ -333,5 +354,4 @@ async function init() {
     render(daneOgloszen, true);
 }
 
-// Start aplikacji
 init();
