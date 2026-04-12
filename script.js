@@ -41,7 +41,7 @@ window.zarejestruj = async () => {
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// --- FUNKCJE POMOCNICZE ---
+// --- OBSŁUGA UŻYTKOWNIKA I MENU ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
@@ -60,41 +60,36 @@ async function sprawdzUzytkownika() {
                         <small style="color:gray;">Zalogowany jako:</small><br>
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
-                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer; border-radius:8px;">📝 Moje ogłoszenia</div>
+                    <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; border-radius:8px;">✉️ Wiadomości</div>
+                    <div onclick="alert('Ulubione')" style="padding:10px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
-                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
             </div>`;
     }
 }
 
-// --- POBIERANIE I RENDEROWANIE ---
-async function pobierz() {
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    daneOgloszen = data || [];
-    render(daneOgloszen, true);
-}
+window.toggleUserMenu = (e) => { 
+    e.stopPropagation(); 
+    const m = document.getElementById('drop-menu'); 
+    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
+};
 
-function render(lista, czyStronaGlowna = false) {
-    const kontener = document.getElementById('lista');
-    if (!kontener) return;
-    const dane = czyStronaGlowna ? lista.slice(0, 12) : lista;
+// --- KATEGORIE I FILTROWANIE ---
+window.toggleSubcats = (kat) => {
+    const panel = document.getElementById('subcat-panel');
+    if (!panel) return;
+    panel.style.display = 'flex';
+    panel.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    render(daneOgloszen.filter(o => o.kategoria === kat), false);
+};
 
-    kontener.innerHTML = dane.map(o => {
-        const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjumia || 'https://via.placeholder.com/300');
-        return `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
-            <div style="padding:15px;">
-                <b style="font-size:18px;">${o.cena} zł</b>
-                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
-            </div>
-        </div>`;
-    }).join('');
-}
+window.filtrujPoPodkat = (kat, podkat) => {
+    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat), false);
+};
 
-// --- DODAWANIE OGŁOSZEŃ ---
 window.updateFormSubcats = () => {
     const kategoriaGlowna = document.getElementById('f-kat').value;
     const polePodkategorii = document.getElementById('f-podkat');
@@ -104,6 +99,7 @@ window.updateFormSubcats = () => {
         listaPodkategorii.map(p => `<option value="${p}">${p}</option>`).join('');
 };
 
+// --- DODAWANIE OGŁOSZEŃ ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -139,43 +135,68 @@ window.wyslijOgloszenie = async (e) => {
     }]);
 
     if (error) { alert("Błąd: " + error.message); btn.disabled = false; } 
-    else { alert("Dodano!"); location.reload(); }
+    else { alert("Dodano pomyślnie!"); location.reload(); }
 };
 
 // --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async () => {
     const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
     const moje = daneOgloszen.filter(o => o.user_email === user.email);
     const content = document.getElementById('view-content');
     
-    content.innerHTML = `<h2>Moje ogłoszenia (${moje.length})</h2>` + moje.map(o => `
-        <div style="border:1px solid #ddd; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;">
-            <span>${o.tytul} - ${o.cena} zł</span>
-            <button onclick="usunOgloszenie(${o.id})" style="color:red; cursor:pointer;">Usuń</button>
-        </div>
-    `).join('');
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2 style="margin-bottom:20px;">📝 Moje ogłoszenia (${moje.length})</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto;">
+            ${moje.map(o => `
+                <div class="ad-card" style="border:1px solid #eee; cursor:default;">
+                    <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:110px; object-fit:cover;">
+                    <div style="padding:10px;">
+                        <b>${o.cena} zł</b>
+                        <div style="font-size:12px; height:32px; overflow:hidden;">${o.tytul}</div>
+                        <button onclick="usunOgloszenie(${o.id})" style="width:100%; margin-top:10px; color:red; cursor:pointer;">Usuń</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Usunąć?")) {
+    if (confirm("Usunąć to ogłoszenie?")) {
         await baza.from('ogloszenia').delete().eq('id', id);
         location.reload();
     }
 };
 
-window.toggleUserMenu = (e) => { 
-    e.stopPropagation(); 
-    const m = document.getElementById('drop-menu'); 
-    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
-};
+// --- RENDEROWANIE I MODALE ---
+function render(lista, czyStronaGlowna = false) {
+    const kontener = document.getElementById('lista');
+    if (!kontener) return;
+    const tytulSekcji = document.getElementById('grid-title');
+    if (tytulSekcji) tytulSekcji.innerText = czyStronaGlowna ? "Najnowsze ogłoszenia" : "Wyniki wyszukiwania";
+
+    const dane = czyStronaGlowna ? lista.slice(0, 12) : lista;
+    kontener.innerHTML = dane.map(o => `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
+            <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:180px; object-fit:cover;">
+            <div style="padding:15px;">
+                <b style="font-size:18px;">${o.cena} zł</b>
+                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
+                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
+            </div>
+        </div>`).join('');
+}
 
 window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
+window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
-// --- START ---
 async function init() {
     await sprawdzUzytkownika();
-    await pobierz();
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    render(daneOgloszen, true);
 }
 
 init();
