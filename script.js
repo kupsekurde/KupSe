@@ -45,22 +45,22 @@ window.wyloguj = async () => {
 
 // --- USER STATUS ---
 async function sprawdzUzytkownika() {
-    const { data: { user } } = await baza.auth.getUser();
-    if (user) {
-        document.getElementById('auth-box').style.display = 'none';
-        const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
-        
-        const nav = document.getElementById('user-nav');
-        nav.innerHTML = `
-            <div style="display:flex; gap:15px; align-items:center;">
-                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Moje Konto ▼</button>
-                <div id="drop-menu" style="display:none; position:absolute; top:60px; right:5%; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.1); border-radius:10px; padding:10px; z-index:1001;">
-                    <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
-                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red;">Wyloguj</div>
-                </div>
-                <button onclick="otworzModal()" style="background:#111; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer;">+ Dodaj</button>
-            </div>`;
+nav.innerHTML = `
+    <div style="display:flex; gap:15px; align-items:center;">
+        <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Moje Konto ▼</button>
+        <div id="drop-menu" style="display:none; position:absolute; top:60px; right:5%; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:1001; min-width:200px;">
+            <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px; font-size:12px; color:gray;">
+                Zalogowany jako:<br><b style="color:black; font-size:14px;">${user.email}</b>
+            </div>
+            <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                <span>✉️ Wiadomości</span>
+                <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px;">2</span>
+            </div>
+            <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
+            <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; border-top:1px solid #eee; margin-top:10px;">🚪 Wyloguj</div>
+        </div>
+        <button onclick="otworzModal()" style="background:#111; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer;">+ Dodaj</button>
+    </div>`;
     }
 }
 
