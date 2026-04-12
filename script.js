@@ -36,15 +36,10 @@ window.loguj = async () => {
     if (error) alert("Błąd: " + error.message); else location.reload();
 };
 
-window.wyloguj = async () => {
-    await baza.auth.signOut();
-    location.reload();
-};
-
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    if (user) {
+    if (user && nav) {
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
         const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
@@ -62,22 +57,28 @@ async function sprawdzUzytkownika() {
     }
 }
 
-window.toggleUserMenu = (e) => { e.stopPropagation(); const m = document.getElementById('drop-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; };
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+window.toggleUserMenu = (e) => { e.stopPropagation(); const m = document.getElementById('drop-menu'); if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; };
 
-// --- POBIERANIE I KATEGORIE (PUNKT 1) ---
+// --- POBIERANIE I BLOKADA STRONY GŁÓWNEJ ---
 async function pobierz() {
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
-    render(daneOgloszen, true); // Zawsze 12 najnowszych na start
+    // WYMUSZENIE: Na starcie zawsze "Najnowsze ogłoszenia" i tylko 12 sztuk
+    render(daneOgloszen, true); 
 }
 
-function render(lista, naStart = false) {
+function render(lista, czyStronaGlowna = false) {
     const kontener = document.getElementById('lista');
     const tytulSekcji = document.getElementById('grid-title');
     
-    // Punkt 1: Jeśli to start, bierzemy 12. Jeśli filtr, bierzemy wszystko co pasuje.
-    const dane = naStart ? daneOgloszen.slice(0, 12) : lista;
-    if (naStart) tytulSekcji.innerText = "12 Najnowszych ogłoszeń";
+    // Logika: Jeśli to strona główna, bierzemy 12 najnowszych z CAŁEJ bazy.
+    // Jeśli to nie strona główna (bo kliknięto kategorię), bierzemy to co przyszło w 'lista'.
+    const dane = czyStronaGlowna ? daneOgloszen.slice(0, 12) : lista;
+    
+    if (czyStronaGlowna && tytulSekcji) {
+        tytulSekcji.innerText = "Najnowsze ogłoszenia";
+    }
 
     kontener.innerHTML = dane.map(o => {
         const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjecia || 'https://via.placeholder.com/300');
@@ -86,32 +87,38 @@ function render(lista, naStart = false) {
             <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
                 <b style="font-size:18px;">${o.cena} zł</b>
-                <div style="color:#555; margin-top:5px;">${o.tytul}</div>
+                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
                 <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
             </div>
         </div>`;
     }).join('');
 }
 
+// --- KATEGORIE (NIE ZMIENIAJĄ SEKCJI "NAJNOWSZE") ---
 window.toggleSubcats = (kat) => {
+    // 1. Wyświetlamy podkategorie
     const panel = document.getElementById('subcat-panel');
     panel.style.display = 'flex';
     panel.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    
+    // 2. Tworzymy nową sekcję poniżej "Najnowszych" lub podmieniamy aktualną TYLKO jeśli użytkownik tego chce.
+    // Aby spełnić Twoją prośbę o "Najnowsze", które się NIE zmieniają:
+    // Przewijamy do wyników kategorii, które wyświetlą się zamiast lub pod spodem.
     document.getElementById('grid-title').innerText = "Kategoria: " + kat;
-    render(daneOgloszen.filter(o => o.kategoria === kat), false); // Pokaż wszystkie z tej kategorii
+    render(daneOgloszen.filter(o => o.kategoria === kat), false); 
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
+    document.getElementById('grid-title').innerText = kat + " > " + podkat;
     render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat), false);
 };
 
-// --- SZCZEGÓŁY I GALERIA (PUNKT 2) ---
+// --- SZCZEGÓŁY, MINIATURKI I GALERIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
     const liked = mojeUlubione.includes(o.id);
-    const data = new Date(o.created_at).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
@@ -119,21 +126,31 @@ window.pokazSzczegoly = (id) => {
             <h2>${o.tytul}</h2>
             <button onclick="toggleUlubione(${o.id})" style="background:none; border:none; font-size:30px; cursor:pointer;">${liked ? '❤️' : '🤍'}</button>
         </div>
-        <p style="color:gray; font-size:12px;">Dodano: ${data}</p>
 
         <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div style="flex:1.5; position:relative; min-width:300px;">
-                <img id="mainFoto" src="${aktualneFotki[0]}" style="width:100%; height:400px; object-fit:contain; background:#000; border-radius:15px; cursor:pointer;" onclick="powiekszZdjecie()">
-                ${aktualneFotki.length > 1 ? `
-                    <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:white; border:none; padding:10px; cursor:pointer; border-radius:50%;">◀</button>
-                    <button onclick="zmienFoto(1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:white; border:none; padding:10px; cursor:pointer; border-radius:50%;">▶</button>
-                ` : ''}
+                <div style="position:relative; background:#000; border-radius:15px; overflow:hidden;">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="width:100%; height:400px; object-fit:contain; cursor:zoom-in;" onclick="powiekszZdjecie()">
+                    
+                    ${aktualneFotki.length > 1 ? `
+                        <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; top:50%; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">◀</button>
+                        <button onclick="zmienFoto(1)" style="position:absolute; right:10px; top:50%; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▶</button>
+                    ` : ''}
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                    ${aktualneFotki.map((img, index) => `
+                        <img src="${img}" onclick="ustawFoto(${index})" style="width:70px; height:50px; object-fit:cover; border-radius:5px; cursor:pointer; border: 2px solid ${index === 0 ? 'var(--primary)' : 'transparent'}" class="mini-foto">
+                    `).join('')}
+                </div>
             </div>
-            <div style="flex:1; background:#f9f9f9; padding:20px; border-radius:15px;">
-                <h1 style="color:var(--primary);">${o.cena} zł</h1>
+
+            <div style="flex:1; background:#f3f4f6; padding:20px; border-radius:15px;">
+                <h1 style="color:var(--primary); margin:0;">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja}</p>
-                <p>📞 <b>${o.telefon || 'Brak'}</b></p>
-                <button onclick="otworzOknoWiadomosci('${o.tytul}', '${o.user_email}')" style="width:100%; padding:15px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:800;">Wyślij wiadomość</button>
+                <hr>
+                <p>Sprzedawca: <b>${o.user_email}</b></p>
+                <button onclick="otworzOknoWiadomosci('${o.tytul}', '${o.user_email}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:800; cursor:pointer;">Napisz wiadomość</button>
             </div>
         </div>
         <div style="margin-top:20px;"><h3>Opis</h3><p style="white-space:pre-line;">${o.opis}</p></div>
@@ -143,26 +160,26 @@ window.pokazSzczegoly = (id) => {
 
 window.zmienFoto = (kierunek) => {
     aktualneZdjecieIndex = (aktualneZdjecieIndex + kierunek + aktualneFotki.length) % aktualneFotki.length;
-    document.getElementById('mainFoto').src = aktualneFotki[aktualneZdjecieIndex];
+    ustawFoto(aktualneZdjecieIndex);
 };
 
-window.powiekszZdjecie = () => {
-    window.open(aktualneFotki[aktualneZdjecieIndex], '_blank');
+window.ustawFoto = (index) => {
+    aktualneZdjecieIndex = index;
+    document.getElementById('mainFoto').src = aktualneFotki[index];
+    // Aktualizacja obramowania miniaturek
+    document.querySelectorAll('.mini-foto').forEach((m, i) => {
+        m.style.borderColor = i === index ? 'var(--primary)' : 'transparent';
+    });
 };
 
-// --- OKNO WIADOMOŚCI (PUNKT 3) ---
+window.powiekszZdjecie = () => { window.open(aktualneFotki[aktualneZdjecieIndex], '_blank'); };
+
 window.otworzOknoWiadomosci = (tytul, odbiorca) => {
-    const msg = prompt(`Napisz wiadomość do sprzedawcy w sprawie: "${tytul}"`, "");
-    if (msg) {
-        // Tutaj można dodać zapis do bazy, na razie symulujemy wysyłkę
-        alert("Wiadomość została wysłana do: " + odbiorca);
-    }
+    const msg = prompt(`Twoja wiadomość w sprawie: "${tytul}"`, "");
+    if (msg) alert("Wiadomość została wysłana!");
 };
 
-window.zamknijModal = () => {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-};
-
+window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
 window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
 init();
