@@ -96,19 +96,14 @@ window.addEventListener('click', (e) => {
 window.szukaj = () => {
     const fraza = document.getElementById('find-text').value.toLowerCase().trim();
     const lok = document.getElementById('find-loc').value.toLowerCase().trim();
-    const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28;
 
     const wyniki = daneOgloszen.filter(o => {
         const tytulOk = o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
         const lokOk = o.lokalizacja.toLowerCase().includes(lok);
-        const aktywny = (teraz - new Date(o.created_at)) < limit;
-        return tytulOk && lokOk && aktywny;
+        return tytulOk && lokOk;
     });
-    
-    document.getElementById('subcat-panel').style.display = 'none';
-    document.getElementById('grid-title').innerText = (fraza || lok) ? `Wyniki (${wyniki.length})` : "Najnowsze ogłoszenia";
-    render(wyniki);
+
+    pokazWynikiModal(`Wyniki wyszukiwania (${wyniki.length})`, wyniki);
 };
 
 // --- WIADOMOŚCI ---
@@ -164,7 +159,12 @@ window.pokazSzczegoly = (id) => {
                 <h2>${o.tytul}</h2>
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
-                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                     <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                     <button onclick="toggleUlubione(event, ${o.id})" id="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+                        ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
+                     </button>
+                </div>
                 <h3 style="margin-top:20px;">Opis</h3>
                 <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis}</p>
             </div>
@@ -174,7 +174,8 @@ window.pokazSzczegoly = (id) => {
 
 window.zmienGlowneZdjecie = (idx) => {
     aktualneZdjecieIndex = idx;
-    document.getElementById('mainFoto').src = aktualneFotki[idx];
+    const img = document.getElementById('mainFoto');
+    if(img) img.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
         el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
     });
@@ -188,35 +189,187 @@ window.otworzFullFoto = () => {
         lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9000; display:none; align-items:center; justify-content:center; user-select:none;";
         document.body.appendChild(lb);
     }
-    
     lb.innerHTML = `
-        <button onclick="document.getElementById('lightbox-box').style.display='none'" style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center; box-shadow:0 0 15px rgba(0,0,0,0.5);">&times;</button>
+        <button onclick="document.getElementById('lightbox-box').style.display='none'" style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">&times;</button>
         <button onclick="navFullFoto(-1)" style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❮</button>
-        <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain; transition:0.2s;">
+        <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain;">
         <button onclick="navFullFoto(1)" style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❯</button>
-        <div style="position:absolute; bottom:20px; color:white; font-size:14px; font-family:sans-serif;">Zdjęcie ${aktualneZdjecieIndex + 1} z ${aktualneFotki.length}</div>
     `;
     lb.style.display = 'flex';
 };
 
 window.navFullFoto = (dir) => {
     aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
-    const lbImg = document.getElementById('lb-img');
-    if(lbImg) {
-        lbImg.src = aktualneFotki[aktualneZdjecieIndex];
-        const text = document.querySelector('#lightbox-box div');
-        if(text) text.innerText = `Zdjęcie ${aktualneZdjecieIndex + 1} z ${aktualneFotki.length}`;
-    }
+    const img = document.getElementById('lb-img');
+    if(img) img.src = aktualneFotki[aktualneZdjecieIndex];
 };
 
-window.addEventListener('keydown', (e) => {
-    const lb = document.getElementById('lightbox-box');
-    if (lb && lb.style.display === 'flex') {
-        if (e.key === 'Escape') lb.style.display = 'none';
-        if (e.key === 'ArrowRight') navFullFoto(1);
-        if (e.key === 'ArrowLeft') navFullFoto(-1);
+// --- MOJE OGŁOSZENIA ---
+window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+    const teraz = new Date();
+    const limit = 1000 * 60 * 60 * 24 * 28;
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    const aktywne = moje.filter(o => (teraz - new Date(o.created_at)) < limit);
+    const zakonczone = moje.filter(o => (teraz - new Date(o.created_at)) >= limit);
+    const wyswietlane = tab === 'aktywne' ? aktywne : zakonczone;
+
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2>Moje ogłoszenia</h2>
+        <div style="display:flex; gap:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
+            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
+            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
+            ${wyswietlane.map(o => `
+                <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden;">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
+                    <div style="padding:8px;">
+                        <b style="font-size:13px;">${o.cena} zł</b>
+                        <div style="display:flex; gap:5px; margin-top:8px;">
+                            <button onclick="edytujOgloszenie(${o.id})" style="flex:1; padding:5px; font-size:11px;">Edytuj</button>
+                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; color:red;">🗑️</button>
+                        </div>
+                    </div>
+                </div>`).join('')}
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.usunOgloszenie = async (id) => {
+    if (confirm("Usunąć ogłoszenie na stałe?")) { await baza.from('ogloszenia').delete().eq('id', id); location.reload(); }
+};
+
+// --- DODAWANIE ---
+window.wyslijOgloszenie = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.innerText = "Wysyłanie...";
+    const { data: { user } } = await baza.auth.getUser();
+    
+    const pliki = document.getElementById('f-plik').files;
+    let linki = [];
+    for (let f of pliki) {
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
-});
+
+    await baza.from('ogloszenia').insert([{
+        tytul: document.getElementById('f-tytul').value,
+        kategoria: document.getElementById('f-kat').value,
+        podkategoria: document.getElementById('f-podkat').value,
+        cena: parseFloat(document.getElementById('f-cena').value),
+        lokalizacja: document.getElementById('f-lok').value,
+        opis: document.getElementById('f-opis').value,
+        telefon: document.getElementById('f-tel').value,
+        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
+        user_email: user.email 
+    }]);
+    location.reload();
+};
+
+// --- LOGIKA KATEGORII I WYNIKÓW ---
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    p.style.display = 'flex';
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat);
+    pokazWynikiModal(`Kategoria: ${kat}`, wyniki);
+};
+
+window.filtrujPoPodkat = (kat, podkat) => {
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
+};
+
+function pokazWynikiModal(tytul, wyniki) {
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2>${tytul}</h2>
+        <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:70vh; overflow-y:auto;">
+            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
+        </div>
+    `;
+    document.getElementById('modal-view').style.display = 'flex';
+}
+
+function renderCardHTML(o) {
+    const isFav = mojeUlubione.includes(o.id);
+    return `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
+            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                ${isFav ? '❤️' : '🤍'}
+            </div>
+            <img src="${o.zdjecia[0]}" style="width:100%; height:150px; object-fit:cover;">
+            <div style="padding:12px;">
+                <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
+                <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
+                <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
+            </div>
+        </div>`;
+}
+
+// --- RENDER GŁÓWNY (12 NAJNOWSZYCH) ---
+function renderTop12(lista) {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    const teraz = new Date();
+    const limit = 1000 * 60 * 60 * 24 * 28;
+    const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
+    const top12 = aktywne.slice(0, 12);
+    
+    k.style.display = 'grid';
+    k.style.gridTemplateColumns = 'repeat(4, 1fr)'; 
+    k.style.gap = '20px';
+    k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
+}
+
+// --- ULUBIONE ---
+window.toggleUlubione = async (e, id) => {
+    e.stopPropagation();
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się!");
+    const index = mojeUlubione.indexOf(id);
+    if (index > -1) {
+        await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
+        mojeUlubione.splice(index, 1);
+    } else {
+        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
+        mojeUlubione.push(id);
+    }
+    // Odśwież widok jeśli jesteśmy w sekcji ulubionych lub zaktualizuj ikony
+    const favBtn = document.getElementById(`fav-btn-${id}`);
+    if(favBtn) favBtn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
+    renderTop12(daneOgloszen);
+};
+
+window.pokazUlubione = () => {
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
+    pokazWynikiModal("Twoje Ulubione", ulubioneLista);
+};
+
+window.updateFormSubcats = (prefix) => {
+    const k = document.getElementById(`${prefix}kat`).value;
+    const s = document.getElementById(`${prefix}podkat`);
+    if(s) s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+};
+
+window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+
+async function init() {
+    await sprawdzUzytkownika();
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    renderTop12(daneOgloszen);
+}
+
+init();
 
 // --- EDYCJA OGŁOSZENIA ---
 window.edytujOgloszenie = (id) => {
@@ -274,7 +427,7 @@ window.zapiszEdycje = async (e, id) => {
     const nowePliki = document.getElementById('e-pliki').files;
     
     if ((edytowaneZdjecia.length + nowePliki.length) > 5) {
-        return alert("Łącznie możesz mieć maksymalnie 5 zdjęć. Usuń stare lub wybierz mniej nowych.");
+        return alert("Łącznie możesz mieć maksymalnie 5 zdjęć.");
     }
 
     const btn = document.getElementById('btn-e-save');
@@ -303,149 +456,3 @@ window.zapiszEdycje = async (e, id) => {
 
     location.reload();
 };
-
-// --- DODAWANIE NOWEGO OGŁOSZENIA ---
-window.wyslijOgloszenie = async (e) => {
-    e.preventDefault();
-    const pliki = document.getElementById('f-plik').files;
-    
-    if (pliki.length > 5) {
-        return alert("Możesz dodać maksymalnie 5 zdjęć.");
-    }
-
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true; btn.innerText = "Wysyłanie...";
-    const { data: { user } } = await baza.auth.getUser();
-    
-    let linki = [];
-    for (let f of pliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
-    }
-    
-    await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
-        cena: parseFloat(document.getElementById('f-cena').value),
-        lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
-        user_email: user.email 
-    }]);
-    location.reload();
-};
-
-// --- MOJE OGŁOSZENIA ---
-window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return;
-    const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28;
-    const moje = daneOgloszen.filter(o => o.user_email === user.email);
-    const aktywne = moje.filter(o => (teraz - new Date(o.created_at)) < limit);
-    const zakonczone = moje.filter(o => (teraz - new Date(o.created_at)) >= limit);
-    const wyswietlane = tab === 'aktywne' ? aktywne : zakonczone;
-
-    document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2>Moje ogłoszenia</h2>
-        <div style="display:flex; gap:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
-            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
-            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
-        </div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
-            ${wyswietlane.map(o => `
-                <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden; position:relative;">
-                    <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
-                    <div style="padding:8px;">
-                        <b style="font-size:13px;">${o.cena} zł</b>
-                        <div style="font-size:11px; height:28px; overflow:hidden; color:#555;">${o.tytul}</div>
-                        <div style="display:flex; gap:5px; margin-top:8px;">
-                            <button onclick="edytujOgloszenie(${o.id})" style="flex:1; padding:5px; background:#f0f0f0; border:none; border-radius:5px; cursor:pointer; font-size:12px;">✏️ Edytuj</button>
-                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; background:#ffebeb; color:red; border:none; border-radius:5px; cursor:pointer;">🗑️</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-window.usunOgloszenie = async (id) => {
-    if (confirm("Czy na pewno chcesz trwale usunąć to ogłoszenie?")) {
-        await baza.from('ogloszenia').delete().eq('id', id);
-        location.reload();
-    }
-};
-
-// --- POZOSTAŁE FUNKCJE ---
-window.toggleUlubione = async (e, id) => {
-    e.stopPropagation();
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-    const index = mojeUlubione.indexOf(id);
-    if (index > -1) {
-        await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
-        mojeUlubione.splice(index, 1);
-    } else {
-        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
-        mojeUlubione.push(id);
-    }
-    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
-};
-
-window.pokazUlubione = () => {
-    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
-    document.getElementById('grid-title').innerText = "Twoje Ulubione";
-    render(ulubioneLista);
-};
-
-window.toggleSubcats = (kat) => {
-    const p = document.getElementById('subcat-panel');
-    p.style.display = 'flex';
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-    render(daneOgloszen.filter(o => o.kategoria === kat));
-};
-
-window.filtrujPoPodkat = (kat, podkat) => {
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat));
-};
-
-window.updateFormSubcats = (formPrefix = 'f-') => {
-    const k = document.getElementById(`${formPrefix}kat`).value;
-    const podkatSelect = document.getElementById(`${formPrefix}podkat`);
-    if(podkatSelect) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-    }
-};
-
-window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-
-function render(lista) {
-    const k = document.getElementById('lista');
-    if (!k) return;
-    k.innerHTML = lista.map(o => `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="position:relative;">
-            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-                ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
-            </div>
-            <img src="${o.zdjecia[0]}" style="width:100%; height:180px; object-fit:cover;">
-            <div style="padding:15px;">
-                <b style="font-size:16px;">${o.cena} zł</b>
-                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden; color:#333;">${o.tytul}</div>
-                <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
-            </div>
-        </div>`).join('');
-}
-
-async function init() {
-    await sprawdzUzytkownika();
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    daneOgloszen = data || [];
-    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
-}
-
-init();
