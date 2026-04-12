@@ -7,6 +7,7 @@ let mojeUlubione = [];
 let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
 
+// --- DANE KATEGORII ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody', 'Motocykle', 'Części'],
     'Dom': ['Meble', 'Ogrzewanie', 'Dekoracje'],
@@ -22,11 +23,67 @@ const SUB_DATA = {
     'Inne': ['Różne']
 };
 
-// --- INICJALIZACJA ---
-async function init() {
-    await sprawdzUzytkownika();
-    await pobierz();
-}
+// --- OBSŁUGA FORMULARZA DODAWANIA ---
+
+window.updateFormSubcats = () => {
+    const kategoriaGlowna = document.getElementById('f-kat').value;
+    const polePodkategorii = document.getElementById('f-podkat');
+    if (!polePodkategorii) return;
+
+    const listaPodkategorii = SUB_DATA[kategoriaGlowna] || [];
+    polePodkategorii.innerHTML = '<option value="">Wybierz podkategorię</option>' + 
+        listaPodkategorii.map(p => `<option value="${p}">${p}</option>`).join('');
+};
+
+window.wyslijOgloszenie = async (e) => {
+    e.preventDefault(); // Zatrzymuje przeładowanie strony
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerText = "Wysyłanie...";
+
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby dodać ogłoszenie!");
+
+    const tytul = document.getElementById('f-tytul').value;
+    const kategoria = document.getElementById('f-kat').value;
+    const podkategoria = document.getElementById('f-podkat').value;
+    const cena = document.getElementById('f-cena').value;
+    const lokalizacja = document.getElementById('f-lok').value;
+    const opis = document.getElementById('f-opis').value;
+    const telefon = document.getElementById('f-tel').value;
+    const pliki = document.getElementById('f-plik').files;
+
+    let wgraneZdjecia = [];
+
+    // Przesyłanie zdjęć do Storage
+    for (let f of pliki) {
+        const nazwa = `${Date.now()}_${f.name}`;
+        const { data, error } = await baza.storage.from('zdjecia').upload(nazwa, f);
+        if (data) {
+            const { data: urlData } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+            wgraneZdjecia.push(urlData.publicUrl);
+        }
+    }
+
+    // Jeśli nie udało się wgrać zdjęć, użyj placeholderu
+    if (wgraneZdjecia.length === 0) wgraneZdjecia.push('https://via.placeholder.com/600');
+
+    // Zapis do tabeli 'ogloszenia'
+    const { error } = await baza.from('ogloszenia').insert([{
+        tytul, kategoria, podkategoria, cena: parseFloat(cena),
+        lokalizacja, opis, telefon, zdjecia: wgraneZdjecia,
+        user_email: user.email
+    }]);
+
+    if (error) {
+        alert("Błąd: " + error.message);
+        btn.disabled = false;
+        btn.innerText = "Opublikuj ogłoszenie";
+    } else {
+        alert("Ogłoszenie dodane pomyślnie!");
+        location.reload();
+    }
+};
 
 // --- LOGOWANIE I REJESTRACJA ---
 window.loguj = async () => {
