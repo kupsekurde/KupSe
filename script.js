@@ -219,7 +219,7 @@ window.navFullFoto = (dir) => {
 
 // --- FILTROWANIE SPECJALISTYCZNE ---
 window.otworzFiltry = (kat, podkat) => {
-    if (kat !== 'Motoryzacja' || podkat !== 'Samochody osobowe') {
+    if (kat !== 'Motoryzacja' && kat !== 'Elektronika') {
         filtrujPoPodkat(kat, podkat);
         return;
     }
@@ -228,52 +228,61 @@ window.otworzFiltry = (kat, podkat) => {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h3>Szukaj: ${podkat}</h3>
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-            <input type="text" id="f-marka" placeholder="Marka (np. BMW)">
-            <input type="text" id="f-model" placeholder="Model (np. Seria 3)">
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="f-rok-min" placeholder="Rok od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="f-rok-max" placeholder="Rok do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-            </div>
+            <input type="text" id="f-marka" placeholder="Marka">
+            <input type="text" id="f-model" placeholder="Model">
             <div style="display:flex; gap:10px;">
                 <input type="number" id="f-cena-min" placeholder="Cena od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 <input type="number" id="f-cena-max" placeholder="Cena do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
-            <select id="f-paliwo" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <option value="">Wszystkie paliwa</option>
-                <option value="Benzyna">Benzyna</option>
-                <option value="Diesel">Diesel</option>
-                <option value="LPG">LPG</option>
-                <option value="Hybryda">Hybryda</option>
-                <option value="Elektryczny">Elektryczny</option>
-            </select>
-            <button onclick="zastosujFiltryAut('${kat}', '${podkat}')" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">POKAŻ OGŁOSZENIA</button>
+            ${kat === 'Motoryzacja' ? `
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="f-rok-min" placeholder="Rok od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="number" id="f-rok-max" placeholder="Rok do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                </div>
+                <select id="f-paliwo" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <option value="">Wszystkie paliwa</option>
+                    <option value="Benzyna">Benzyna</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="LPG">LPG</option>
+                    <option value="Hybryda">Hybryda</option>
+                    <option value="Elektryczny">Elektryczny</option>
+                </select>
+            ` : ''}
+            <button onclick="zastosujFiltrySpec('${kat}', '${podkat}')" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">POKAŻ OGŁOSZENIA</button>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.zastosujFiltryAut = (kat, podkat) => {
+window.zastosujFiltrySpec = (kat, podkat) => {
     const marka = document.getElementById('f-marka').value.toLowerCase().trim();
     const model = document.getElementById('f-model').value.toLowerCase().trim();
-    const rMin = parseInt(document.getElementById('f-rok-min').value) || 0;
-    const rMax = parseInt(document.getElementById('f-rok-max').value) || 9999;
     const cMin = parseFloat(document.getElementById('f-cena-min').value) || 0;
     const cMax = parseFloat(document.getElementById('f-cena-max').value) || 99999999;
-    const paliwo = document.getElementById('f-paliwo').value.toLowerCase();
+    
+    let rMin = 0, rMax = 9999, paliwo = "";
+    if(kat === 'Motoryzacja') {
+        rMin = parseInt(document.getElementById('f-rok-min').value) || 0;
+        rMax = parseInt(document.getElementById('f-rok-max').value) || 9999;
+        paliwo = document.getElementById('f-paliwo').value.toLowerCase();
+    }
 
     const wyniki = daneOgloszen.filter(o => {
         if (o.kategoria !== kat || o.podkategoria !== podkat) return false;
         const tresc = (o.tytul + " " + o.opis).toLowerCase();
         
-        const rokMatch = o.opis.match(/Rok: (\d{4})/);
-        const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
-
         const mOk = marka === "" || tresc.includes(marka);
         const modOk = model === "" || tresc.includes(model);
         const cOk = o.cena >= cMin && o.cena <= cMax;
-        const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
-        const pOk = paliwo === "" || tresc.includes(paliwo);
+        
+        if(kat === 'Motoryzacja') {
+            const rokMatch = o.opis.match(/Rok: (\d{4})/);
+            const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+            const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+            const pOk = paliwo === "" || tresc.includes(paliwo);
+            return mOk && modOk && cOk && rOk && pOk;
+        }
 
-        return mOk && modOk && cOk && rOk && pOk;
+        return mOk && modOk && cOk;
     });
 
     pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
@@ -294,22 +303,35 @@ window.updateFormSubcats = (prefix) => {
         s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
-    if (k === 'Motoryzacja' && extra) {
-        extra.innerHTML = `
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
-                <input type="text" id="f-marka-ins" placeholder="Marka (np. Audi)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                <input type="text" id="f-model-ins" placeholder="Model (np. A6)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                <input type="number" id="f-rok-ins" placeholder="Rok produkcji" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                <select id="f-paliwo-ins" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                    <option value="Benzyna">Benzyna</option>
-                    <option value="Diesel">Diesel</option>
-                    <option value="LPG">LPG</option>
-                    <option value="Hybryda">Hybryda</option>
-                    <option value="Elektryczny">Elektryczny</option>
-                </select>
-            </div>`;
-    } else if (extra) {
-        extra.innerHTML = '';
+    if (extra) {
+        if (k === 'Motoryzacja') {
+            extra.innerHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
+                    <input type="text" id="f-marka-ins" placeholder="Marka (np. Audi)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-model-ins" placeholder="Model (np. A6)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="number" id="f-rok-ins" placeholder="Rok produkcji" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <select id="f-paliwo-ins" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="Benzyna">Benzyna</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="LPG">LPG</option>
+                        <option value="Hybryda">Hybryda</option>
+                        <option value="Elektryczny">Elektryczny</option>
+                    </select>
+                </div>`;
+        } else if (k === 'Elektronika') {
+            extra.innerHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
+                    <input type="text" id="f-marka-ins" placeholder="Producent (np. Apple)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-model-ins" placeholder="Model (np. iPhone 15)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <select id="f-stan-ins" style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="Nowy">Nowy</option>
+                        <option value="Używany">Używany</option>
+                        <option value="Uszkodzony">Uszkodzony</option>
+                    </select>
+                </div>`;
+        } else {
+            extra.innerHTML = '';
+        }
     }
 };
 
@@ -334,17 +356,23 @@ window.wyslijOgloszenie = async (e) => {
     }
 
     let dodatek = "";
-    if (document.getElementById('f-kat').value === 'Motoryzacja') {
+    const kat = document.getElementById('f-kat').value;
+    if (kat === 'Motoryzacja') {
         const marka = document.getElementById('f-marka-ins').value;
         const model = document.getElementById('f-model-ins').value;
         const rok = document.getElementById('f-rok-ins').value;
         const paliwo = document.getElementById('f-paliwo-ins').value;
         dodatek = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
+    } else if (kat === 'Elektronika') {
+        const marka = document.getElementById('f-marka-ins').value;
+        const model = document.getElementById('f-model-ins').value;
+        const stan = document.getElementById('f-stan-ins').value;
+        dodatek = `\n\n--- DANE ---\nProducent: ${marka}\nModel: ${model}\nStan: ${stan}`;
     }
 
     const { error } = await baza.from('ogloszenia').insert([{
         tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
+        kategoria: kat,
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
@@ -480,7 +508,6 @@ window.toggleUlubione = async (e, id) => {
     const favBtn = document.getElementById(`fav-btn-${id}`);
     if(favBtn) favBtn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
     
-    // Odświeżamy widok jeśli jesteśmy w "Ulubionych"
     if(document.getElementById('view-content').innerText.includes("Twoje Ulubione")) {
         pokazUlubione();
     }
@@ -503,7 +530,7 @@ async function init() {
 
 init();
 
-// --- EDYCJA OGŁOSZENIA ---
+// --- EDYTUJ OGŁOSZENIE ---
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
