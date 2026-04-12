@@ -32,8 +32,35 @@ async function init() {
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-    const { error } = await baza.auth.signInWithPassword({ email, password });
-    if (error) alert("Błąd: " + error.message); else location.reload();
+    
+    if(!email || !password) return alert("Wpisz dane!");
+
+    const { data, error } = await baza.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+        alert("Błąd logowania: " + error.message);
+    } else {
+        location.reload(); // Odśwież po sukcesie
+    }
+};
+
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+
+    if(!email || !password) return alert("Podaj email i hasło!");
+    if(password.length < 6) return alert("Hasło musi mieć min. 6 znaków!");
+
+    const { data, error } = await baza.auth.signUp({ email, password });
+    
+    if (error) {
+        alert("Błąd rejestracji: " + error.message);
+    } else {
+        alert("Konto utworzone! Teraz możesz się zalogować.");
+        // Przełącz widok na logowanie
+        document.getElementById('register-view').classList.add('hidden');
+        document.getElementById('login-view').classList.remove('hidden');
+    }
 };
 
 async function sprawdzUzytkownika() {
