@@ -41,7 +41,7 @@ window.zarejestruj = async () => {
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// --- MENU I PROFIL ---
+// --- INTERFEJS UŻYTKOWNIKA I POWIADOMIENIA ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
@@ -49,20 +49,32 @@ async function sprawdzUzytkownika() {
     if (user && nav) {
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
         
-        const { data: ulubioneData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = ulubioneData ? ulubioneData.map(x => x.ogloszenie_id) : [];
+        // Pobieranie liczby wiadomości do mnie
+        const { count: msgCount } = await baza
+            .from('wiadomosci')
+            .select('*', { count: 'exact', head: true })
+            .eq('odbiorca', user.email);
+
+        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
         nav.innerHTML = `
             <div style="position:relative; display:flex; gap:10px; align-items:center;">
-                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">Moje Konto ▼</button>
+                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+                </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                        <small style="color:gray;">Zalogowany:</small><br>
+                        <small style="color:gray;">Zalogowany jako:</small><br>
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
-                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer; border-radius:8px;">📝 Moje ogłoszenia</div>
-                    <div onclick="alert('Wiadomości wkrótce')" style="padding:10px; cursor:pointer; border-radius:8px;">✉️ Wiadomości</div>
-                    <div onclick="alert('Ulubione: ' + mojeUlubione.length)" style="padding:10px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}
+                    </div>
+                    <div onclick="alert('Ulubione: ' + mojeUlubione.length)" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
@@ -77,29 +89,57 @@ window.toggleUserMenu = (e) => {
     if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
 };
 
-// --- KATEGORIE ---
-window.toggleSubcats = (kat) => {
-    const panel = document.getElementById('subcat-panel');
-    if (!panel) return;
-    panel.style.display = 'flex';
-    panel.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-    render(daneOgloszen.filter(o => o.kategoria === kat), false);
+// --- SYSTEM WIADOMOŚCI ---
+window.pokazSkrzynke = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+
+    const { data: msg, error } = await baza
+        .from('wiadomosci')
+        .select('*')
+        .eq('odbiorca', user.email)
+        .order('created_at', { ascending: false });
+
+    const content = document.getElementById('view-content');
+    
+    let htmlMsg = msg && msg.length > 0 
+        ? msg.map(m => `
+            <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
+                <div style="font-size:11px; color:gray; margin-bottom:5px;">Od: <b>${m.nadawca}</b> • ${new Date(m.created_at).toLocaleString('pl-PL')}</div>
+                <div style="font-size:14px; color:#333; line-height:1.4;">${m.tresc}</div>
+                <button onclick="wyslijWiadomosc('${m.nadawca}', 'Odp: wiadomość')" style="margin-top:10px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; font-size:13px;">Odpowiedz ↩</button>
+            </div>
+        `).join('')
+        : '<p style="text-align:center; color:gray; padding:20px;">Brak otrzymanych wiadomości.</p>';
+
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2 style="margin-bottom:20px;">Skrzynka odbiorcza</h2>
+        <div style="max-height:65vh; overflow-y:auto; padding-right:5px;">
+            ${htmlMsg}
+        </div>`;
+        
+    document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.filtrujPoPodkat = (kat, podkat) => {
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat), false);
+window.wyslijWiadomosc = async (odbiorca, tytul) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby wysłać wiadomość!");
+    if (user.email === odbiorca) return alert("Nie możesz pisać do samego siebie!");
+
+    const tresc = prompt(`Wiadomość do: ${odbiorca}\nTemat: ${tytul}`, "Dzień dobry, czy oferta jest aktualna?");
+    if (tresc) {
+        const { error } = await baza.from('wiadomosci').insert([{ 
+            nadawca: user.email, 
+            odbiorca: odbiorca, 
+            tresc: tresc 
+        }]);
+        if (error) alert("Błąd wysyłania: " + error.message); 
+        else alert("Wiadomość została wysłana!");
+    }
 };
 
-window.updateFormSubcats = () => {
-    const kategoriaGlowna = document.getElementById('f-kat').value;
-    const polePodkategorii = document.getElementById('f-podkat');
-    if (!polePodkategorii) return;
-    const listaPodkategorii = SUB_DATA[kategoriaGlowna] || [];
-    polePodkategorii.innerHTML = '<option value="">Wybierz podkategorię</option>' + 
-        listaPodkategorii.map(p => `<option value="${p}">${p}</option>`).join('');
-};
-
-// --- SZCZEGÓŁY OGŁOSZENIA ---
+// --- SZCZEGÓŁY OGŁOSZENIA I GALERIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -112,30 +152,29 @@ window.pokazSzczegoly = (id) => {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
             <div style="flex:1.5; min-width:300px;">
-                <div style="position:relative; background:#000; border-radius:15px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; height:400px; object-fit:contain; cursor:zoom-in;" onclick="window.open(this.src)">
+                <div style="position:relative; background:#000; border-radius:15px; overflow:hidden; height:400px; display:flex; align-items:center; justify-content:center;">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in;" onclick="window.open(this.src)">
                     ${aktualneFotki.length > 1 ? `
                         <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">◀</button>
                         <button onclick="zmienFoto(1)" style="position:absolute; right:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▶</button>
                     ` : ''}
                 </div>
-                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;">
                     ${aktualneFotki.map((img, i) => `
-                        <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'orange' : '#ddd'}">
+                        <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'var(--primary)' : '#ddd'}">
                     `).join('')}
                 </div>
             </div>
             <div style="flex:1; min-width:250px;">
-                <h2 style="margin-top:0;">${o.tytul}</h2>
-                <h1 style="color:var(--primary);">${o.cena} zł</h1>
-                <p>📍 ${o.lokalizacja}</p>
-                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-                <div style="margin:15px 0;">📞 <b>${o.telefon || 'Brak numeru'}</b></div>
-                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                <div style="margin-top:20px;">
-                    <h3>Opis</h3>
-                    <p style="white-space:pre-line; color:#555;">${o.opis}</p>
+                <h2 style="margin:0 0 10px 0;">${o.tytul}</h2>
+                <h1 style="color:var(--primary); margin-bottom:15px;">${o.cena} zł</h1>
+                <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:15px;">
+                    <p>📍 Lokalizacja: <b>${o.lokalizacja}</b></p>
+                    <p>📞 Telefon: <b>${o.telefon || 'Nie podano'}</b></p>
                 </div>
+                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul.replace(/'/g, "\\'")}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:16px; font-weight:bold; cursor:pointer; margin-bottom:20px;">Wyślij wiadomość</button>
+                <h3 style="border-bottom:1px solid #eee; padding-bottom:10px;">Opis</h3>
+                <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis}</p>
             </div>
         </div>
     `;
@@ -149,30 +188,31 @@ window.zmienFoto = (dir) => {
 
 window.ustawFoto = (idx) => {
     aktualneZdjecieIndex = idx;
-    const mainImg = document.getElementById('mainFoto');
-    if (mainImg) mainImg.src = aktualneFotki[idx];
-    document.querySelectorAll('.mini-foto').forEach((img, i) => {
-        img.style.borderColor = i === idx ? 'orange' : '#ddd';
-    });
+    const img = document.getElementById('mainFoto');
+    if (img) img.src = aktualneFotki[idx];
+    document.querySelectorAll('.mini-foto').forEach((m, i) => m.style.borderColor = i === idx ? 'var(--primary)' : '#ddd');
 };
 
-// --- SYSTEM WIADOMOŚCI ---
-window.wyslijWiadomosc = async (odbiorca, tytul) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się, aby wysłać wiadomość!");
-    
-    const tresc = prompt(`Wiadomość w sprawie: ${tytul}`, "Dzień dobry, czy ogłoszenie jest aktualne?");
-    if (tresc) {
-        const { error } = await baza.from('wiadomosci').insert([{ 
-            nadawca: user.email, 
-            odbiorca: odbiorca, 
-            tresc: tresc 
-        }]);
-        if (error) alert("Błąd wysyłania: " + error.message); else alert("Wiadomość została wysłana!");
-    }
+// --- FILTROWANIE I KATEGORIE ---
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    if (!p) return;
+    p.style.display = 'flex';
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    render(daneOgloszen.filter(o => o.kategoria === kat), false);
 };
 
-// --- DODAWANIE OGŁOSZEŃ ---
+window.filtrujPoPodkat = (kat, podkat) => {
+    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat), false);
+};
+
+window.updateFormSubcats = () => {
+    const k = document.getElementById('f-kat').value;
+    const s = document.getElementById('f-podkat');
+    if(s) s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+};
+
+// --- ZARZĄDZANIE OGŁOSZENIAMI ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -180,20 +220,14 @@ window.wyslijOgloszenie = async (e) => {
     btn.innerText = "Wysyłanie...";
 
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-
     const pliki = document.getElementById('f-plik').files;
-    let wgraneZdjecia = [];
+    let linki = [];
 
     for (let f of pliki) {
-        const nazwa = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(nazwa, f);
-        if (data) {
-            const { data: urlData } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
-            wgraneZdjecia.push(urlData.publicUrl);
-        }
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
-    if (wgraneZdjecia.length === 0) wgraneZdjecia.push('https://via.placeholder.com/600');
 
     const { error } = await baza.from('ogloszenia').insert([{
         tytul: document.getElementById('f-tytul').value,
@@ -203,48 +237,14 @@ window.wyslijOgloszenie = async (e) => {
         lokalizacja: document.getElementById('f-lok').value,
         opis: document.getElementById('f-opis').value,
         telefon: document.getElementById('f-tel').value,
-        zdjecia: wgraneZdjecia,
+        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
         user_email: user.email 
     }]);
 
-    if (error) { 
-        alert("Błąd: " + error.message); 
-        btn.disabled = false; 
-    } else { 
-        alert("Dodano ogłoszenie!"); 
-        location.reload(); 
-    }
+    if (error) { alert("Błąd: " + error.message); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; } 
+    else location.reload();
 };
 
-// --- RENDEROWANIE GŁÓWNE ---
-async function pobierz() {
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    daneOgloszen = data || [];
-    render(daneOgloszen, true);
-}
-
-function render(lista, czyStronaGlowna = false) {
-    const kontener = document.getElementById('lista');
-    if (!kontener) return;
-    const tytulSekcji = document.getElementById('grid-title');
-    if (tytulSekcji) tytulSekcji.innerText = czyStronaGlowna ? "Najnowsze ogłoszenia" : "Wyniki wyszukiwania";
-
-    const dane = czyStronaGlowna ? lista.slice(0, 12) : lista;
-    kontener.innerHTML = dane.map(o => {
-        const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : 'https://via.placeholder.com/300';
-        return `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
-            <div style="padding:15px;">
-                <b style="font-size:18px;">${o.cena} zł</b>
-                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-// --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
@@ -260,8 +260,8 @@ window.pokazMojeOgloszenia = async () => {
                     <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:110px; object-fit:cover;">
                     <div style="padding:10px;">
                         <b>${o.cena} zł</b>
-                        <div style="font-size:11px;">${o.tytul}</div>
-                        <button onclick="usunOgloszenie(${o.id})" style="width:100%; margin-top:10px; color:red; cursor:pointer;">Usuń</button>
+                        <div style="font-size:11px; height:30px; overflow:hidden;">${o.tytul}</div>
+                        <button onclick="usunOgloszenie(${o.id})" style="width:100%; margin-top:10px; color:red; cursor:pointer; background:none; border:1px solid red; border-radius:5px; padding:5px;">Usuń</button>
                     </div>
                 </div>
             `).join('')}
@@ -270,18 +270,38 @@ window.pokazMojeOgloszenia = async () => {
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Na pewno usunąć?")) {
+    if (confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) {
         await baza.from('ogloszenia').delete().eq('id', id);
         location.reload();
     }
 };
 
-window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
+// --- RENDEROWANIE I INICJALIZACJA ---
+function render(lista, glowna = false) {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    const d = glowna ? lista.slice(0, 12) : lista;
+    k.innerHTML = d.map(o => `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
+            <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:180px; object-fit:cover;">
+            <div style="padding:15px;">
+                <b>${o.cena} zł</b>
+                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden;">${o.tytul}</div>
+                <div style="font-size:12px; color:gray; margin-top:5px;">📍 ${o.lokalizacja}</div>
+            </div>
+        </div>`).join('');
+}
+
+window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
 async function init() {
     await sprawdzUzytkownika();
-    await pobierz();
+    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    if (error) console.error("Błąd pobierania:", error.message);
+    daneOgloszen = data || [];
+    render(daneOgloszen, true);
 }
 
+// Start aplikacji
 init();
