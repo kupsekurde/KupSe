@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KupSe - Twój Portal</title>
+    <title>KupSe - Twój Portal Ogłoszeniowy</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #23e5db; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
         .navbar { background: var(--white); padding: 5px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
         .main-logo { height: 60px; cursor: pointer; }
         .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 2px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
@@ -24,21 +24,27 @@
         .subcat-panel { display: none; background: #f8f9fa; padding: 15px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
         .sub-pill { padding: 8px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; }
         .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
         .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; }
+        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         .ad-img { width: 100%; height: 200px; object-fit: cover; }
         .ad-body { padding: 15px; }
-        .ad-price { font-size: 22px; font-weight: 800; }
+        .ad-price { font-size: 22px; font-weight: 800; color: var(--text); }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center; }
         .modal-box { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 30px; padding: 30px; overflow-y: auto; position: relative; }
         .close-btn { position: absolute; top: 20px; right: 25px; font-size: 40px; cursor: pointer; z-index: 2100; color: #111; line-height: 1; }
 
-        .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 20px; z-index: 1001; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 55px; background: white; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 15px; padding: 10px; z-index: 1001; }
+        .dropdown-content button { width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 10px; font-weight: 600; }
+        .dropdown-content button:hover { background: #f3f4f6; }
         .show { display: block; }
         .btn-account { background: #f3f4f6; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; }
         .hidden { display: none; }
+
+        footer { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; background: white; border-top: 1px solid #eee; margin-top: 40px; }
+        .legal-text h4 { margin-top: 20px; color: #111; }
     </style>
 </head>
 <body>
@@ -69,7 +75,6 @@
         <div class="cat-item" onclick="toggleSubcats('Sport')"><div class="cat-icon"><img src="cat-sport.png"></div><span>Sport</span></div>
         <div class="cat-item" onclick="toggleSubcats('Nauka')"><div class="cat-icon"><img src="cat-nauka.png"></div><span>Nauka</span></div>
         <div class="cat-item" onclick="toggleSubcats('Usługi')"><div class="cat-icon"><img src="cat-uslugi.png"></div><span>Usługi</span></div>
-        <div class="cat-item" onclick="toggleSubcats('Praca')"><div class="cat-icon"><img src="cat-praca.png"></div><span>Praca</span></div>
         <div class="cat-item" onclick="toggleSubcats('Inne')"><div class="cat-icon"><img src="cat-inne.png"></div><span>Inne</span></div>
     </div>
     <div id="subcat-panel" class="subcat-panel"></div>
@@ -94,9 +99,14 @@
         </div>
     </div>
 
-    <h2 style="margin-top:40px">Najnowsze ogłoszenia</h2>
+    <h2 style="margin-top:40px">12 Najnowszych ogłoszeń</h2>
     <div id="lista" class="ads-grid"></div>
 </div>
+
+<footer>
+    <p>&copy; 2026 KupSe - Portal Ogłoszeniowy. Wszystkie prawa zastrzeżone.</p>
+    <p><a href="javascript:void(0)" onclick="document.getElementById('modal-legal').style.display='flex'" style="color:var(--primary); text-decoration:none; font-weight:bold;">Regulamin i Polityka Prywatności</a></p>
+</footer>
 
 <div id="modal-form" class="modal">
     <div class="modal-box">
@@ -111,6 +121,12 @@
                 <option value="Elektronika">Elektronika</option>
                 <option value="Ogród">Ogród</option>
                 <option value="Moda">Moda</option>
+                <option value="Rolnictwo">Rolnictwo</option>
+                <option value="Zwierzęta">Zwierzęta</option>
+                <option value="Dzieci">Dzieci</option>
+                <option value="Sport">Sport</option>
+                <option value="Nauka">Nauka</option>
+                <option value="Usługi">Usługi</option>
                 <option value="Inne">Inne</option>
             </select>
             <select id="f-podkat" required style="padding:12px; border-radius:8px; border:1px solid #ddd"><option value="">Podkategoria</option></select>
@@ -121,6 +137,23 @@
             <input type="file" id="f-plik" accept="image/*" multiple required>
             <button type="submit" id="btn-save" style="background:var(--primary); padding:15px; border:none; border-radius:10px; font-weight:800; cursor:pointer">Dodaj ogłoszenie</button>
         </form>
+    </div>
+</div>
+
+<div id="modal-legal" class="modal">
+    <div class="modal-box legal-text">
+        <span class="close-btn" onclick="document.getElementById('modal-legal').style.display='none'">&times;</span>
+        <h2 style="color:var(--primary)">Regulamin i Polityka Prywatności</h2>
+        <hr>
+        <h4>1. Postanowienia Ogólne</h4>
+        <p>Portal KupSe jest platformą udostępniającą miejsce na publikację ogłoszeń. Administrator nie bierze udziału w transakcjach.</p>
+        <h4>2. Wyłączenie Odpowiedzialności</h4>
+        <p>Serwis nie ponosi odpowiedzialności za treść ogłoszeń, rzetelność sprzedających oraz stan techniczny oferowanych przedmiotów. Każda transakcja odbywa się na ryzyko Użytkownika.</p>
+        <h4>3. Ochrona Danych (RODO)</h4>
+        <p>Twoje dane (email, nick) są przetwarzane wyłącznie w celu obsługi konta i ogłoszeń. Korzystamy z bezpiecznych serwerów Supabase.</p>
+        <h4>4. Zasady Publikacji</h4>
+        <p>Zabrania się dodawania ogłoszeń nielegalnych, obraźliwych lub wprowadzających w błąd. Administrator zastrzega sobie prawo do usunięcia ogłoszenia bez podania przyczyny.</p>
+        <button onclick="document.getElementById('modal-legal').style.display='none'" style="width:100%; background:#111; color:white; padding:15px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:20px">Zrozumiałem i akceptuję</button>
     </div>
 </div>
 
