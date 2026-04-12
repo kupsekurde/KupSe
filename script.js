@@ -15,10 +15,11 @@ const MAPA_KATEGORII = {
     "Sport": ["Rowery", "Siłownia"],
     "Nauka": ["Książki", "Instrumenty"],
     "Usługi": ["Remonty", "Transport"],
+    "Praca": ["Stała", "Dodatkowa"],
     "Inne": ["Różne"]
 };
 
-// --- MAGIA KOMPRESJI (Zmniejsza MB przed wysyłką) ---
+// --- KOMPRESYJA ---
 async function zmniejszZdjecie(plik) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -44,54 +45,116 @@ async function init() { await checkUser(); await pobierz(); }
 
 async function pobierz() {
     const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false }).limit(12);
+    if(error) console.error(error);
     daneOgloszen = data || [];
     render(daneOgloszen);
 }
 
-async function checkUser() {
-    const { data: { user } } = await baza.auth.getUser();
-    const nav = document.getElementById('user-nav');
-    if (user) {
-        const { count } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('receiver_email', user.email).eq('przeczytane', false);
-        const nick = user.user_metadata.display_name || user.email;
-        nav.innerHTML = `
-            <button onclick="otworzModal()" class="btn-account" style="background:var(--primary); color:white; margin-right:10px">+ Dodaj</button>
-            <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">Konto ${count > 0 ? '🔴' : ''} ▾</button>
-            <div id="drop" class="dropdown-content">
-                <div style="font-weight:800; padding:10px">${nick}</div>
-                <hr style="border:0; border-top:1px solid #eee">
-                <button onclick="otworzUlubione()">Ulubione ❤️</button>
-                <button onclick="wyloguj()" style="color:red; font-weight:800">Wyloguj</button>
-            </div>`;
-        document.getElementById('auth-box').style.display = 'none';
-    }
-}
+// --- WYSZUKIWARKA ---
+window.filtruj = () => {
+    const txt = document.getElementById('find-text').value.toLowerCase();
+    const wynik = daneOgloszen.filter(o => o.tytul.toLowerCase().includes(txt) || o.opis.toLowerCase().includes(txt));
+    render(wynik);
+};
 
+// --- RENDER ---
 function render(lista) {
-    document.getElementById('lista').innerHTML = lista.map(o => {
-        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0].trim()) : 'https://via.placeholder.com/300';
+    const div = document.getElementById('lista');
+    div.style.display = "grid";
+    div.style.gridTemplateColumns = "repeat(4, 1fr)"; // 4 kolumny
+    div.style.gap = "20px";
+    
+    div.innerHTML = lista.map(o => {
+        let foto = 'https://via.placeholder.com/300';
+        if (o.zdjecia) {
+            const arr = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
+            foto = arr[0].trim();
+        }
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img class="ad-img" src="${foto}">
             <div class="ad-body">
                 <div class="ad-price">${o.cena} zł</div>
-                <div style="font-weight:600">${o.tytul}</div>
+                <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${o.tytul}</div>
                 <div style="font-size:12px; color:gray">📍 ${o.lokalizacja}</div>
             </div>
         </div>`;
     }).join('');
 }
 
-// --- DODAWANIE Z KOMPRESJĄ ---
+// --- SZCZEGÓŁY (Miniaturki i Zoom) ---
+window.pokazSzczegoly = async (id) => {
+    const o = daneOgloszen.find(i => i.id === id);
+    const { data: { user } } = await baza.auth.getUser();
+    let zdjecia = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
+    
+    const miniaturyHTML = zdjecia.map(u => `
+        <img src="${u.trim()}" style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:1px solid #ddd" 
+        onclick="event.stopPropagation(); document.getElementById('main-zoom').src='${u.trim()}'">
+    `).join('');
+
+    let serce = "gray";
+    if(user) {
+        const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
+        if(data?.length > 0) serce = "red";
+    }
+
+    document.getElementById('view-content').innerHTML = `
+        <span class="close-btn" onclick="zamknijModal()">&times;</span>
+        <div style="display:grid; grid-template-columns: 1fr 350px; gap:25px;">
+            <div>
+                <img id="main-zoom" src="${zdjecia[0].trim()}" style="width:100%; border-radius:20px; cursor:zoom-in" onclick="window.open(this.src)">
+                <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto; padding-bottom:5px">${miniaturyHTML}</div>
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between">
+                    <h1 style="margin:0">${o.tytul}</h1>
+                    <div onclick="event.stopPropagation(); toggleUlubione(${o.id})" style="font-size:35px; cursor:pointer; color:${serce}">❤</div>
+                </div>
+                <h2 style="color:var(--primary); font-size:30px; margin:15px 0">${o.cena} zł</h2>
+                <div style="background:#f3f4f7; padding:20px; border-radius:15px; margin-bottom:20px">${o.opis}</div>
+                <p>📍 Lokalizacja: <b>${o.lokalizacja}</b></p>
+                <p>📞 Telefon: <b>${o.telefon}</b></p>
+                <button onclick="alert('Zadzwoń: ${o.telefon}')" style="width:100%; padding:15px; background:black; color:white; border-radius:12px; border:none; font-weight:800; cursor:pointer">ZADZWOŃ TERAZ</button>
+            </div>
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+// --- KONTO I DODAWANIE ---
+async function checkUser() {
+    const { data: { user } } = await baza.auth.getUser();
+    const nav = document.getElementById('user-nav');
+    if (user) {
+        const nick = user.user_metadata.display_name || user.email;
+        nav.innerHTML = `
+            <button onclick="otworzModal()" class="btn-account" style="background:var(--primary); color:white; margin-right:10px">+ Dodaj</button>
+            <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">Konto ▾</button>
+            <div id="drop" class="dropdown-content">
+                <div style="font-weight:800; padding:10px">${nick}</div>
+                <button onclick="otworzUlubione()">Ulubione ❤️</button>
+                <button onclick="wyloguj()" style="color:red">Wyloguj</button>
+            </div>`;
+        document.getElementById('auth-box').style.display = 'none';
+    }
+}
+
+window.updateFormSubcats = () => {
+    const k = document.getElementById('f-kat').value;
+    const p = document.getElementById('f-podkat');
+    p.innerHTML = '<option value="">Podkategoria</option>';
+    if(MAPA_KATEGORII[k]) MAPA_KATEGORII[k].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
+};
+
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const { data: { user } } = await baza.auth.getUser();
-    const btn = document.getElementById('btn-save'); btn.innerText = "Zmniejszanie zdjęć..."; btn.disabled = true;
+    const btn = document.getElementById('btn-save'); btn.innerText = "Przetwarzanie..."; btn.disabled = true;
     try {
         const pliki = document.getElementById('f-plik').files;
         const urls = [];
         for (let i = 0; i < pliki.length; i++) {
-            const blob = await zmniejszZdjecie(pliki[i]); // TU KOMPRESUJE
+            const blob = await zmniejszZdjecie(pliki[i]);
             const path = `img_${Date.now()}_${i}.jpg`;
             await baza.storage.from('zdjecia').upload(path, blob);
             urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
@@ -107,31 +170,15 @@ window.wyslijOgloszenie = async (e) => {
             podkategoria: document.getElementById('f-podkat').value
         }]);
         location.reload();
-    } catch (err) { alert("Błąd: " + err.message); btn.disabled = false; btn.innerText = "Dodaj ogłoszenie"; }
+    } catch (err) { alert(err.message); btn.disabled = false; }
 };
 
-window.pokazSzczegoly = async (id) => {
-    const o = daneOgloszen.find(i => i.id === id);
-    const { data: { user } } = await baza.auth.getUser();
-    let zdjecia = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
-    let serce = "gray";
-    if(user) {
-        const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-        if(data?.length > 0) serce = "red";
-    }
-    document.getElementById('view-content').innerHTML = `
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <div style="display:grid; grid-template-columns: 1fr 300px; gap:20px;">
-            <img src="${zdjecia[0].trim()}" style="width:100%; border-radius:15px;">
-            <div>
-                <h2 style="margin:0">${o.tytul} <span onclick="toggleUlubione(${o.id})" style="cursor:pointer; color:${serce}">❤</span></h2>
-                <h1 style="color:var(--primary)">${o.cena} zł</h1>
-                <p>${o.opis}</p>
-                <p>📍 ${o.lokalizacja}</p>
-                <button style="width:100%; padding:15px; background:black; color:white; border-radius:10px; border:none">TEL: ${o.telefon}</button>
-            </div>
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
+window.toggleSubcats = (k) => {
+    const panel = document.getElementById('subcat-panel');
+    const filtered = daneOgloszen.filter(o => o.kategoria === k);
+    render(filtered);
+    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()" style="border:none; background:none; cursor:pointer; font-weight:bold">✕</button>`;
+    panel.style.display = 'flex';
 };
 
 window.toggleUlubione = async (id) => {
@@ -145,14 +192,7 @@ window.toggleUlubione = async (id) => {
 
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-window.onclick = (e) => { if (e.target.classList.contains('modal')) zamknijModal(); };
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
-window.updateFormSubcats = () => {
-    const k = document.getElementById('f-kat').value;
-    const p = document.getElementById('f-podkat');
-    p.innerHTML = '<option value="">Podkategoria</option>';
-    if(MAPA_KATEGORII[k]) MAPA_KATEGORII[k].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
-};
 window.loguj = async () => {
     const { error } = await baza.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('pass').value });
     if (error) alert(error.message); else location.reload();
