@@ -18,26 +18,36 @@ const MAPA_KATEGORII = {
     "Inne": ["Różne"]
 };
 
-// --- INICJALIZACJA ---
-async function init() {
-    await checkUser();
-    await pobierz();
+// --- MAGIA KOMPRESJI (Zmniejsza MB przed wysyłką) ---
+async function zmniejszZdjecie(plik) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(plik);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > 1200) { h *= 1200 / w; w = 1200; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+            };
+        };
+    });
 }
 
-// --- POBIERANIE (LIMIT 12 SZTUK) ---
-async function pobierz() {
-    const { data, error } = await baza
-        .from('ogloszenia')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(12); // To sprawia, że nowe wypycha stare
+// --- POBIERANIE (LIMIT 12) ---
+async function init() { await checkUser(); await pobierz(); }
 
-    if(error) console.error("Błąd pobierania:", error);
+async function pobierz() {
+    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false }).limit(12);
     daneOgloszen = data || [];
     render(daneOgloszen);
 }
 
-// --- LOGOWANIE I KONTO ---
 async function checkUser() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
@@ -50,22 +60,16 @@ async function checkUser() {
             <div id="drop" class="dropdown-content">
                 <div style="font-weight:800; padding:10px">${nick}</div>
                 <hr style="border:0; border-top:1px solid #eee">
-                <button onclick="otworzUlubione()" style="border:none; background:none; cursor:pointer; padding:10px; width:100%; text-align:left">Ulubione ❤️</button>
-                <button onclick="otworzWiadomosci()" style="border:none; background:none; cursor:pointer; padding:10px; width:100%; text-align:left">Wiadomości (${count || 0})</button>
-                <button onclick="wyloguj()" style="color:red; border:none; background:none; cursor:pointer; width:100%; text-align:left; font-weight:800; padding:10px">Wyloguj</button>
+                <button onclick="otworzUlubione()">Ulubione ❤️</button>
+                <button onclick="wyloguj()" style="color:red; font-weight:800">Wyloguj</button>
             </div>`;
         document.getElementById('auth-box').style.display = 'none';
     }
 }
 
-// --- RENDEROWANIE LISTY ---
 function render(lista) {
     document.getElementById('lista').innerHTML = lista.map(o => {
-        let foto = 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
-        if (o.zdjecia) {
-            const arr = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
-            foto = arr[0].trim();
-        }
+        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0].trim()) : 'https://via.placeholder.com/300';
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img class="ad-img" src="${foto}">
@@ -78,84 +82,21 @@ function render(lista) {
     }).join('');
 }
 
-// --- SZCZEGÓŁY + ULUBIONE ---
-window.pokazSzczegoly = async (id) => {
-    const o = daneOgloszen.find(i => i.id === id);
-    const { data: { user } } = await baza.auth.getUser();
-    
-    let zdjecia = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
-    const miniaturyHTML = zdjecia.map(u => `<img src="${u.trim()}" style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:1px solid #ddd" onclick="document.getElementById('main-zoom').src='${u.trim()}'">`).join('');
-
-    let serceKolor = "gray";
-    if(user) {
-        const { data: fav } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-        if(fav && fav.length > 0) serceKolor = "red";
-    }
-
-    document.getElementById('view-content').innerHTML = `
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <div style="display:grid; grid-template-columns: 1fr 350px; gap:25px;">
-            <div>
-                <img id="main-zoom" src="${zdjecia[0].trim()}" style="width:100%; border-radius:20px; cursor:zoom-in" onclick="window.open(this.src)">
-                <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto">${miniaturyHTML}</div>
-            </div>
-            <div>
-                <div style="display:flex; justify-content:space-between; align-items:start">
-                    <h1 style="margin:0">${o.tytul}</h1>
-                    <div id="btn-fav" onclick="toggleUlubione(${o.id})" style="font-size:35px; cursor:pointer; color:${serceKolor}">❤</div>
-                </div>
-                <h2 style="color:var(--primary); font-size:32px; margin:10px 0">${o.cena} zł</h2>
-                <div style="background:#f3f4f7; padding:20px; border-radius:15px; margin:20px 0">${o.opis}</div>
-                <p>📍 Lokalizacja: <b>${o.lokalizacja}</b></p>
-                ${user ? `<button onclick="wyslijWiadomosc('${o.email_autora}')" style="width:100%; padding:15px; border-radius:12px; border:none; background:#111; color:white; font-weight:800; cursor:pointer">WYŚLIJ WIADOMOŚĆ</button>` : `<p style="color:red; font-weight:bold; text-align:center">Zaloguj się, aby napisać</p>`}
-            </div>
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-// --- LOGIKA SERDUSZKA ---
-window.toggleUlubione = async (id) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-    const btn = document.getElementById('btn-fav');
-    const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-    if (data && data.length > 0) {
-        await baza.from('ulubione').delete().eq('user_id', user.id).eq('ogloszenie_id', id);
-        btn.style.color = "gray";
-    } else {
-        await baza.from('ulubione').insert([{ user_id: user.id, ogloszenie_id: id }]);
-        btn.style.color = "red";
-    }
-};
-
-window.otworzUlubione = async () => {
-    const { data: { user } } = await baza.auth.getUser();
-    const { data: favs } = await baza.from('ulubione').select('ogloszenie_id').eq('user_id', user.id);
-    const ids = favs.map(f => f.ogloszenie_id);
-    const polubione = daneOgloszen.filter(o => ids.includes(o.id));
-    document.getElementById('msg-content').innerHTML = `
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <h2>Twoje Ulubione ❤️</h2>
-        <div style="max-height:400px; overflow-y:auto">
-            ${polubione.map(o => `<div onclick="zamknijModal(); pokazSzczegoly(${o.id})" style="display:flex; gap:10px; padding:10px; border-bottom:1px solid #eee; cursor:pointer; align-items:center"><img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0]}" style="width:50px; height:50px; object-fit:cover; border-radius:5px"><div><b>${o.tytul}</b><br><span style="color:var(--primary)">${o.cena} zł</span></div></div>`).join('') || 'Brak ulubionych.'}
-        </div>`;
-    document.getElementById('modal-messages').style.display = 'flex';
-};
-
-// --- DODAWANIE OGŁOSZENIA ---
+// --- DODAWANIE Z KOMPRESJĄ ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const { data: { user } } = await baza.auth.getUser();
-    const btn = document.getElementById('btn-save'); btn.innerText = "Wysyłanie..."; btn.disabled = true;
+    const btn = document.getElementById('btn-save'); btn.innerText = "Zmniejszanie zdjęć..."; btn.disabled = true;
     try {
         const pliki = document.getElementById('f-plik').files;
         const urls = [];
         for (let i = 0; i < pliki.length; i++) {
+            const blob = await zmniejszZdjecie(pliki[i]); // TU KOMPRESUJE
             const path = `img_${Date.now()}_${i}.jpg`;
-            await baza.storage.from('zdjecia').upload(path, pliki[i]);
+            await baza.storage.from('zdjecia').upload(path, blob);
             urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
         }
-        const { error } = await baza.from('ogloszenia').insert([{
+        await baza.from('ogloszenia').insert([{
             tytul: document.getElementById('f-tytul').value,
             cena: parseInt(document.getElementById('f-cena').value),
             opis: document.getElementById('f-opis').value,
@@ -165,14 +106,46 @@ window.wyslijOgloszenie = async (e) => {
             kategoria: document.getElementById('f-kat').value,
             podkategoria: document.getElementById('f-podkat').value
         }]);
-        if(error) throw error;
         location.reload();
     } catch (err) { alert("Błąd: " + err.message); btn.disabled = false; btn.innerText = "Dodaj ogłoszenie"; }
 };
 
-// --- FUNKCJE POMOCNICZE ---
+window.pokazSzczegoly = async (id) => {
+    const o = daneOgloszen.find(i => i.id === id);
+    const { data: { user } } = await baza.auth.getUser();
+    let zdjecia = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
+    let serce = "gray";
+    if(user) {
+        const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
+        if(data?.length > 0) serce = "red";
+    }
+    document.getElementById('view-content').innerHTML = `
+        <span class="close-btn" onclick="zamknijModal()">&times;</span>
+        <div style="display:grid; grid-template-columns: 1fr 300px; gap:20px;">
+            <img src="${zdjecia[0].trim()}" style="width:100%; border-radius:15px;">
+            <div>
+                <h2 style="margin:0">${o.tytul} <span onclick="toggleUlubione(${o.id})" style="cursor:pointer; color:${serce}">❤</span></h2>
+                <h1 style="color:var(--primary)">${o.cena} zł</h1>
+                <p>${o.opis}</p>
+                <p>📍 ${o.lokalizacja}</p>
+                <button style="width:100%; padding:15px; background:black; color:white; border-radius:10px; border:none">TEL: ${o.telefon}</button>
+            </div>
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.toggleUlubione = async (id) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się!");
+    const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
+    if (data?.length > 0) await baza.from('ulubione').delete().eq('user_id', user.id).eq('ogloszenie_id', id);
+    else await baza.from('ulubione').insert([{ user_id: user.id, ogloszenie_id: id }]);
+    pokazSzczegoly(id);
+};
+
 window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+window.onclick = (e) => { if (e.target.classList.contains('modal')) zamknijModal(); };
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 window.updateFormSubcats = () => {
     const k = document.getElementById('f-kat').value;
@@ -180,13 +153,6 @@ window.updateFormSubcats = () => {
     p.innerHTML = '<option value="">Podkategoria</option>';
     if(MAPA_KATEGORII[k]) MAPA_KATEGORII[k].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
 };
-window.toggleSubcats = (k) => {
-    const panel = document.getElementById('subcat-panel');
-    render(daneOgloszen.filter(o => o.kategoria === k));
-    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-weight:bold; margin-left:10px">✕</button>`;
-    panel.style.display = 'flex';
-};
-
 window.loguj = async () => {
     const { error } = await baza.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('pass').value });
     if (error) alert(error.message); else location.reload();
