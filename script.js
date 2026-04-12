@@ -6,7 +6,7 @@ let daneOgloszen = [];
 let mojeUlubione = [];
 let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
-let edytowaneZdjecia = []; // Pomocnicza tablica dla edycji
+let edytowaneZdjecia = [];
 
 const SUB_DATA = {
     'Motoryzacja': ['Samochody', 'Motocykle', 'Części'],
@@ -71,10 +71,7 @@ async function sprawdzUzytkownika() {
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
                     <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span>
-                        <span id="menu-msg-count">${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}</span>
-                    </div>
+                    <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
                     <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
@@ -92,9 +89,7 @@ window.toggleUserMenu = (e) => {
 
 window.addEventListener('click', (e) => {
     const menu = document.getElementById('drop-menu');
-    const adMenus = document.querySelectorAll('.ad-options-menu');
     if (menu && menu.style.display === 'block' && !menu.contains(e.target)) menu.style.display = 'none';
-    adMenus.forEach(m => { if (m.style.display === 'block' && !e.target.closest('.ad-options-container')) m.style.display = 'none'; });
 });
 
 // --- SZUKANIE ---
@@ -120,30 +115,235 @@ window.szukaj = () => {
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
-    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('przeczytane', false);
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email);
     const { data: msg } = await baza.from('wiadomosci').select('*').eq('odbiorca', user.email).order('created_at', { ascending: false });
     const content = document.getElementById('view-content');
     let htmlMsg = msg && msg.length > 0 ? msg.map(m => `
         <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
-            <div style="font-size:11px; color:gray;">Od: <b>${m.nadawca}</b> • ${new Date(m.created_at).toLocaleString('pl-PL')}</div>
+            <div style="font-size:11px; color:gray;">Od: ${m.nadawca}</div>
             <div style="font-size:14px; margin-top:5px;">${m.tresc}</div>
-            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Odp: wiadomość')" style="margin-top:10px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold;">Odpowiedz</button>
-        </div>`).join('') : '<p style="text-align:center; padding:20px;">Brak wiadomości.</p>';
-    content.innerHTML = `<button class="close-btn" onclick="zamknijModal()">&times;</button><h2>Skrzynka odbiorcza</h2><div style="max-height:65vh; overflow-y:auto;">${htmlMsg}</div>`;
+            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Re: wiadomość')" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; margin-top:5px;">Odpowiedz</button>
+        </div>`).join('') : '<p>Brak wiadomości.</p>';
+    content.innerHTML = `<button class="close-btn" onclick="zamknijModal()">&times;</button><h2>Wiadomości</h2><div style="max-height:60vh; overflow-y:auto;">${htmlMsg}</div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
 window.wyslijWiadomosc = async (odbiorca, tytul) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Zaloguj się!");
-    const tresc = prompt(`Do: ${odbiorca}\nTemat: ${tytul}`, "Dzień dobry...");
+    const tresc = prompt(`Wiadomość do: ${odbiorca}`);
     if (tresc) {
         await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
-        alert("Wysłano wiadomość!");
+        alert("Wysłano!");
     }
 };
 
-// --- ULUBIONE ---
+// --- GALERIA I SZCZEGÓŁY ---
+window.pokazSzczegoly = (id) => {
+    const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    aktualneZdjecieIndex = 0;
+    
+    document.getElementById('view-content').innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <div style="display:flex; flex-wrap:wrap; gap:20px;">
+            <div style="flex:1.5; min-width:300px;">
+                <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="otworzFullFoto()">
+                </div>
+                <div id="miniaturki-container" style="display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                    ${aktualneFotki.map((img, i) => `
+                        <img src="${img}" onclick="zmienGlowneZdjecie(${i})" 
+                             style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:${i===0 ? '2px solid var(--primary)' : '2px solid transparent'}; transition:0.2s;" 
+                             class="mini-foto">
+                    `).join('')}
+                </div>
+            </div>
+            <div style="flex:1;">
+                <h2>${o.tytul}</h2>
+                <h1 style="color:var(--primary);">${o.cena} zł</h1>
+                <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
+                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                <h3 style="margin-top:20px;">Opis</h3>
+                <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis}</p>
+            </div>
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.zmienGlowneZdjecie = (idx) => {
+    aktualneZdjecieIndex = idx;
+    document.getElementById('mainFoto').src = aktualneFotki[idx];
+    document.querySelectorAll('.mini-foto').forEach((el, i) => {
+        el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
+    });
+};
+
+window.otworzFullFoto = () => {
+    let lb = document.getElementById('lightbox-box');
+    if (!lb) {
+        lb = document.createElement('div');
+        lb.id = 'lightbox-box';
+        lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9000; display:none; align-items:center; justify-content:center; user-select:none;";
+        document.body.appendChild(lb);
+    }
+    
+    lb.innerHTML = `
+        <button onclick="document.getElementById('lightbox-box').style.display='none'" style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center; box-shadow:0 0 15px rgba(0,0,0,0.5);">&times;</button>
+        <button onclick="navFullFoto(-1)" style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❮</button>
+        <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain; transition:0.2s;">
+        <button onclick="navFullFoto(1)" style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❯</button>
+        <div style="position:absolute; bottom:20px; color:white; font-size:14px; font-family:sans-serif;">Zdjęcie ${aktualneZdjecieIndex + 1} z ${aktualneFotki.length}</div>
+    `;
+    lb.style.display = 'flex';
+};
+
+window.navFullFoto = (dir) => {
+    aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
+    const lbImg = document.getElementById('lb-img');
+    if(lbImg) {
+        lbImg.src = aktualneFotki[aktualneZdjecieIndex];
+        // Aktualizacja licznika w lightbox
+        const text = document.querySelector('#lightbox-box div');
+        if(text) text.innerText = `Zdjęcie ${aktualneZdjecieIndex + 1} z ${aktualneFotki.length}`;
+    }
+};
+
+// Obsługa klawiatury (Esc, Lewo, Prawo)
+window.addEventListener('keydown', (e) => {
+    const lb = document.getElementById('lightbox-box');
+    if (lb && lb.style.display === 'flex') {
+        if (e.key === 'Escape') lb.style.display = 'none';
+        if (e.key === 'ArrowRight') navFullFoto(1);
+        if (e.key === 'ArrowLeft') navFullFoto(-1);
+    }
+});
+
+// --- EDYCJA OGŁOSZENIA ---
+window.edytujOgloszenie = (id) => {
+    const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    renderujFormularzEdycji(o);
+};
+
+function renderujFormularzEdycji(o) {
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="pokazMojeOgloszenia()">&times;</button>
+        <h3 style="margin-bottom:15px;">Edytuj ogłoszenie</h3>
+        <form onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:12px;">
+            <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł" style="padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <div style="display:flex; gap:10px;">
+                <select id="e-kat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px;">
+                    ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
+                </select>
+                <select id="e-podkat" required style="flex:1; padding:10px; border-radius:8px;">
+                    <option value="${o.podkategoria}">${o.podkategoria}</option>
+                </select>
+            </div>
+            
+            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami:</label>
+            <div id="edit-preview" style="display:flex; gap:8px; flex-wrap:wrap; background:#f0f0f0; padding:10px; border-radius:10px; min-height:50px;">
+                ${edytowaneZdjecia.map((src, i) => `
+                    <div style="position:relative; width:60px; height:60px;">
+                        <img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;">
+                        <div onclick="usunFotoZEdycji(${i}, ${o.id})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold;">&times;</div>
+                    </div>
+                `).join('')}
+            </div>
+            <input type="file" id="e-pliki" multiple accept="image/*" style="font-size:12px;">
+
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="e-lok" value="${o.lokalizacja}" required placeholder="Lokalizacja" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+            </div>
+            <input type="text" id="e-tel" value="${o.telefon || ''}" placeholder="Telefon" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+            <textarea id="e-opis" rows="5" required placeholder="Opis" style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;">${o.opis}</textarea>
+            <button type="submit" id="btn-e-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
+        </form>`;
+}
+
+window.usunFotoZEdycji = (idx, id) => {
+    edytowaneZdjecia.splice(idx, 1);
+    renderujFormularzEdycji(daneOgloszen.find(x => x.id === id));
+};
+
+window.zapiszEdycje = async (e, id) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-e-save');
+    btn.disabled = true; btn.innerText = "Zapisywanie...";
+
+    const nowePliki = document.getElementById('e-pliki').files;
+    let noweLinki = [];
+    for (let f of nowePliki) {
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) noweLinki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    }
+
+    const ostateczneZdjecia = [...edytowaneZdjecia, ...noweLinki];
+    if (ostateczneZdjecia.length === 0) ostateczneZdjecia.push('https://via.placeholder.com/600');
+
+    await baza.from('ogloszenia').update({
+        tytul: document.getElementById('e-tytul').value,
+        kategoria: document.getElementById('e-kat').value,
+        podkategoria: document.getElementById('e-podkat').value,
+        cena: parseFloat(document.getElementById('e-cena').value),
+        lokalizacja: document.getElementById('e-lok').value,
+        opis: document.getElementById('e-opis').value,
+        telefon: document.getElementById('e-tel').value,
+        zdjecia: ostateczneZdjecia
+    }).eq('id', id);
+
+    location.reload();
+};
+
+// --- MOJE OGŁOSZENIA ---
+window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+    const teraz = new Date();
+    const limit = 1000 * 60 * 60 * 24 * 28;
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    const aktywne = moje.filter(o => (teraz - new Date(o.created_at)) < limit);
+    const zakonczone = moje.filter(o => (teraz - new Date(o.created_at)) >= limit);
+    const wyswietlane = tab === 'aktywne' ? aktywne : zakonczone;
+
+    document.getElementById('view-content').innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2>Moje ogłoszenia</h2>
+        <div style="display:flex; gap:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
+            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
+            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
+            ${wyswietlane.map(o => `
+                <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden; position:relative;">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
+                    <div style="padding:8px;">
+                        <b style="font-size:13px;">${o.cena} zł</b>
+                        <div style="font-size:11px; height:28px; overflow:hidden; color:#555;">${o.tytul}</div>
+                        <div style="display:flex; gap:5px; margin-top:8px;">
+                            <button onclick="edytujOgloszenie(${o.id})" style="flex:1; padding:5px; background:#f0f0f0; border:none; border-radius:5px; cursor:pointer; font-size:12px;">✏️ Edytuj</button>
+                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; background:#ffebeb; color:red; border:none; border-radius:5px; cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.usunOgloszenie = async (id) => {
+    if (confirm("Czy na pewno chcesz trwale usunąć to ogłoszenie?")) {
+        await baza.from('ogloszenia').delete().eq('id', id);
+        location.reload();
+    }
+};
+
+// --- POZOSTAŁE FUNKCJE ---
 window.toggleUlubione = async (e, id) => {
     e.stopPropagation();
     const { data: { user } } = await baza.auth.getUser();
@@ -156,7 +356,6 @@ window.toggleUlubione = async (e, id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    sprawdzUzytkownika();
     render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 };
 
@@ -166,52 +365,15 @@ window.pokazUlubione = () => {
     render(ulubioneLista);
 };
 
-// --- SZCZEGÓŁY ---
-window.pokazSzczegoly = (id) => {
-    const o = daneOgloszen.find(x => x.id === id);
-    if (!o) return;
-    aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    aktualneZdjecieIndex = 0;
-    document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <div style="display:flex; flex-wrap:wrap; gap:20px;">
-            <div style="flex:1.5; min-width:300px;">
-                <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center;">
-                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="otworzFullFoto()">
-                </div>
-            </div>
-            <div style="flex:1;">
-                <h2>${o.tytul}</h2>
-                <h1 style="color:var(--primary);">${o.cena} zł</h1>
-                <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
-                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                <h3 style="margin-top:15px;">Opis</h3>
-                <p style="white-space:pre-line; color:#444;">${o.opis}</p>
-            </div>
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-window.otworzFullFoto = () => {
-    let lb = document.getElementById('lightbox-overlay') || document.createElement('div');
-    lb.id = 'lightbox-overlay';
-    lb.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:5000;display:flex;align-items:center;justify-content:center;";
-    lb.onclick = () => lb.style.display = 'none';
-    lb.innerHTML = `<img src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%;max-height:90%;">`;
-    document.body.appendChild(lb);
-    lb.style.display = 'flex';
-};
-
-// --- KATEGORIE ---
 window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     p.style.display = 'flex';
     p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-    render(daneOgloszen.filter(o => o.kategoria === kat && (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
+    render(daneOgloszen.filter(o => o.kategoria === kat));
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat && (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
+    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat));
 };
 
 window.updateFormSubcats = (formPrefix = 'f-') => {
@@ -219,11 +381,10 @@ window.updateFormSubcats = (formPrefix = 'f-') => {
     document.getElementById(`${formPrefix}podkat`).innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
 };
 
-// --- DODAWANIE OGŁOSZENIA ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    btn.disabled = true;
+    btn.disabled = true; btn.innerText = "Wysyłanie...";
     const { data: { user } } = await baza.auth.getUser();
     const pliki = document.getElementById('f-plik').files;
     let linki = [];
@@ -246,168 +407,24 @@ window.wyslijOgloszenie = async (e) => {
     location.reload();
 };
 
-// --- MOJE OGŁOSZENIA (AKTYWNE/ZAKOŃCZONE) ---
-window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return;
-    const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28;
-    const moje = daneOgloszen.filter(o => o.user_email === user.email);
-    const aktywne = moje.filter(o => (teraz - new Date(o.created_at)) < limit);
-    const zakonczone = moje.filter(o => (teraz - new Date(o.created_at)) >= limit);
-    const wyswietlane = tab === 'aktywne' ? aktywne : zakonczone;
+window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
-    document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2>Twoje ogłoszenia</h2>
-        <div style="display:flex; gap:20px; border-bottom:1px solid #eee; margin:15px 0;">
-            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
-            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
-        </div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:15px;">
-            ${wyswietlane.map(o => `
-                <div class="ad-card" style="position:relative;">
-                    <img src="${o.zdjecia[0]}" style="width:100%; height:110px; object-fit:cover;">
-                    <div style="padding:10px;">
-                        <b>${o.cena} zł</b>
-                        <div style="font-size:11px; height:30px; overflow:hidden;">${o.tytul}</div>
-                        ${tab === 'aktywne' ? `
-                            <div class="ad-options-container" style="position:absolute; top:5px; right:5px;">
-                                <button onclick="toggleAdMenu(event, ${o.id})" style="background:white; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">⋮</button>
-                                <div id="ad-menu-${o.id}" class="ad-options-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:8px; z-index:100; min-width:110px;">
-                                    <div onclick="edytujOgloszenie(${o.id})" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee;">Edytuj</div>
-                                    <div onclick="usunOgloszenie(${o.id})" style="padding:10px; cursor:pointer; color:red;">Zakończ</div>
-                                </div>
-                            </div>` : ''}
-                    </div>
-                </div>`).join('')}
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-window.toggleAdMenu = (e, id) => {
-    e.stopPropagation();
-    document.querySelectorAll('.ad-options-menu').forEach(m => { if(m.id !== `ad-menu-${id}`) m.style.display = 'none'; });
-    const m = document.getElementById(`ad-menu-${id}`);
-    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
-};
-
-window.usunOgloszenie = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) {
-        await baza.from('ogloszenia').delete().eq('id', id);
-        location.reload();
-    }
-};
-
-// --- SYSTEM EDYCJI ZE ZDJĘCIAMI ---
-window.edytujOgloszenie = (id) => {
-    const o = daneOgloszen.find(x => x.id === id);
-    if (!o) return;
-    edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
-    
-    renderujFormularzEdycji(o);
-};
-
-function renderujFormularzEdycji(o) {
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="pokazMojeOgloszenia()">&times;</button>
-        <h3>Edytuj ogłoszenie</h3>
-        <form id="edit-form" onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-            <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł">
-            <div style="display:flex; gap:10px;">
-                <select id="e-kat" onchange="updateFormSubcats('e-')" required>
-                    ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
-                </select>
-                <select id="e-podkat" required>
-                    <option value="${o.podkategoria}">${o.podkategoria}</option>
-                </select>
-            </div>
-            
-            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami:</label>
-            <div id="edit-photos-preview" style="display:flex; gap:5px; flex-wrap:wrap; background:#eee; padding:10px; border-radius:10px;">
-                ${edytowaneZdjecia.map((src, i) => `
-                    <div style="position:relative; width:60px; height:60px;">
-                        <img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;">
-                        <div onclick="usunZdjecieZEdycji(${i}, ${o.id})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold;">X</div>
-                    </div>
-                `).join('')}
-            </div>
-            <input type="file" id="e-nowe-pliki" multiple accept="image/*" style="font-size:12px;">
-
-            <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena">
-            <input type="text" id="e-lok" value="${o.lokalizacja}" required placeholder="Lokalizacja">
-            <input type="text" id="e-tel" value="${o.telefon || ''}" placeholder="Telefon">
-            <textarea id="e-opis" rows="5" required placeholder="Opis">${o.opis}</textarea>
-            <button type="submit" id="btn-edit-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
-        </form>`;
-}
-
-window.usunZdjecieZEdycji = (index, adId) => {
-    edytowaneZdjecia.splice(index, 1);
-    const o = daneOgloszen.find(x => x.id === adId);
-    renderujFormularzEdycji(o);
-};
-
-window.zapiszEdycje = async (e, id) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-edit-save');
-    btn.disabled = true;
-    btn.innerText = "Zapisywanie...";
-
-    // 1. Wgrywanie nowych zdjęć (jeśli są)
-    const nowePliki = document.getElementById('e-nowe-pliki').files;
-    let noweLinki = [];
-    for (let f of nowePliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) noweLinki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
-    }
-
-    // 2. Połączenie starych (zostawionych) z nowymi
-    const ostateczneZdjecia = [...edytowaneZdjecia, ...noweLinki];
-    if (ostateczneZdjecia.length === 0) ostateczneZdjecia.push('https://via.placeholder.com/600');
-
-    // 3. Update w bazie
-    const { error } = await baza.from('ogloszenia').update({
-        tytul: document.getElementById('e-tytul').value,
-        kategoria: document.getElementById('e-kat').value,
-        podkategoria: document.getElementById('e-podkat').value,
-        cena: parseFloat(document.getElementById('e-cena').value),
-        lokalizacja: document.getElementById('e-lok').value,
-        opis: document.getElementById('e-opis').value,
-        telefon: document.getElementById('e-tel').value,
-        zdjecia: ostateczneZdjecia
-    }).eq('id', id);
-
-    if (error) {
-        alert("Błąd zapisu: " + error.message);
-        btn.disabled = false;
-        btn.innerText = "Zapisz zmiany";
-    } else {
-        location.reload();
-    }
-};
-
-// --- RENDER I INIT ---
 function render(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
     k.innerHTML = lista.map(o => `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="position:relative;">
-            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
                 ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
             </div>
             <img src="${o.zdjecia[0]}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
-                <b>${o.cena} zł</b>
-                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden;">${o.tytul}</div>
+                <b style="font-size:16px;">${o.cena} zł</b>
+                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden; color:#333;">${o.tytul}</div>
                 <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
             </div>
         </div>`).join('');
 }
-
-window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
 async function init() {
     await sprawdzUzytkownika();
