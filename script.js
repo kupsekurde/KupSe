@@ -4,18 +4,18 @@ const baza = window.supabase.createClient(URL_S, KEY_S);
 
 let daneOgloszen = [];
 let aktualnaGaleria = [];
+let odbiorcaMsg = null;
 
 // --- LOGOWANIE ---
 window.loguj = async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('pass').value;
+    const email = emailEl.value;
+    const password = passEl.value;
 
     const { error } = await baza.auth.signInWithPassword({ email, password });
 
     if (error) {
-        const { error: sErr } = await baza.auth.signUp({ email, password });
-        if (sErr) alert(sErr.message);
-        else alert("Zarejestrowano! Zaloguj się.");
+        await baza.auth.signUp({ email, password });
+        alert("Zarejestrowano!");
     } else location.reload();
 };
 
@@ -24,45 +24,27 @@ window.wyloguj = async () => {
     location.reload();
 };
 
-// --- USER MENU ---
+// --- MENU ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
 
     if (user && nav) {
         nav.innerHTML = `
-        <div style="display:flex; align-items:center; gap:12px; margin-left:auto;">
-            
-            <div style="position:relative">
-                <button onclick="toggleUserMenu(event)" 
-                    style="background:#ff4f00; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer;">
-                    ${user.email} ▼
-                </button>
+        <div style="margin-left:auto; position:relative;">
+            <button onclick="toggleUserMenu(event)" 
+                style="background:#ff4f00;color:white;padding:10px;border:none;border-radius:8px;">
+                ${user.email} ▼
+            </button>
 
-                <div id="drop-menu" style="
-                    display:none;
-                    position:absolute;
-                    right:0;
-                    top:50px;
-                    background:white;
-                    min-width:180px;
-                    border-radius:10px;
-                    box-shadow:0 8px 30px rgba(0,0,0,0.15);
-                    padding:15px;
-                ">
-                    <div style="padding:8px 0; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div style="padding:8px 0; cursor:pointer;">✉️ Wiadomości</div>
-                    <div style="padding:8px 0; cursor:pointer;">❤️ Ulubione</div>
-                    <div onclick="wyloguj()" style="padding:8px 0; cursor:pointer; color:red;">🚪 Wyloguj</div>
-                </div>
+            <div id="drop-menu" style="display:none; position:absolute; right:0; background:white; padding:15px;">
+                <div>📝 Moje ogłoszenia</div>
+                <div>✉️ Wiadomości</div>
+                <div>❤️ Ulubione</div>
+                <div onclick="wyloguj()" style="color:red;">🚪 Wyloguj</div>
             </div>
-
-            <img src="SprzedajSe.png" onclick="otworzModal()" style="height:40px; cursor:pointer;">
         </div>
         `;
-
-        const auth = document.getElementById('auth-box');
-        if (auth) auth.style.display = 'none';
     }
 }
 
@@ -80,114 +62,117 @@ async function pobierz() {
         .order('created_at', { ascending: false });
 
     daneOgloszen = data || [];
-
-    // TYLKO 12 NA GŁÓWNEJ
     render(daneOgloszen, true);
 }
 
 // --- RENDER ---
 function render(lista, limit = false) {
     const kontener = document.getElementById('lista');
-    if (!kontener) return;
-
     const dane = limit ? lista.slice(0, 12) : lista;
 
-    kontener.style.display = "grid";
-    kontener.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
-    kontener.style.gap = "20px";
-
     kontener.innerHTML = dane.map(o => {
-        let foto = o.zdjecia
-            ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia)
-            : 'https://via.placeholder.com/300';
+        let foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia;
 
         return `
-        <div onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:10px; border:1px solid #eee; overflow:hidden; cursor:pointer;">
-            <div style="height:180px">
-                <img src="${foto}" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-            <div style="padding:12px;">
-                <div style="color:#ff4f00; font-weight:bold;">
-                    ${o.cena.toLocaleString()} zł
-                </div>
-                <div style="font-size:14px;">
-                    ${o.tytul}
-                </div>
+        <div onclick="pokazSzczegoly(${o.id})" style="position:relative; border:1px solid #eee; border-radius:10px;">
+            
+            <button onclick="event.stopPropagation(); toggleUlubione(${o.id})"
+            style="position:absolute; top:5px; right:5px;">❤️</button>
+
+            <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
+            <div style="padding:10px;">
+                <b>${o.cena} zł</b>
+                <div>${o.tytul}</div>
             </div>
         </div>
         `;
     }).join('');
 }
 
-// --- KATEGORIE ---
-window.toggleSubcats = (kat) => {
-    const filtr = daneOgloszen.filter(o => o.kategoria === kat);
-    render(filtr, false);
+// ❤️ ULUBIONE
+window.toggleUlubione = async (id) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się");
+
+    const { data } = await baza
+        .from('ulubione')
+        .select('*')
+        .eq('user_email', user.email)
+        .eq('ogloszenie_id', id);
+
+    if (data.length) {
+        await baza.from('ulubione').delete().eq('id', data[0].id);
+        alert("Usunięto");
+    } else {
+        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
+        alert("Dodano ❤️");
+    }
 };
 
-// --- SZCZEGÓŁY ---
-window.pokazSzczegoly = async (id) => {
+// 🔎 FILTR
+window.filtruj = () => {
+    const t = search.value.toLowerCase();
+    const minV = Number(min.value) || 0;
+    const maxV = Number(max.value) || Infinity;
+
+    const wynik = daneOgloszen.filter(o =>
+        o.tytul.toLowerCase().includes(t) &&
+        o.cena >= minV &&
+        o.cena <= maxV
+    );
+
+    render(wynik, false);
+};
+
+// 💬 WIADOMOŚCI
+window.otworzWiadomosc = (email) => {
+    odbiorcaMsg = email;
+    document.getElementById('msg-modal').style.display = 'flex';
+};
+
+window.wyslijMsg = async () => {
+    const txt = document.getElementById('msg-text').value;
+    const { data: { user } } = await baza.auth.getUser();
+
+    await baza.from('wiadomosci').insert([{
+        nadawca: user.email,
+        odbiorca: odbiorcaMsg,
+        tresc: txt
+    }]);
+
+    alert("Wysłano!");
+    msgModal.style.display = 'none';
+};
+
+// 📄 SZCZEGÓŁY
+window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     const box = document.getElementById('view-content');
 
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
 
-    const mini = aktualnaGaleria.map((img, i) => `
-        <img src="${img}" onclick="zmienFoto(${i})"
-        style="width:60px; height:60px; cursor:pointer;">
+    const mini = aktualnaGaleria.map((img,i)=>`
+        <img src="${img}" onclick="zmienFoto(${i})" style="width:50px;">
     `).join('');
 
     box.innerHTML = `
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-        
-        <div>
-            <img id="mainFoto" src="${aktualnaGaleria[0]}"
-                style="width:100%; max-height:300px; object-fit:contain; cursor:pointer;"
-                onclick="powiekszFoto()">
-
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                ${mini}
-            </div>
-        </div>
-
-        <div>
-            <h2>${o.tytul}</h2>
-            <h1 style="color:#ff4f00">${o.cena} zł</h1>
-            <p>${o.opis}</p>
-        </div>
-    </div>
+    <img id="mainFoto" src="${aktualnaGaleria[0]}" onclick="powiekszFoto()" style="width:100%;">
+    <div>${mini}</div>
+    <h2>${o.tytul}</h2>
+    <h1>${o.cena} zł</h1>
+    <button onclick="otworzWiadomosc('${o.email_autora}')">Napisz</button>
     `;
 
-    document.getElementById('modal-view').style.display = 'flex';
+    modalView.style.display = 'flex';
 };
 
-// --- GALERIA ---
+// 🖼 GALERIA
 window.zmienFoto = (i) => {
-    document.getElementById('mainFoto').src = aktualnaGaleria[i];
+    mainFoto.src = aktualnaGaleria[i];
 };
 
 window.powiekszFoto = () => {
-    const src = document.getElementById('mainFoto').src;
-    window.open(src);
-};
-
-// --- MODALE ---
-window.otworzModal = () => {
-    document.getElementById('modal-form').style.display = 'flex';
-};
-
-window.zamknijModal = () => {
-    document.getElementById('modal-form').style.display = 'none';
-    document.getElementById('modal-view').style.display = 'none';
-};
-
-window.onclick = (e) => {
-    if (!e.target.closest('button')) {
-        const m = document.getElementById('drop-menu');
-        if (m) m.style.display = 'none';
-    }
-
-    if (e.target.className === 'modal') zamknijModal();
+    window.open(mainFoto.src);
 };
 
 // --- START ---
