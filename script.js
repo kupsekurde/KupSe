@@ -204,13 +204,11 @@ window.navFullFoto = (dir) => {
     const lbImg = document.getElementById('lb-img');
     if(lbImg) {
         lbImg.src = aktualneFotki[aktualneZdjecieIndex];
-        // Aktualizacja licznika w lightbox
         const text = document.querySelector('#lightbox-box div');
         if(text) text.innerText = `Zdjęcie ${aktualneZdjecieIndex + 1} z ${aktualneFotki.length}`;
     }
 };
 
-// Obsługa klawiatury (Esc, Lewo, Prawo)
 window.addEventListener('keydown', (e) => {
     const lb = document.getElementById('lightbox-box');
     if (lb && lb.style.display === 'flex') {
@@ -244,7 +242,7 @@ function renderujFormularzEdycji(o) {
                 </select>
             </div>
             
-            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami:</label>
+            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>
             <div id="edit-preview" style="display:flex; gap:8px; flex-wrap:wrap; background:#f0f0f0; padding:10px; border-radius:10px; min-height:50px;">
                 ${edytowaneZdjecia.map((src, i) => `
                     <div style="position:relative; width:60px; height:60px;">
@@ -254,6 +252,7 @@ function renderujFormularzEdycji(o) {
                 `).join('')}
             </div>
             <input type="file" id="e-pliki" multiple accept="image/*" style="font-size:12px;">
+            <p style="font-size:10px; color:gray; margin-top:-10px;">Pozostało miejsca: ${5 - edytowaneZdjecia.length} zdjęć</p>
 
             <div style="display:flex; gap:10px;">
                 <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
@@ -272,10 +271,15 @@ window.usunFotoZEdycji = (idx, id) => {
 
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
+    const nowePliki = document.getElementById('e-pliki').files;
+    
+    if ((edytowaneZdjecia.length + nowePliki.length) > 5) {
+        return alert("Łącznie możesz mieć maksymalnie 5 zdjęć. Usuń stare lub wybierz mniej nowych.");
+    }
+
     const btn = document.getElementById('btn-e-save');
     btn.disabled = true; btn.innerText = "Zapisywanie...";
 
-    const nowePliki = document.getElementById('e-pliki').files;
     let noweLinki = [];
     for (let f of nowePliki) {
         const n = `${Date.now()}_${f.name}`;
@@ -297,6 +301,40 @@ window.zapiszEdycje = async (e, id) => {
         zdjecia: ostateczneZdjecia
     }).eq('id', id);
 
+    location.reload();
+};
+
+// --- DODAWANIE NOWEGO OGŁOSZENIA ---
+window.wyslijOgloszenie = async (e) => {
+    e.preventDefault();
+    const pliki = document.getElementById('f-plik').files;
+    
+    if (pliki.length > 5) {
+        return alert("Możesz dodać maksymalnie 5 zdjęć.");
+    }
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.innerText = "Wysyłanie...";
+    const { data: { user } } = await baza.auth.getUser();
+    
+    let linki = [];
+    for (let f of pliki) {
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    }
+    
+    await baza.from('ogloszenia').insert([{
+        tytul: document.getElementById('f-tytul').value,
+        kategoria: document.getElementById('f-kat').value,
+        podkategoria: document.getElementById('f-podkat').value,
+        cena: parseFloat(document.getElementById('f-cena').value),
+        lokalizacja: document.getElementById('f-lok').value,
+        opis: document.getElementById('f-opis').value,
+        telefon: document.getElementById('f-tel').value,
+        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
+        user_email: user.email 
+    }]);
     location.reload();
 };
 
@@ -378,33 +416,10 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 window.updateFormSubcats = (formPrefix = 'f-') => {
     const k = document.getElementById(`${formPrefix}kat`).value;
-    document.getElementById(`${formPrefix}podkat`).innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-};
-
-window.wyslijOgloszenie = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true; btn.innerText = "Wysyłanie...";
-    const { data: { user } } = await baza.auth.getUser();
-    const pliki = document.getElementById('f-plik').files;
-    let linki = [];
-    for (let f of pliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    const podkatSelect = document.getElementById(`${formPrefix}podkat`);
+    if(podkatSelect) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
-    await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
-        cena: parseFloat(document.getElementById('f-cena').value),
-        lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
-        user_email: user.email 
-    }]);
-    location.reload();
 };
 
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
