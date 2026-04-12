@@ -41,7 +41,7 @@ window.zarejestruj = async () => {
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// --- INTERFEJS UŻYTKOWNIKA I POWIADOMIENIA ---
+// --- INTERFEJS UŻYTKOWNIKA ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
@@ -91,20 +91,9 @@ window.toggleUserMenu = (e) => {
 
 window.addEventListener('click', (e) => {
     const menu = document.getElementById('drop-menu');
-    const btn = document.getElementById('menu-btn');
     const adMenus = document.querySelectorAll('.ad-options-menu');
-    
-    // Zamykanie menu użytkownika
-    if (menu && menu.style.display === 'block' && !menu.contains(e.target) && e.target !== btn) {
-        menu.style.display = 'none';
-    }
-
-    // Zamykanie menu "trzech kropek" w ogłoszeniach
-    adMenus.forEach(m => {
-        if (m.style.display === 'block' && !e.target.closest('.ad-options-container')) {
-            m.style.display = 'none';
-        }
-    });
+    if (menu && menu.style.display === 'block' && !menu.contains(e.target)) menu.style.display = 'none';
+    adMenus.forEach(m => { if (m.style.display === 'block' && !e.target.closest('.ad-options-container')) m.style.display = 'none'; });
 });
 
 // --- SZUKANIE ---
@@ -122,10 +111,8 @@ window.szukaj = () => {
     });
     
     document.getElementById('subcat-panel').style.display = 'none';
-    const naglowek = document.getElementById('grid-title');
-    naglowek.innerText = (fraza || lok) ? `Wyniki wyszukiwania (${wyniki.length})` : "Najnowsze ogłoszenia";
-
-    render(wyniki, false);
+    document.getElementById('grid-title').innerText = (fraza || lok) ? `Wyniki (${wyniki.length})` : "Najnowsze ogłoszenia";
+    render(wyniki);
 };
 
 // --- WIADOMOŚCI ---
@@ -137,10 +124,10 @@ window.pokazSkrzynke = async () => {
     const content = document.getElementById('view-content');
     let htmlMsg = msg && msg.length > 0 ? msg.map(m => `
         <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
-            <div style="font-size:11px; color:gray; margin-bottom:5px;">Od: <b>${m.nadawca}</b> • ${new Date(m.created_at).toLocaleString('pl-PL')}</div>
-            <div style="font-size:14px; color:#333; line-height:1.4;">${m.tresc}</div>
-            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Odp: wiadomość')" style="margin-top:10px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; font-size:13px;">Odpowiedz ↩</button>
-        </div>`).join('') : '<p style="text-align:center; color:gray; padding:20px;">Brak otrzymanych wiadomości.</p>';
+            <div style="font-size:11px; color:gray;">Od: <b>${m.nadawca}</b> • ${new Date(m.created_at).toLocaleString('pl-PL')}</div>
+            <div style="font-size:14px; margin-top:5px;">${m.tresc}</div>
+            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Odp: wiadomość')" style="margin-top:10px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold;">Odpowiedz</button>
+        </div>`).join('') : '<p style="text-align:center; padding:20px;">Brak wiadomości.</p>';
     content.innerHTML = `<button class="close-btn" onclick="zamknijModal()">&times;</button><h2>Skrzynka odbiorcza</h2><div style="max-height:65vh; overflow-y:auto;">${htmlMsg}</div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
@@ -148,10 +135,10 @@ window.pokazSkrzynke = async () => {
 window.wyslijWiadomosc = async (odbiorca, tytul) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Zaloguj się!");
-    const tresc = prompt(`Wiadomość do: ${odbiorca}\nTemat: ${tytul}`, "Dzień dobry...");
+    const tresc = prompt(`Do: ${odbiorca}\nTemat: ${tytul}`, "Dzień dobry...");
     if (tresc) {
-        const { error } = await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca: odbiorca, tresc: tresc, przeczytane: false }]);
-        if (error) alert("Błąd: " + error.message); else alert("Wysłano!");
+        await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+        alert("Wysłano wiadomość!");
     }
 };
 
@@ -168,28 +155,27 @@ window.toggleUlubione = async (e, id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
     sprawdzUzytkownika();
+    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 };
 
 window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
-    render(ulubioneLista, false);
     document.getElementById('grid-title').innerText = "Twoje Ulubione";
+    render(ulubioneLista);
 };
 
-// --- SZCZEGÓŁY I GALERIA ---
+// --- SZCZEGÓŁY ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
-    const modalContent = document.getElementById('view-content');
-    modalContent.innerHTML = `
+    document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
             <div style="flex:1.5; min-width:300px;">
-                <div style="position:relative; background:#000; border-radius:15px; height:400px; display:flex; align-items:center; justify-content:center;">
+                <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center;">
                     <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="otworzFullFoto()">
                 </div>
             </div>
@@ -197,22 +183,22 @@ window.pokazSzczegoly = (id) => {
                 <h2>${o.tytul}</h2>
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
-                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                <h3 style="margin-top:20px;">Opis</h3>
-                <p style="white-space:pre-line;">${o.opis}</p>
+                <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                <h3 style="margin-top:15px;">Opis</h3>
+                <p style="white-space:pre-line; color:#444;">${o.opis}</p>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
 window.otworzFullFoto = () => {
-    let lightbox = document.getElementById('lightbox-overlay') || document.createElement('div');
-    lightbox.id = 'lightbox-overlay';
-    lightbox.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:5000;display:flex;align-items:center;justify-content:center;";
-    lightbox.onclick = () => lightbox.style.display = 'none';
-    lightbox.innerHTML = `<img src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%;max-height:90%;">`;
-    document.body.appendChild(lightbox);
-    lightbox.style.display = 'flex';
+    let lb = document.getElementById('lightbox-overlay') || document.createElement('div');
+    lb.id = 'lightbox-overlay';
+    lb.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:5000;display:flex;align-items:center;justify-content:center;";
+    lb.onclick = () => lb.style.display = 'none';
+    lb.innerHTML = `<img src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%;max-height:90%;">`;
+    document.body.appendChild(lb);
+    lb.style.display = 'flex';
 };
 
 // --- KATEGORIE ---
@@ -220,21 +206,19 @@ window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     p.style.display = 'flex';
     p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
-    const teraz = new Date();
-    render(daneOgloszen.filter(o => o.kategoria === kat && (teraz - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
+    render(daneOgloszen.filter(o => o.kategoria === kat && (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
-    const teraz = new Date();
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat && (teraz - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
+    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat && (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 };
 
-window.updateFormSubcats = () => {
-    const k = document.getElementById('f-kat').value;
-    document.getElementById('f-podkat').innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+window.updateFormSubcats = (formPrefix = 'f-') => {
+    const k = document.getElementById(`${formPrefix}kat`).value;
+    document.getElementById(`${formPrefix}podkat`).innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
 };
 
-// --- ZARZĄDZANIE ---
+// --- DODAWANIE OGŁOSZENIA ---
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -247,7 +231,7 @@ window.wyslijOgloszenie = async (e) => {
         const { data } = await baza.storage.from('zdjecia').upload(n, f);
         if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
-    const { error } = await baza.from('ogloszenia').insert([{
+    await baza.from('ogloszenia').insert([{
         tytul: document.getElementById('f-tytul').value,
         kategoria: document.getElementById('f-kat').value,
         podkategoria: document.getElementById('f-podkat').value,
@@ -258,47 +242,42 @@ window.wyslijOgloszenie = async (e) => {
         zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
         user_email: user.email 
     }]);
-    if (error) alert(error.message); else location.reload();
+    location.reload();
 };
 
-// --- MOJE OGŁOSZENIA (AKTYWNE/ZAKOŃCZONE) ---
+// --- MOJE OGŁOSZENIA (AKTYWNE/ZAKOŃCZONE + EDYCJA) ---
 window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
-
-    const limit = 1000 * 60 * 60 * 24 * 28;
     const teraz = new Date();
-    
+    const limit = 1000 * 60 * 60 * 24 * 28;
     const moje = daneOgloszen.filter(o => o.user_email === user.email);
     const aktywne = moje.filter(o => (teraz - new Date(o.created_at)) < limit);
     const zakonczone = moje.filter(o => (teraz - new Date(o.created_at)) >= limit);
-
     const wyswietlane = tab === 'aktywne' ? aktywne : zakonczone;
 
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
+    document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2 style="margin-bottom:15px;">Twoje ogłoszenia</h2>
-        <div style="display:flex; gap:20px; border-bottom:1px solid #eee; margin-bottom:20px;">
-            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}; color: ${tab === 'aktywne' ? 'var(--primary)' : '#666'}">Aktywne (${aktywne.length})</div>
-            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}; color: ${tab === 'zakonczone' ? 'var(--primary)' : '#666'}">Zakończone (${zakonczone.length})</div>
+        <h2>Twoje ogłoszenia</h2>
+        <div style="display:flex; gap:20px; border-bottom:1px solid #eee; margin:15px 0;">
+            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
+            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
         </div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:15px;">
             ${wyswietlane.map(o => `
-                <div class="ad-card" style="position:relative; cursor:default;">
+                <div class="ad-card" style="position:relative;">
                     <img src="${o.zdjecia[0]}" style="width:100%; height:110px; object-fit:cover;">
                     <div style="padding:10px;">
                         <b>${o.cena} zł</b>
                         <div style="font-size:11px; height:30px; overflow:hidden;">${o.tytul}</div>
                         ${tab === 'aktywne' ? `
                             <div class="ad-options-container" style="position:absolute; top:5px; right:5px;">
-                                <button onclick="toggleAdMenu(event, ${o.id})" style="background:white; border:none; width:28px; height:28px; border-radius:50%; cursor:pointer; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2);">⋮</button>
-                                <div id="ad-menu-${o.id}" class="ad-options-menu" style="display:none; position:absolute; right:0; top:32px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:8px; z-index:100; min-width:100px; padding:5px 0;">
-                                    <div onclick="edytujOgloszenie(${o.id})" style="padding:10px; cursor:pointer; font-size:13px; border-bottom:1px solid #eee;">Edytuj</div>
-                                    <div onclick="usunOgloszenie(${o.id})" style="padding:10px; cursor:pointer; font-size:13px; color:red;">Zakończ</div>
+                                <button onclick="toggleAdMenu(event, ${o.id})" style="background:white; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">⋮</button>
+                                <div id="ad-menu-${o.id}" class="ad-options-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:8px; z-index:100; min-width:110px;">
+                                    <div onclick="edytujOgloszenie(${o.id})" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee;">Edytuj</div>
+                                    <div onclick="usunOgloszenie(${o.id})" style="padding:10px; cursor:pointer; color:red;">Zakończ</div>
                                 </div>
-                            </div>
-                        ` : ''}
+                            </div>` : ''}
                     </div>
                 </div>`).join('')}
         </div>`;
@@ -307,21 +286,59 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
 
 window.toggleAdMenu = (e, id) => {
     e.stopPropagation();
-    const menu = document.getElementById(`ad-menu-${id}`);
-    const isVisible = menu.style.display === 'block';
-    document.querySelectorAll('.ad-options-menu').forEach(m => m.style.display = 'none');
-    menu.style.display = isVisible ? 'none' : 'block';
+    document.querySelectorAll('.ad-options-menu').forEach(m => { if(m.id !== `ad-menu-${id}`) m.style.display = 'none'; });
+    const m = document.getElementById(`ad-menu-${id}`);
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Czy na pewno chcesz zakończyć/usunąć to ogłoszenie?")) {
+    if (confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) {
         await baza.from('ogloszenia').delete().eq('id', id);
         location.reload();
     }
 };
 
+// --- SYSTEM EDYCJI ---
 window.edytujOgloszenie = (id) => {
-    alert("Funkcja edycji dla ogłoszenia ID: " + id + " (Tu można otworzyć formularz)");
+    const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="pokazMojeOgloszenia()">&times;</button>
+        <h3>Edytuj ogłoszenie</h3>
+        <form id="edit-form" onsubmit="zapiszEdycje(event, ${id})" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł">
+            <div style="display:flex; gap:10px;">
+                <select id="e-kat" onchange="updateFormSubcats('e-')" required>
+                    ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
+                </select>
+                <select id="e-podkat" required>
+                    <option value="${o.podkategoria}">${o.podkategoria}</option>
+                </select>
+            </div>
+            <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena">
+            <input type="text" id="e-lok" value="${o.lokalizacja}" required placeholder="Lokalizacja">
+            <input type="text" id="e-tel" value="${o.telefon || ''}" placeholder="Telefon">
+            <textarea id="e-opis" rows="5" required placeholder="Opis">${o.opis}</textarea>
+            <button type="submit" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
+        </form>`;
+};
+
+window.zapiszEdycje = async (e, id) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    btn.innerText = "Zapisywanie...";
+    const { error } = await baza.from('ogloszenia').update({
+        tytul: document.getElementById('e-tytul').value,
+        kategoria: document.getElementById('e-kat').value,
+        podkategoria: document.getElementById('e-podkat').value,
+        cena: parseFloat(document.getElementById('e-cena').value),
+        lokalizacja: document.getElementById('e-lok').value,
+        opis: document.getElementById('e-opis').value,
+        telefon: document.getElementById('e-tel').value
+    }).eq('id', id);
+    if (error) alert("Błąd zapisu: " + error.message); else location.reload();
 };
 
 // --- RENDER I INIT ---
@@ -336,7 +353,7 @@ function render(lista) {
             <img src="${o.zdjecia[0]}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
                 <b>${o.cena} zł</b>
-                <div style="font-size:14px; margin-top:5px;">${o.tytul}</div>
+                <div style="font-size:14px; margin-top:5px; height:38px; overflow:hidden;">${o.tytul}</div>
                 <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
             </div>
         </div>`).join('');
@@ -348,9 +365,7 @@ async function init() {
     await sprawdzUzytkownika();
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
-    const teraz = new Date();
-    const aktywne = daneOgloszen.filter(o => (teraz - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28));
-    render(aktywne);
+    render(daneOgloszen.filter(o => (new Date() - new Date(o.created_at)) < (1000 * 60 * 60 * 24 * 28)));
 }
 
 init();
