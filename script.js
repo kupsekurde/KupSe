@@ -5,57 +5,64 @@ const baza = window.supabase.createClient(URL_S, KEY_S);
 let daneOgloszen = [];
 let aktualnaGaleria = [];
 
-const MAPA_KATEGORII = {
-    "Motoryzacja": ["Samochody", "Motocykle", "Części", "Opony"],
-    "Nieruchomości": ["Mieszkania", "Domy", "Działki", "Biura"],
-    "Elektronika": ["Telefony", "Laptopy", "Gry i Konsole", "RTV"],
-    "Dom i Ogród": ["Meble", "Ogród", "Narzędzia", "Dekoracje"],
-    "Moda": ["Ubrania", "Buty", "Biżuteria", "Akcesoria"],
-    "Rolnictwo": ["Ciągniki", "Maszyny rolnicze", "Produkty rolne"],
-    "Zwierzęta": ["Psy", "Koty", "Ptaki", "Akcesoria"],
-    "Dla Dzieci": ["Zabawki", "Wózki", "Ubranka"],
-    "Sport i Hobby": ["Rowery", "Siłownia", "Turystyka", "Wędkarstwo"],
-    "Muzyka i Edukacja": ["Instrumenty", "Książki", "Płyty"],
-    "Usługi": ["Budowlane", "Uroda", "Transport", "IT"],
-    "Praca": ["Pełny etat", "Dodatkowa", "Staże"],
-    "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
-};
-
-// --- LOGOWANIE I REJESTRACJA ---
+// --- LOGOWANIE ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-    if (!email || !password) return alert("Wpisz email i hasło!");
+
     const { error } = await baza.auth.signInWithPassword({ email, password });
+
     if (error) {
         const { error: sErr } = await baza.auth.signUp({ email, password });
-        if (sErr) alert(sErr.message); else alert("Zarejestrowano! Zaloguj się.");
+        if (sErr) alert(sErr.message);
+        else alert("Zarejestrowano! Zaloguj się.");
     } else location.reload();
 };
 
-window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+window.wyloguj = async () => {
+    await baza.auth.signOut();
+    location.reload();
+};
 
-// --- OBSŁUGA MENU "MOJE KONTO" ---
+// --- USER MENU ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
+
     if (user && nav) {
         nav.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
-                <div style="position:relative">
-                    <button class="btn-account" onclick="toggleUserMenu(event)">Moje Konto ▼</button>
-                    <div id="drop-menu" style="display:none; position:absolute; right:0; top:50px; background:white; min-width:200px; z-index:9999; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:10px; border:1px solid #eee;">
-                        <div style="font-size:10px; color:gray; padding:5px; border-bottom:1px solid #f0f0f0; margin-bottom:5px;">${user.email}</div>
-                        <button class="d-btn" onclick="alert('Moje ogłoszenia')">📝 Moje ogłoszenia</button>
-                        <button class="d-btn" onclick="alert('Wiadomości')">✉️ Wiadomości</button>
-                        <button class="d-btn" onclick="alert('Ulubione')">❤️ Ulubione</button>
-                        <button class="d-btn" onclick="wyloguj()" style="color:red; border-top:1px solid #f0f0f0; margin-top:5px;">🚪 Wyloguj</button>
-                    </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-left:auto;">
+            
+            <div style="position:relative">
+                <button onclick="toggleUserMenu(event)" 
+                    style="background:#ff4f00; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer;">
+                    ${user.email} ▼
+                </button>
+
+                <div id="drop-menu" style="
+                    display:none;
+                    position:absolute;
+                    right:0;
+                    top:50px;
+                    background:white;
+                    min-width:180px;
+                    border-radius:10px;
+                    box-shadow:0 8px 30px rgba(0,0,0,0.15);
+                    padding:15px;
+                ">
+                    <div style="padding:8px 0; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div style="padding:8px 0; cursor:pointer;">✉️ Wiadomości</div>
+                    <div style="padding:8px 0; cursor:pointer;">❤️ Ulubione</div>
+                    <div onclick="wyloguj()" style="padding:8px 0; cursor:pointer; color:red;">🚪 Wyloguj</div>
                 </div>
-                <img src="SprzedajSe.png" onclick="otworzModal()" style="height: 40px; width: auto; cursor:pointer;" alt="Sprzedaj">
             </div>
+
+            <img src="SprzedajSe.png" onclick="otworzModal()" style="height:40px; cursor:pointer;">
+        </div>
         `;
-        if(document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
+
+        const auth = document.getElementById('auth-box');
+        if (auth) auth.style.display = 'none';
     }
 }
 
@@ -65,105 +72,108 @@ window.toggleUserMenu = (e) => {
     m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
-// --- POBIERANIE I RENDERING (4 W RZĘDZIE) ---
+// --- POBIERANIE ---
 async function pobierz() {
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    const { data } = await baza
+        .from('ogloszenia')
+        .select('*')
+        .order('created_at', { ascending: false });
+
     daneOgloszen = data || [];
-    render(daneOgloszen.slice(0, 12)); // Startowo 12 najnowszych
+
+    // TYLKO 12 NA GŁÓWNEJ
+    render(daneOgloszen, true);
 }
 
-function render(lista) {
+// --- RENDER ---
+function render(lista, limit = false) {
     const kontener = document.getElementById('lista');
-    if(!kontener) return;
-    
-    // WYMUSZAMY GRID W KODZIE
+    if (!kontener) return;
+
+    const dane = limit ? lista.slice(0, 12) : lista;
+
     kontener.style.display = "grid";
     kontener.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
     kontener.style.gap = "20px";
 
-    kontener.innerHTML = lista.map(o => {
-        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia) : 'https://via.placeholder.com/300';
+    kontener.innerHTML = dane.map(o => {
+        let foto = o.zdjecia
+            ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia)
+            : 'https://via.placeholder.com/300';
+
         return `
-            <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:10px; border:1px solid #eee; overflow:hidden; cursor:pointer;">
-                <div style="width:100%; height:180px; overflow:hidden">
-                    <img src="${foto}" style="width:100%; height:100%; object-fit:cover;">
+        <div onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:10px; border:1px solid #eee; overflow:hidden; cursor:pointer;">
+            <div style="height:180px">
+                <img src="${foto}" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <div style="padding:12px;">
+                <div style="color:#ff4f00; font-weight:bold;">
+                    ${o.cena.toLocaleString()} zł
                 </div>
-                <div style="padding:12px;">
-                    <div style="font-weight:bold; color:#ff4f00; font-size:16px;">${o.cena.toLocaleString()} zł</div>
-                    <div style="font-size:14px; margin:5px 0; color:#333; height:38px; overflow:hidden;">${o.tytul}</div>
-                    <div style="font-size:10px; color:#999; margin-top:8px;">
-                        📍 ${o.lokalizacja} | ${new Date(o.created_at).toLocaleDateString()}
-                    </div>
+                <div style="font-size:14px;">
+                    ${o.tytul}
                 </div>
             </div>
+        </div>
         `;
     }).join('');
 }
 
-// --- PODKATEGORIE (OBSŁUGA SELECTA) ---
-window.updateFormSubcats = () => {
-    const kat = document.getElementById('f-kat').value;
-    const p = document.getElementById('f-podkat');
-    if(!p) return;
-    p.innerHTML = '<option value="">Wybierz podkategorię</option>';
-    if(MAPA_KATEGORII[kat]) {
-        MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
-    }
+// --- KATEGORIE ---
+window.toggleSubcats = (kat) => {
+    const filtr = daneOgloszen.filter(o => o.kategoria === kat);
+    render(filtr, false);
 };
 
-// --- SZCZEGÓŁY I KONTAKT ---
+// --- SZCZEGÓŁY ---
 window.pokazSzczegoly = async (id) => {
-    const o = daneOgloszen.find(item => item.id === id);
-    const { data: { user } } = await baza.auth.getUser();
+    const o = daneOgloszen.find(x => x.id === id);
     const box = document.getElementById('view-content');
+
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
 
-    const kontaktHtml = user ? `
-        <button onclick="otworzWiadomosc('${o.email_autora}', '${o.tytul}', ${o.id})" style="width:100%; padding:15px; background:#ff4f00; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">WYŚLIJ WIADOMOŚĆ</button>
-        <p style="text-align:center; margin-top:10px; font-weight:bold;">📞 ${o.telefon}</p>
-    ` : `<div style="background:#eee; padding:10px; border-radius:8px; text-align:center; font-size:12px;">Zaloguj się, aby zobaczyć kontakt</div>`;
+    const mini = aktualnaGaleria.map((img, i) => `
+        <img src="${img}" onclick="zmienFoto(${i})"
+        style="width:60px; height:60px; cursor:pointer;">
+    `).join('');
 
     box.innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <img src="${aktualnaGaleria[0]}" style="width:100%; border-radius:10px; max-height:300px; object-fit:contain; background:#f9f9f9;">
-            <div>
-                <h2 style="margin:0">${o.tytul}</h2>
-                <h1 style="color:#ff4f00; margin:10px 0">${o.cena.toLocaleString()} zł</h1>
-                <p style="font-size:11px; color:gray;">Kategoria: ${o.kategoria} / ${o.podkategoria}</p>
-                <div style="margin:15px 0; font-size:14px; color:#444; line-height:1.4">${o.opis}</div>
-                ${kontaktHtml}
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        
+        <div>
+            <img id="mainFoto" src="${aktualnaGaleria[0]}"
+                style="width:100%; max-height:300px; object-fit:contain; cursor:pointer;"
+                onclick="powiekszFoto()">
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                ${mini}
             </div>
         </div>
+
+        <div>
+            <h2>${o.tytul}</h2>
+            <h1 style="color:#ff4f00">${o.cena} zł</h1>
+            <p>${o.opis}</p>
+        </div>
+    </div>
     `;
+
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.otworzWiadomosc = (odb, tytul, oId) => {
-    const msg = prompt("Napisz do sprzedającego ws. " + tytul);
-    if(msg) {
-        baza.auth.getUser().then(({data}) => {
-            baza.from('wiadomosci').insert([{ 
-                nadawca: data.user.email, 
-                odbiorca: odb, 
-                tresc: msg, 
-                ogloszenie_id: oId 
-            }]).then(() => alert("Wysłano wiadomość!"));
-        });
-    }
+// --- GALERIA ---
+window.zmienFoto = (i) => {
+    document.getElementById('mainFoto').src = aktualnaGaleria[i];
 };
 
-// --- FILTRY KATEGORII (Zdejmują limit 12) ---
-window.toggleSubcats = (kat) => {
-    const filtr = daneOgloszen.filter(o => o.kategoria === kat);
-    render(filtr); // Pokazuje wszystko z tej kategorii
-    const panel = document.getElementById('subcat-panel');
-    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPod('${kat}', '${p}')">${p}</div>`).join('') + 
-                      `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
-    panel.style.display = 'flex';
+window.powiekszFoto = () => {
+    const src = document.getElementById('mainFoto').src;
+    window.open(src);
 };
 
-window.filtrujPod = (kat, pod) => {
-    render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
+// --- MODALE ---
+window.otworzModal = () => {
+    document.getElementById('modal-form').style.display = 'flex';
 };
 
 window.zamknijModal = () => {
@@ -171,16 +181,15 @@ window.zamknijModal = () => {
     document.getElementById('modal-view').style.display = 'none';
 };
 
-window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
-
-// Zamykanie wszystkiego
 window.onclick = (e) => {
-    if (!e.target.closest('.btn-account')) {
+    if (!e.target.closest('button')) {
         const m = document.getElementById('drop-menu');
-        if(m) m.style.display = 'none';
+        if (m) m.style.display = 'none';
     }
+
     if (e.target.className === 'modal') zamknijModal();
 };
 
+// --- START ---
 sprawdzUzytkownika();
 pobierz();
