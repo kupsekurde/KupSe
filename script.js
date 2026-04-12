@@ -22,111 +22,56 @@ const MAPA_KATEGORII = {
     "Inne": ["Za darmo", "Zamiana", "Kolekcje"]
 };
 
-// --- FUNKCJA KOMPRESJI ZDJĘĆ ---
-async function kompresujZdjecie(plik) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(plik);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200;
-                let width = img.width;
-                let height = img.height;
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/jpeg', 0.7);
-            };
-        };
-    });
-}
-
-// --- LOGOWANIE I AUTH (Zaktualizowane o nowe menu) ---
+// --- AUTH ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    if (user) {
-        nav.style.marginLeft = "auto";
-        nav.style.display = "flex";
-        nav.style.alignItems = "center";
+    if (user && nav) {
         nav.innerHTML = `
-            <div style="position:relative">
-                <button class="btn-account" onclick="toggleUserMenu(event)" style="background:#eee; margin-right:10px">Moje Konto ▼</button>
-                <div id="drop-menu" style="display:none; position:absolute; right:10px; top:45px; background:white; min-width:220px; box-shadow:0 4px 12px rgba(0,0,0,0.15); border-radius:10px; flex-direction:column; z-index:5000; padding:10px">
-                    <div style="font-size:12px; padding:8px; border-bottom:1px solid #eee">
-                        <b>Login:</b> ${user.user_metadata.display_name || 'Użytkownik'}<br>
-                        <b>Email:</b> ${user.email}
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+                <div style="position:relative">
+                    <button class="btn-account" onclick="toggleUserMenu(event)">Moje Konto ▼</button>
+                    <div id="drop-menu" class="dropdown-content" style="display:none; position:absolute; right:0; top:55px; background:white; min-width:200px; z-index:5000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; padding: 10px;">
+                        <span style="font-size:11px; color:gray; padding:5px; display:block; border-bottom:1px solid #eee">Zalogowany: <b>${user.email}</b></span>
+                        <button class="d-btn" onclick="alert('Moje ogłoszenia')">Moje ogłoszenia</button>
+                        <button class="d-btn" onclick="wyloguj()" style="color:#ef4444; font-weight:bold; border-top:1px solid #eee; margin-top:5px">Wyloguj się</button>
                     </div>
-                    <button class="d-btn" onclick="alert('Moje ogłoszenia')">Moje ogłoszenia</button>
-                    <button class="d-btn" onclick="alert('Ulubione')">Ulubione</button>
-                    <button class="d-btn" onclick="alert('Wiadomości')">Wiadomości</button>
-                    <button class="d-btn" onclick="wyloguj()" style="color:red; border-top:1px solid #eee">Wyloguj się</button>
                 </div>
+                <img src="SprzedajSe.png" onclick="otworzModal()" style="height: 40px; width: auto; cursor:pointer; object-fit: contain;" alt="Dodaj">
             </div>
-            <img src="SprzedajSe.png" class="btn-add-ad" onclick="otworzModal()" style="cursor:pointer">
         `;
-        const authBox = document.getElementById('auth-box');
-        if(authBox) authBox.classList.add('hidden');
     }
 }
 
-// NOWA FUNKCJA DROPDOWN
 window.toggleUserMenu = (e) => {
     e.stopPropagation();
     const menu = document.getElementById('drop-menu');
-    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+    if(menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 };
 
-window.loguj = async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('pass').value;
-    const { error } = await baza.auth.signInWithPassword({ email, password });
-    if (error) await baza.auth.signUp({ email, password });
-    location.reload();
-};
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-window.wyloguj = async () => {
-    await baza.auth.signOut();
-    location.reload();
-};
-
-// --- OBSŁUGA OGŁOSZEŃ (Zintegrowany grid) ---
+// --- POBIERANIE (Główna = Top 12) ---
 async function pobierz() {
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
-    render(daneOgloszen, 'lista');
+    // Na start pokaż tylko 12 najnowszych
+    render(daneOgloszen.slice(0, 12));
 }
 
-function render(lista, kontenerId = 'lista') {
-    const kontener = document.getElementById(kontenerId);
-    if(!lista.length) { kontener.innerHTML = "<p>Brak ogłoszeń.</p>"; return; }
-    
-    // Wymuszenie grida z Kodu 2
-    kontener.style.display = "grid";
-    kontener.style.gridTemplateColumns = "repeat(4, 1fr)";
-    kontener.style.gap = "20px";
-
+function render(lista) {
+    const kontener = document.getElementById('lista');
+    if(!kontener) return;
     kontener.innerHTML = lista.map(o => {
-        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0].trim()) : 'https://via.placeholder.com/300';
+        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia) : 'https://via.placeholder.com/300';
         return `
             <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-                <img class="ad-img" src="${foto}" alt="foto" style="width:100%; height:180px; object-fit:cover">
+                <img class="ad-img" src="${foto}">
                 <div class="ad-body">
-                    <div class="ad-price" style="color:var(--primary)">${o.cena.toLocaleString()} zł</div>
+                    <div class="ad-price">${o.cena.toLocaleString()} zł</div>
                     <div class="ad-title">${o.tytul}</div>
-                    <div class="ad-date">
-                        <span>📍 ${o.lokalizacja}</span>
-                        <span>${formatujDate(o.created_at)}</span>
+                    <div style="font-size: 11px; color: #777; margin-top: 8px;">
+                        📍 ${o.lokalizacja} | ${new Date(o.created_at).toLocaleDateString()} ${new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </div>
                 </div>
             </div>
@@ -134,193 +79,96 @@ function render(lista, kontenerId = 'lista') {
     }).join('');
 }
 
-// --- MODAL SZCZEGÓŁÓW (Zintegrowane serce i wiadomości) ---
+// --- SZCZEGÓŁY ---
 window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(item => item.id === id);
     const { data: { user } } = await baza.auth.getUser();
     const box = document.getElementById('view-content');
     
     aktualnaGaleria = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    aktualnyIndex = 0;
-
-    let serce = "gray";
-    if(user) {
-        const { data: favs } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-        if(favs?.length > 0) serce = "red";
-    }
-
-    const miniaturkiHtml = aktualnaGaleria.map((imgUrl, index) => `
-        <img src="${imgUrl}"
-             style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:2px solid #eee"
-             onclick="document.getElementById('main-img').src='${imgUrl}'; aktualnyIndex = ${index}; event.stopPropagation();">
-    `).join('');
+    
+    const kontaktHtml = user ? `
+        <a href="tel:${o.telefon}" class="btn-account" style="display:block; text-align:center; background:#111; color:white; text-decoration:none; padding:15px; margin-bottom:10px; border-radius:10px;">📞 ZADZWOŃ: ${o.telefon}</a>
+        <button onclick="otworzOknoWiadomosci('${o.email_autora}', ${o.id}, '${o.tytul}')" style="width:100%; padding:15px; background:#ff4f00; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:800;">✉ WYŚLIJ WIADOMOŚĆ</button>
+    ` : `
+        <div style="background:#fff3cd; padding:15px; border-radius:10px; text-align:center; font-size:13px; border:1px solid #ffeeba; color: #856404;">
+            Zaloguj się, aby zobaczyć numer i wysłać wiadomość.
+        </div>
+    `;
 
     box.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center">
-            <div onclick="toggleUlubione(${o.id})" style="font-size:25px; cursor:pointer; color:${serce}">❤</div>
-            <span class="close-btn" onclick="zamknijModal()" style="font-size:30px; cursor:pointer; background:#f0f0f0; padding:0 10px; border-radius:6px; color:#888">&times;</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+            <div style="font-size:25px; cursor:pointer; color:#ccc;">❤</div>
+            <span onclick="zamknijModal()" style="font-size:30px; cursor:pointer;">&times;</span>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:10px">
+        <div class="details-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
             <div>
-                <img id="main-img" src="${aktualnaGaleria[0]}"
-                     style="width:100%; border-radius:20px; cursor:zoom-in; box-shadow:0 10px 20px rgba(0,0,0,0.1); max-height:400px; object-fit:contain"
-                     onclick="openLightbox()">
-                <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap">
-                    ${miniaturkiHtml}
+                <img id="main-img" src="${aktualnaGaleria[0]}" style="width:100%; border-radius:10px; height:300px; object-fit:cover;">
+                <div style="display:flex; gap:5px; margin-top:10px; overflow-x:auto">
+                    ${aktualnaGaleria.map(img => `<img src="${img}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; cursor:pointer;" onclick="document.getElementById('main-img').src='${img}'">`).join('')}
                 </div>
             </div>
             <div>
-                <h1 style="margin:0; font-size:32px">${o.tytul}</h1>
-                <h2 style="color:var(--primary); font-size:28px; margin:10px 0">${o.cena.toLocaleString()} zł</h2>
-                <p style="color:gray">📍 Lokalizacja: ${o.lokalizacja}</p>
-                <p style="color:gray">📂 Kategoria: ${o.kategoria} (${o.podkategoria})</p>
-                <div style="background:#f1f5f9; padding:20px; border-radius:15px; margin:20px 0; line-height:1.6">${o.opis}</div>
-                <a href="tel:${o.telefon}" style="display:block; text-align:center; background:#111; color:#fff; padding:18px; border-radius:15px; text-decoration:none; font-weight:800; font-size:18px">📞 Zadzwoń: ${o.telefon}</a>
-                
-                <div style="margin-top:15px">
-                    <textarea id="m-txt" placeholder="Napisz wiadomość do sprzedawcy..." style="width:100%; height:60px; border-radius:8px; border:1px solid #ddd; padding:8px; resize:none"></textarea>
-                    <button onclick="wyslijWiadomosc('${o.email_autora}', ${o.id})" style="width:100%; margin-top:5px; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold">Wyślij wiadomość</button>
-                </div>
+                <h2 style="margin:0">${o.tytul}</h2>
+                <h1 style="color:#ff4f00; margin:10px 0">${o.cena.toLocaleString()} zł</h1>
+                <p style="font-size:11px; color:gray;">📍 ${o.lokalizacja} | ${o.kategoria}</p>
+                <div style="margin:20px 0; font-size:14px; color:#444; line-height:1.4">${o.opis}</div>
+                ${kontaktHtml}
             </div>
         </div>
     `;
-    const modalView = document.getElementById('modal-view');
-    modalView.style.display = 'flex';
-    modalView.style.zIndex = "3000";
+    document.getElementById('modal-view').style.display = 'flex';
 };
 
-// NOWA FUNKCJA WIADOMOŚCI
-window.wyslijWiadomosc = async (odb, oId) => {
+// --- OKNO WIADOMOŚCI ---
+window.otworzOknoWiadomosci = (odbiorca, oglId, tytul) => {
+    const div = document.createElement('div');
+    div.id = "msg-overlay";
+    div.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; align-items:center; justify-content:center;";
+    div.innerHTML = `
+        <div style="background:white; padding:25px; border-radius:15px; width:350px;">
+            <h4 style="margin-top:0">Wyślij wiadomość ws.:</h4>
+            <p style="font-size:12px; color:gray">${tytul}</p>
+            <textarea id="msg-text" placeholder="Twoja wiadomość..." style="width:100%; height:100px; margin:10px 0; padding:10px; border-radius:8px; border:1px solid #ddd; resize:none;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('msg-overlay').remove()" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer;">Anuluj</button>
+                <button onclick="wyslijWiadomoscDoBazy('${odbiorca}', ${oglId})" style="flex:1; padding:10px; background:#ff4f00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Wyślij</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div);
+};
+
+window.wyslijWiadomoscDoBazy = async (odb, oId) => {
+    const txt = document.getElementById('msg-text').value;
+    if(!txt) return alert("Wpisz treść!");
     const { data: { user } } = await baza.auth.getUser();
-    if(!user) return alert("Zaloguj się, aby wysłać wiadomość!");
-    const t = document.getElementById('m-txt').value;
-    if(!t) return alert("Wpisz treść wiadomości!");
-    const { error } = await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca: odb, tresc: t, ogloszenie_id: oId }]);
-    if(!error) { alert("Wysłano!"); document.getElementById('m-txt').value = ""; }
+    const { error } = await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca: odb, tresc: txt, ogloszenie_id: oId }]);
+    if(!error) { alert("Wysłano wiadomość!"); document.getElementById('msg-overlay').remove(); }
 };
 
-// NOWA FUNKCJA ULUBIONE
-window.toggleUlubione = async (id) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-    const { data: favs } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-    if (favs.length > 0) {
-        await baza.from('ulubione').delete().eq('user_id', user.id).eq('ogloszenie_id', id);
-    } else {
-        await baza.from('ulubione').insert([{ user_id: user.id, ogloszenie_id: id }]);
-    }
-    pokazSzczegoly(id);
-};
-
-window.openLightbox = () => {
-    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
-    document.getElementById('lightbox').style.display = 'flex';
-};
-
-window.changeLightbox = (dir) => {
-    aktualnyIndex += dir;
-    if (aktualnyIndex >= aktualnaGaleria.length) aktualnyIndex = 0;
-    if (aktualnyIndex < 0) aktualnyIndex = aktualnaGaleria.length - 1;
-    document.getElementById('lightbox-img').src = aktualnaGaleria[aktualnyIndex];
-};
-
-// --- DODAWANIE OGŁOSZEŃ ---
-window.wyslijOgloszenie = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-save');
-    const pliki = document.getElementById('f-plik').files;
-    if (pliki.length > 5) { alert("Max 5 zdjęć."); return; }
-    btn.innerText = "Kompresja i wysyłka...";
-    btn.disabled = true;
-
-    try {
-        const urlList = [];
-        for (let i = 0; i < pliki.length; i++) {
-            const skompresowanyPlik = await kompresujZdjecie(pliki[i]);
-            const path = `${Date.now()}_${i}_img.jpg`;
-            const { error: uploadError } = await baza.storage.from('zdjecia').upload(path, skompresowanyPlik);
-            if (uploadError) throw uploadError;
-            const { data: u } = baza.storage.from('zdjecia').getPublicUrl(path);
-            urlList.push(u.publicUrl);
-        }
-
-        const { data: { user } } = await baza.auth.getUser();
-
-        const { error: insertError } = await baza.from('ogloszenia').insert([{
-            tytul: document.getElementById('f-tytul').value,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value,
-            cena: parseInt(document.getElementById('f-cena').value),
-            opis: document.getElementById('f-opis').value,
-            lokalizacja: document.getElementById('f-lok').value,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: urlList,
-            email_autora: user.email
-        }]);
-
-        if (insertError) throw insertError;
-        location.reload();
-    } catch (err) {
-        alert("Błąd: " + err.message);
-        btn.innerText = "Opublikuj na KupSe";
-        btn.disabled = false;
-    }
-};
-
-// --- POMOCNICZE ---
-window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
-window.zamknijModal = () => {
-    document.getElementById('modal-form').style.display = 'none';
-    document.getElementById('modal-view').style.display = 'none';
-    const msgModal = document.getElementById('modal-messages');
-    if(msgModal) msgModal.style.display = 'none';
-};
-
-// NOWA FUNKCJA ZAMYKANIA PRZEZ TŁO
-window.onclick = (e) => {
-    if (e.target.classList.contains('modal')) zamknijModal();
-    const dropMenu = document.getElementById('drop-menu');
-    if (dropMenu && !e.target.matches('.btn-account')) {
-        dropMenu.style.display = 'none';
-    }
-};
-
-window.updateFormSubcats = () => {
-    const kat = document.getElementById('f-kat').value;
-    const p = document.getElementById('f-podkat');
-    p.innerHTML = '<option value="">Podkategoria</option>';
-    if(MAPA_KATEGORII[kat]) {
-        MAPA_KATEGORII[kat].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
-    }
-};
-
+// --- FILTROWANIE ---
 window.toggleSubcats = (kat) => {
     const panel = document.getElementById('subcat-panel');
-    if (panel.dataset.active === kat && panel.style.display === 'flex') {
-        panel.style.display = 'none';
-        render(daneOgloszen);
-        return;
-    }
-    render(daneOgloszen.filter(o => o.kategoria === kat));
-    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${p}')">${p}</div>`).join('') + `<div class="sub-pill" style="background:#ddd" onclick="location.reload()">Reset X</div>`;
+    // Pokaż WSZYSTKIE ogłoszenia z tej kategorii (zdejmujemy limit 12)
+    const przefiltrowane = daneOgloszen.filter(o => o.kategoria === kat);
+    render(przefiltrowane);
+
+    panel.innerHTML = MAPA_KATEGORII[kat].map(p => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${p}')">${p}</div>`).join('') + 
+                      `<div class="sub-pill" style="background:#eee" onclick="location.reload()">Reset X</div>`;
     panel.style.display = 'flex';
-    panel.dataset.active = kat;
 };
 
 window.filtrujPoPodkat = (kat, pod) => {
     render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === pod));
 };
 
-window.filtruj = () => {
-    const t = document.getElementById('find-text').value.toLowerCase();
-    render(daneOgloszen.filter(o => o.tytul.toLowerCase().includes(t) || o.opis.toLowerCase().includes(t)));
+window.zamknijModal = () => {
+    document.getElementById('modal-form').style.display = 'none';
+    document.getElementById('modal-view').style.display = 'none';
 };
 
-// NOWA FUNKCJA DATY
-function formatujDate(iso) {
-    const d = new Date(iso);
-    return d.toLocaleDateString('pl-PL') + ' ' + d.toLocaleTimeString('pl-PL', {hour:'2-digit', minute:'2-digit'});
-}
+window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
 
 sprawdzUzytkownika();
 pobierz();
