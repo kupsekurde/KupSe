@@ -50,19 +50,45 @@ window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
+    
     if (user && nav) {
+        // Ukrywamy boks logowania jeśli jest widoczny
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
+
+        // Pobieramy liczbę ulubionych, aby wyświetlić licznik (opcjonalnie)
         const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
+
         nav.innerHTML = `
-            <div style="position:relative; display:flex; gap:10px;">
+            <div style="position:relative; display:flex; gap:10px; align-items:center;">
                 <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">Moje Konto ▼</button>
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:200px;">
-                    <small>Zalogowany jako:</small><br><b>${user.email}</b><hr>
-                    <div onclick="alert('Wiadomości')" style="padding:10px 0; cursor:pointer;">✉️ Wiadomości</div>
-                    <div onclick="wyloguj()" style="padding:10px 0; cursor:pointer; color:red;">🚪 Wyloguj</div>
+                
+                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
+                        <small style="color:gray;">Zalogowany jako:</small><br>
+                        <b style="font-size:13px; word-break:break-all;">${user.email}</b>
+                    </div>
+
+                    <div onclick="alert('Moje ogłoszenia')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                        📝 Moje ogłoszenia
+                    </div>
+
+                    <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                        ✉️ Wiadomości
+                    </div>
+
+                    <div onclick="alert('Ulubione')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                        ❤️ Ulubione (${mojeUlubione.length})
+                    </div>
+
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+
+                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">
+                        🚪 Wyloguj
+                    </div>
                 </div>
-                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer;">+ Dodaj</button>
+
+                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
             </div>`;
     }
 }
