@@ -99,6 +99,31 @@ window.addEventListener('click', (e) => {
     }
 });
 
+// --- SZUKANIE (NAZWA + LOKALIZACJA) ---
+window.szukaj = () => {
+    const fraza = document.getElementById('find-text').value.toLowerCase().trim();
+    const lok = document.getElementById('find-loc').value.toLowerCase().trim();
+    
+    const wyniki = daneOgloszen.filter(o => {
+        const tytulOk = o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
+        const lokOk = o.lokalizacja.toLowerCase().includes(lok);
+        return tytulOk && lokOk;
+    });
+    
+    // Ukrywamy panel podkategorii przy szukaniu
+    document.getElementById('subcat-panel').style.display = 'none';
+    
+    // Zmieniamy nagłówek
+    const naglowek = document.getElementById('grid-title');
+    if (fraza || lok) {
+        naglowek.innerText = `Wyniki wyszukiwania (${wyniki.length})`;
+    } else {
+        naglowek.innerText = "Najnowsze ogłoszenia";
+    }
+
+    render(wyniki, false);
+};
+
 // --- SYSTEM WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
@@ -170,6 +195,7 @@ window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
     render(ulubioneLista, false);
     document.getElementById('subcat-panel').style.display = 'none';
+    document.getElementById('grid-title').innerText = "Twoje Ulubione";
 };
 
 // --- SZCZEGÓŁY OGŁOSZENIA I GALERIA ---
@@ -220,7 +246,6 @@ window.pokazSzczegoly = (id) => {
 window.zmienFoto = (dir) => {
     aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
     ustawFoto(aktualneZdjecieIndex);
-    // Jeśli lightbox jest otwarty, zaktualizuj też tam
     const fullImg = document.getElementById('full-img-view');
     if (fullImg) fullImg.src = aktualneFotki[aktualneZdjecieIndex];
 };
@@ -232,21 +257,15 @@ window.ustawFoto = (idx) => {
     document.querySelectorAll('.mini-foto').forEach((m, i) => m.style.borderColor = i === idx ? 'var(--primary)' : '#ddd');
 };
 
-// --- NOWA FUNKCJA LIGHTBOX (POWIĘKSZONE ZDJĘCIE) ---
 window.otworzFullFoto = () => {
     let lightbox = document.getElementById('lightbox-overlay');
     if (!lightbox) {
         lightbox = document.createElement('div');
         lightbox.id = 'lightbox-overlay';
-        lightbox.style = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 5000;
-            display: flex; align-items: center; justify-content: center;
-        `;
+        lightbox.style = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: flex; align-items: center; justify-content: center;`;
         lightbox.onclick = (e) => { if (e.target === lightbox) window.zamknijFullFoto(); };
         document.body.appendChild(lightbox);
     }
-
     lightbox.innerHTML = `
         <button onclick="window.zamknijFullFoto()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:40px; cursor:pointer; z-index:5001;">&times;</button>
         ${aktualneFotki.length > 1 ? `
@@ -269,10 +288,12 @@ window.toggleSubcats = (kat) => {
     if (!p) return;
     p.style.display = 'flex';
     p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    document.getElementById('grid-title').innerText = `Kategoria: ${kat}`;
     render(daneOgloszen.filter(o => o.kategoria === kat), false);
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
+    document.getElementById('grid-title').innerText = `${kat} > ${podkat}`;
     render(daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat), false);
 };
 
@@ -326,7 +347,7 @@ window.pokazMojeOgloszenia = async () => {
         <h2 style="margin-bottom:20px;">Moje ogłoszenia (${moje.length})</h2>
         <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px;">
             ${moje.map(o => `
-                <div class="ad-card" style="border:1px solid #eee;">
+                <div class="ad-card" style="border:1px solid #eee; cursor:default;">
                     <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:110px; object-fit:cover;">
                     <div style="padding:10px;">
                         <b>${o.cena} zł</b>
@@ -350,8 +371,7 @@ window.usunOgloszenie = async (id) => {
 function render(lista, glowna = false) {
     const k = document.getElementById('lista');
     if (!k) return;
-    const d = glowna ? lista.slice(0, 48) : lista; // Zmienione na 48, żeby widzieć więcej ogłoszeń testowych
-    k.innerHTML = d.map(o => {
+    k.innerHTML = lista.map(o => {
         const isFav = mojeUlubione.includes(o.id);
         const dataStr = new Date(o.created_at).toLocaleString('pl-PL', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
         return `
