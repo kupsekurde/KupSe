@@ -52,10 +52,8 @@ async function sprawdzUzytkownika() {
     const nav = document.getElementById('user-nav');
     
     if (user && nav) {
-        // Ukrywamy boks logowania jeśli jest widoczny
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
 
-        // Pobieramy liczbę ulubionych, aby wyświetlić licznik (opcjonalnie)
         const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
 
@@ -69,30 +67,17 @@ async function sprawdzUzytkownika() {
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
 
-                    <div onclick="alert('Moje ogłoszenia')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
-                        📝 Moje ogłoszenia
-                    </div>
-
-                    <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
-                        ✉️ Wiadomości
-                    </div>
-
-                    <div onclick="alert('Ulubione')" style="padding:10px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
-                        ❤️ Ulubione (${mojeUlubione.length})
-                    </div>
-
+                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer; border-radius:8px;">📝 Moje ogłoszenia</div>
+                    <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; border-radius:8px;">✉️ Wiadomości</div>
+                    <div onclick="alert('Ulubione')" style="padding:10px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-
-                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">
-                        🚪 Wyloguj
-                    </div>
+                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
 
                 <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
             </div>`;
     }
 }
-
 window.toggleUserMenu = (e) => { e.stopPropagation(); const m = document.getElementById('drop-menu'); if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; };
 
 // --- POBIERANIE I RENDEROWANIE (NAJNOWSZE OGŁOSZENIA) ---
