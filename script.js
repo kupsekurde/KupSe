@@ -186,3 +186,73 @@ window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m
 window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
 init();
+// ==========================================
+// MOJE OGŁOSZENIA - LOGIKA OKNA I USUWANIA
+// ==========================================
+
+window.pokazMojeOgloszenia = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) {
+        alert("Musisz być zalogowany!");
+        return;
+    }
+
+    // Filtrujemy ogłoszenia zalogowanego użytkownika
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    
+    const content = document.getElementById('view-content');
+    const modal = document.getElementById('modal-view');
+    
+    if (moje.length === 0) {
+        content.innerHTML = `
+            <button class="close-btn" onclick="zamknijModal()">&times;</button>
+            <div style="padding:60px 20px; text-align:center;">
+                <div style="font-size: 50px; margin-bottom: 20px;">📂</div>
+                <h2 style="color:#333; margin-bottom: 10px;">Nie posiadasz ogłoszeń</h2>
+                <p style="color: gray; margin-bottom: 25px;">Dodaj coś, aby wyświetlić to tutaj.</p>
+                <button onclick="zamknijModal(); document.getElementById('modal-form').style.display='flex'" 
+                        style="padding:12px 25px; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">
+                    + Dodaj pierwsze ogłoszenie
+                </button>
+            </div>`;
+    } else {
+        content.innerHTML = `
+            <button class="close-btn" onclick="zamknijModal()">&times;</button>
+            <div style="padding:10px;">
+                <h2 style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                    📝 Moje ogłoszenia <span style="background:#eee; padding:2px 10px; border-radius:15px; font-size:14px;">${moje.length}</span>
+                </h2>
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto; padding:5px;">
+                    ${moje.map(o => `
+                        <div class="ad-card" style="border:1px solid #eee; cursor:default; transform:none;">
+                            <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjumia || 'https://via.placeholder.com/300')}" style="width:100%; height:110px; object-fit:cover; border-radius:8px;">
+                            <div style="padding:10px;">
+                                <b style="display:block; margin-bottom:5px;">${o.cena} zł</b>
+                                <div style="font-size:12px; color:#555; height:32px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                                    ${o.tytul}
+                                </div>
+                                <div style="display:flex; gap:5px; margin-top:10px;">
+                                    <button onclick="pokazSzczegoly(${o.id})" style="flex:1; background:#eee; border:none; padding:6px; border-radius:5px; cursor:pointer; font-size:10px;">Podgląd</button>
+                                    <button onclick="usunOgloszenie(${o.id})" style="flex:1; background:#ffebeb; color:red; border:1px solid #ffdada; padding:6px; border-radius:5px; cursor:pointer; font-size:10px; font-weight:bold;">Usuń</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.usunOgloszenie = async (id) => {
+    if (confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) {
+        const { error } = await baza.from('ogloszenia').delete().eq('id', id);
+        if (error) {
+            alert("Błąd: " + error.message);
+        } else {
+            alert("Usunięto pomyślnie.");
+            location.reload();
+        }
+    }
+};
