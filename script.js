@@ -27,7 +27,7 @@ window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
     const { error } = await baza.auth.signInWithPassword({ email, password });
-    if (error) alert("Błąd: " + error.message); else location.reload();
+    if (error) alert("Błąd logowania: " + error.message); else location.reload();
 };
 
 window.zarejestruj = async () => {
@@ -35,34 +35,34 @@ window.zarejestruj = async () => {
     const password = document.getElementById('reg-pass').value;
     if (password.length < 6) return alert("Hasło min. 6 znaków!");
     const { error } = await baza.auth.signUp({ email, password });
-    if (error) alert("Błąd: " + error.message); 
-    else alert("Zarejestrowano! Możesz się zalogować.");
+    if (error) alert("Błąd rejestracji: " + error.message); 
+    else alert("Zarejestrowano! Sprawdź e-mail lub zaloguj się.");
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
-// --- OBSŁUGA UŻYTKOWNIKA I MENU ---
+// --- MENU I PROFIL ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
     
     if (user && nav) {
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
-
-        const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
+        
+        const { data: ulubioneData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = ulubioneData ? ulubioneData.map(x => x.ogloszenie_id) : [];
 
         nav.innerHTML = `
             <div style="position:relative; display:flex; gap:10px; align-items:center;">
                 <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">Moje Konto ▼</button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                        <small style="color:gray;">Zalogowany jako:</small><br>
+                        <small style="color:gray;">Zalogowany:</small><br>
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
                     <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer; border-radius:8px;">📝 Moje ogłoszenia</div>
-                    <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; border-radius:8px;">✉️ Wiadomości</div>
-                    <div onclick="alert('Ulubione')" style="padding:10px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="alert('Wiadomości wkrótce')" style="padding:10px; cursor:pointer; border-radius:8px;">✉️ Wiadomości</div>
+                    <div onclick="alert('Ulubione: ' + mojeUlubione.length)" style="padding:10px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
@@ -77,7 +77,7 @@ window.toggleUserMenu = (e) => {
     if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
 };
 
-// --- KATEGORIE I FILTROWANIE ---
+// --- KATEGORIE ---
 window.toggleSubcats = (kat) => {
     const panel = document.getElementById('subcat-panel');
     if (!panel) return;
@@ -97,6 +97,61 @@ window.updateFormSubcats = () => {
     const listaPodkategorii = SUB_DATA[kategoriaGlowna] || [];
     polePodkategorii.innerHTML = '<option value="">Wybierz podkategorię</option>' + 
         listaPodkategorii.map(p => `<option value="${p}">${p}</option>`).join('');
+};
+
+// --- SZCZEGÓŁY OGŁOSZENIA (POWIĘKSZANIE ZDJĘCIA) ---
+window.pokazSzczegoly = (id) => {
+    const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    
+    aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    aktualneZdjecieIndex = 0;
+
+    const modalContent = document.getElementById('view-content');
+    modalContent.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <div style="display:flex; flex-wrap:wrap; gap:20px;">
+            <div style="flex:1.5; min-width:300px;">
+                <div style="position:relative; background:#000; border-radius:15px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; height:400px; object-fit:contain; cursor:zoom-in;" onclick="window.open(this.src)">
+                    ${aktualneFotki.length > 1 ? `
+                        <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">◀</button>
+                        <button onclick="zmienFoto(1)" style="position:absolute; right:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▶</button>
+                    ` : ''}
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                    ${aktualneFotki.map((img, i) => `
+                        <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'var(--primary)' : '#ddd'}">
+                    `).join('')}
+                </div>
+            </div>
+            <div style="flex:1; min-width:250px;">
+                <h2 style="margin-top:0;">${o.tytul}</h2>
+                <h1 style="color:var(--primary);">${o.cena} zł</h1>
+                <p>📍 ${o.lokalizacja}</p>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                <div style="font-size:14px; color:#555; white-space:pre-line;">${o.opis}</div>
+                <div style="margin-top:20px; padding:15px; background:#f5f5f5; border-radius:10px;">
+                    📞 <b>${o.telefon || 'Brak numeru'}</b>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.zmienFoto = (dir) => {
+    aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
+    ustawFoto(aktualneZdjecieIndex);
+};
+
+window.ustawFoto = (idx) => {
+    aktualneZdjecieIndex = idx;
+    const mainImg = document.getElementById('mainFoto');
+    if (mainImg) mainImg.src = aktualneFotki[idx];
+    document.querySelectorAll('.mini-foto').forEach((img, i) => {
+        img.style.borderColor = i === idx ? 'var(--primary)' : '#ddd';
+    });
 };
 
 // --- DODAWANIE OGŁOSZEŃ ---
@@ -131,12 +186,46 @@ window.wyslijOgloszenie = async (e) => {
         opis: document.getElementById('f-opis').value,
         telefon: document.getElementById('f-tel').value,
         zdjecia: wgraneZdjecia,
-        user_email: user.email
+        user_email: user.email 
     }]);
 
-    if (error) { alert("Błąd: " + error.message); btn.disabled = false; } 
-    else { alert("Dodano pomyślnie!"); location.reload(); }
+    if (error) { 
+        alert("Błąd: " + error.message); 
+        btn.disabled = false; 
+        btn.innerText = "Opublikuj ogłoszenie";
+    } else { 
+        alert("Dodano ogłoszenie!"); 
+        location.reload(); 
+    }
 };
+
+// --- RENDEROWANIE GŁÓWNE ---
+async function pobierz() {
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    render(daneOgloszen, true);
+}
+
+function render(lista, czyStronaGlowna = false) {
+    const kontener = document.getElementById('lista');
+    if (!kontener) return;
+    const tytulSekcji = document.getElementById('grid-title');
+    if (tytulSekcji) tytulSekcji.innerText = czyStronaGlowna ? "Najnowsze ogłoszenia" : "Wyniki wyszukiwania";
+
+    const dane = czyStronaGlowna ? lista.slice(0, 12) : lista;
+    kontener.innerHTML = dane.map(o => {
+        const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : 'https://via.placeholder.com/300';
+        return `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
+            <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
+            <div style="padding:15px;">
+                <b style="font-size:18px;">${o.cena} zł</b>
+                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
+                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
 
 // --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async () => {
@@ -147,14 +236,14 @@ window.pokazMojeOgloszenia = async () => {
     
     content.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2 style="margin-bottom:20px;">📝 Moje ogłoszenia (${moje.length})</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto;">
+        <h2 style="margin-bottom:20px;">Moje ogłoszenia (${moje.length})</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px;">
             ${moje.map(o => `
-                <div class="ad-card" style="border:1px solid #eee; cursor:default;">
+                <div class="ad-card" style="border:1px solid #eee;">
                     <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:110px; object-fit:cover;">
                     <div style="padding:10px;">
                         <b>${o.cena} zł</b>
-                        <div style="font-size:12px; height:32px; overflow:hidden;">${o.tytul}</div>
+                        <div style="font-size:11px;">${o.tytul}</div>
                         <button onclick="usunOgloszenie(${o.id})" style="width:100%; margin-top:10px; color:red; cursor:pointer;">Usuń</button>
                     </div>
                 </div>
@@ -164,39 +253,19 @@ window.pokazMojeOgloszenia = async () => {
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Usunąć to ogłoszenie?")) {
+    if (confirm("Na pewno usunąć?")) {
         await baza.from('ogloszenia').delete().eq('id', id);
         location.reload();
     }
 };
 
-// --- RENDEROWANIE I MODALE ---
-function render(lista, czyStronaGlowna = false) {
-    const kontener = document.getElementById('lista');
-    if (!kontener) return;
-    const tytulSekcji = document.getElementById('grid-title');
-    if (tytulSekcji) tytulSekcji.innerText = czyStronaGlowna ? "Najnowsze ogłoszenia" : "Wyniki wyszukiwania";
-
-    const dane = czyStronaGlowna ? lista.slice(0, 12) : lista;
-    kontener.innerHTML = dane.map(o => `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <img src="${o.zdjecia ? o.zdjecia[0] : 'https://via.placeholder.com/300'}" style="width:100%; height:180px; object-fit:cover;">
-            <div style="padding:15px;">
-                <b style="font-size:18px;">${o.cena} zł</b>
-                <div style="color:#555; margin-top:5px; height:40px; overflow:hidden;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
-            </div>
-        </div>`).join('');
-}
-
 window.zamknijModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
 window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
 
+// --- START ---
 async function init() {
     await sprawdzUzytkownika();
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    daneOgloszen = data || [];
-    render(daneOgloszen, true);
+    await pobierz();
 }
 
 init();
