@@ -125,29 +125,51 @@ window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     const box = document.getElementById('view-content');
     const fotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    const liked = mojeUlubione.includes(o.id);
+    
+    // Formatowanie daty (Punkt 1)
+    const data = new Date(o.created_at).toLocaleString('pl-PL', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
 
     box.innerHTML = `
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <h2 style="margin-top:0;">${o.tytul}</h2>
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+            <div>
+                <h2 style="margin:0;">${o.tytul}</h2>
+                <span style="font-size:12px; color:gray;">Dodano: ${data}</span>
+            </div>
+            <button onclick="toggleUlubione(${o.id})" style="background:none; border:none; font-size:30px; cursor:pointer;">
+                ${liked ? '❤️' : '🤍'}
+            </button>
+        </div>
+
         <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div style="flex:1.5; min-width:300px;">
-                <img id="mainFoto" src="${fotki[0]}" style="width:100%; border-radius:15px; height:400px; object-fit:cover;">
+                <div style="position:relative; overflow:hidden; border-radius:15px;">
+                    <img id="mainFoto" src="${fotki[0]}" 
+                         onclick="window.open(this.src)" 
+                         title="Kliknij, aby powiększyć"
+                         style="width:100%; height:400px; object-fit:cover; cursor:zoom-in; transition: transform 0.3s ease;">
+                </div>
                 <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;">
-                    ${fotki.map((f, i) => `<img src="${f}" onclick="document.getElementById('mainFoto').src='${f}'" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #ddd;">`).join('')}
+                    ${fotki.map((f) => `<img src="${f}" onclick="document.getElementById('mainFoto').src='${f}'" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #ddd;">`).join('')}
                 </div>
             </div>
+            
             <div style="flex:1; min-width:250px; background:#f9f9f9; padding:20px; border-radius:15px;">
                 <h1 style="color:var(--primary); margin:0;">${o.cena} zł</h1>
-                <p style="color:gray;">📍 ${o.lokalizacja || 'Nie podano'}</p>
+                <p style="color:gray;">📍 ${o.lokalizacja}</p>
                 <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-                <div style="font-weight:bold; margin-bottom:10px;">Dane kontaktowe:</div>
                 <div style="font-size:18px; color:#111; margin-bottom:15px;">📞 ${o.telefon || 'Brak numeru'}</div>
-                <button onclick="alert('Funkcja wiadomości wkrótce!')" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">Wyślij wiadomość</button>
+                <button onclick="alert('Kontaktowanie się z: ${o.user_email}')" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">Wyślij wiadomość</button>
             </div>
         </div>
+
         <div style="margin-top:30px;">
             <h3>Opis</h3>
-            <p style="white-space:pre-line; line-height:1.6; color:#333;">${o.opis || 'Brak opisu.'}</p>
+            <p style="white-space:pre-line; color:#333;">${o.opis}</p>
         </div>
     `;
     document.getElementById('modal-view').style.display = 'flex';
@@ -156,7 +178,7 @@ window.pokazSzczegoly = (id) => {
 // --- FUNKCJE POMOCNICZE ---
 window.toggleUlubione = async (id) => {
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się, aby dodać do ulubionych!");
+    if (!user) return alert("Zaloguj się!");
 
     if (mojeUlubione.includes(id)) {
         await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
@@ -165,12 +187,11 @@ window.toggleUlubione = async (id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    render(daneOgloszen);
-};
-
-window.zamknijModal = () => {
-    document.getElementById('modal-form').style.display = 'none';
-    document.getElementById('modal-view').style.display = 'none';
+    
+    // Odświeżamy widok ogłoszenia, żeby serce zmieniło kolor
+    pokazSzczegoly(id); 
+    // I listę w tle
+    render(daneOgloszen, true); 
 };
 
 window.onclick = (e) => {
