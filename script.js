@@ -299,21 +299,27 @@ window.otworzFormularzDodawania = () => {
 
 window.updateFormSubcats = (prefix) => {
     const k = document.getElementById(`${prefix}kat`).value;
-    const s = document.getElementById(`${prefix}podkat`);
+    const podkat = document.getElementById(`${prefix}podkat`);
     const extra = document.getElementById('extra-fields');
     
-    if (s) {
-        s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    // Aktualizacja podkategorii
+    if (podkat) {
+        podkat.innerHTML = '<option value="">Podkategoria</option>' + 
+            (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
+    // Dynamiczne pola dla Aut osobowych i Elektroniki (Telefony)
     if (extra) {
+        extra.innerHTML = ''; // Czyścimy na start
+        
         if (k === 'Motoryzacja') {
             extra.innerHTML = `
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
-                    <input type="text" id="f-marka-ins" placeholder="Marka (np. Audi)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                    <input type="text" id="f-model-ins" placeholder="Model (np. A6)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-marka-ins" placeholder="Marka" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-model-ins" placeholder="Model" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
                     <input type="number" id="f-rok-ins" placeholder="Rok produkcji" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
                     <select id="f-paliwo-ins" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="">Paliwo</option>
                         <option value="Benzyna">Benzyna</option>
                         <option value="Diesel">Diesel</option>
                         <option value="LPG">LPG</option>
@@ -324,16 +330,14 @@ window.updateFormSubcats = (prefix) => {
         } else if (k === 'Elektronika') {
             extra.innerHTML = `
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
-                    <input type="text" id="f-marka-ins" placeholder="Producent (np. Apple)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
-                    <input type="text" id="f-model-ins" placeholder="Model (np. iPhone 15)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-marka-ins" placeholder="Marka/Producent" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="f-model-ins" placeholder="Model" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
                     <select id="f-stan-ins" style="padding:8px; border-radius:5px; border:1px solid #ccc;">
                         <option value="Nowy">Nowy</option>
                         <option value="Używany">Używany</option>
                         <option value="Uszkodzony">Uszkodzony</option>
                     </select>
                 </div>`;
-        } else {
-            extra.innerHTML = '';
         }
     }
 };
@@ -358,19 +362,22 @@ window.wyslijOgloszenie = async (e) => {
         if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
 
+    // Pobieranie dodatkowych danych technicznych
     let dodatek = "";
     const kat = document.getElementById('f-kat').value;
-    if (kat === 'Motoryzacja') {
-        const marka = document.getElementById('f-marka-ins').value;
-        const model = document.getElementById('f-model-ins').value;
-        const rok = document.getElementById('f-rok-ins').value;
-        const paliwo = document.getElementById('f-paliwo-ins').value;
-        dodatek = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
-    } else if (kat === 'Elektronika') {
-        const marka = document.getElementById('f-marka-ins').value;
-        const model = document.getElementById('f-model-ins').value;
-        const stan = document.getElementById('f-stan-ins').value;
-        dodatek = `\n\n--- DANE ---\nProducent: ${marka}\nModel: ${model}\nStan: ${stan}`;
+    if (kat === 'Motoryzacja' || kat === 'Elektronika') {
+        const marka = document.getElementById('f-marka-ins')?.value || '';
+        const model = document.getElementById('f-model-ins')?.value || '';
+        dodatek = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}`;
+        
+        if (kat === 'Motoryzacja') {
+            const rok = document.getElementById('f-rok-ins').value;
+            const paliwo = document.getElementById('f-paliwo-ins').value;
+            dodatek += `\nRok: ${rok}\nPaliwo: ${paliwo}`;
+        } else if (kat === 'Elektronika') {
+            const stan = document.getElementById('f-stan-ins').value;
+            dodatek += `\nStan: ${stan}`;
+        }
     }
 
     const { error } = await baza.from('ogloszenia').insert([{
@@ -480,12 +487,11 @@ function pokazWynikiModal(tytul, wyniki, strona = 1) {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
         <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:65vh; overflow-y:auto; padding-right:5px;">
-            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
+            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p'}
         </div>
         ${paginacjaHTML}`;
     
     document.getElementById('modal-view').style.display = 'flex';
-    // Przewiń górę siatki po zmianie strony
     const grid = document.getElementById('modal-grid');
     if(grid) grid.scrollTop = 0;
 }
