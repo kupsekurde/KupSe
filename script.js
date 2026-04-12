@@ -6,6 +6,7 @@ let daneOgloszen = [];
 let mojeUlubione = [];
 let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
+let edytowaneZdjecia = []; // Pomocnicza tablica dla edycji
 
 const SUB_DATA = {
     'Motoryzacja': ['Samochody', 'Motocykle', 'Części'],
@@ -245,7 +246,7 @@ window.wyslijOgloszenie = async (e) => {
     location.reload();
 };
 
-// --- MOJE OGŁOSZENIA (AKTYWNE/ZAKOŃCZONE + EDYCJA) ---
+// --- MOJE OGŁOSZENIA (AKTYWNE/ZAKOŃCZONE) ---
 window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
@@ -288,7 +289,7 @@ window.toggleAdMenu = (e, id) => {
     e.stopPropagation();
     document.querySelectorAll('.ad-options-menu').forEach(m => { if(m.id !== `ad-menu-${id}`) m.style.display = 'none'; });
     const m = document.getElementById(`ad-menu-${id}`);
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
 window.usunOgloszenie = async (id) => {
@@ -298,15 +299,21 @@ window.usunOgloszenie = async (id) => {
     }
 };
 
-// --- SYSTEM EDYCJI ---
+// --- SYSTEM EDYCJI ZE ZDJĘCIAMI ---
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
+    edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    
+    renderujFormularzEdycji(o);
+};
+
+function renderujFormularzEdycji(o) {
     const content = document.getElementById('view-content');
     content.innerHTML = `
         <button class="close-btn" onclick="pokazMojeOgloszenia()">&times;</button>
         <h3>Edytuj ogłoszenie</h3>
-        <form id="edit-form" onsubmit="zapiszEdycje(event, ${id})" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+        <form id="edit-form" onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
             <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł">
             <div style="display:flex; gap:10px;">
                 <select id="e-kat" onchange="updateFormSubcats('e-')" required>
@@ -316,19 +323,52 @@ window.edytujOgloszenie = (id) => {
                     <option value="${o.podkategoria}">${o.podkategoria}</option>
                 </select>
             </div>
+            
+            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami:</label>
+            <div id="edit-photos-preview" style="display:flex; gap:5px; flex-wrap:wrap; background:#eee; padding:10px; border-radius:10px;">
+                ${edytowaneZdjecia.map((src, i) => `
+                    <div style="position:relative; width:60px; height:60px;">
+                        <img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;">
+                        <div onclick="usunZdjecieZEdycji(${i}, ${o.id})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold;">X</div>
+                    </div>
+                `).join('')}
+            </div>
+            <input type="file" id="e-nowe-pliki" multiple accept="image/*" style="font-size:12px;">
+
             <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena">
             <input type="text" id="e-lok" value="${o.lokalizacja}" required placeholder="Lokalizacja">
             <input type="text" id="e-tel" value="${o.telefon || ''}" placeholder="Telefon">
             <textarea id="e-opis" rows="5" required placeholder="Opis">${o.opis}</textarea>
-            <button type="submit" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
+            <button type="submit" id="btn-edit-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
         </form>`;
+}
+
+window.usunZdjecieZEdycji = (index, adId) => {
+    edytowaneZdjecia.splice(index, 1);
+    const o = daneOgloszen.find(x => x.id === adId);
+    renderujFormularzEdycji(o);
 };
 
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
-    const btn = e.target.querySelector('button');
+    const btn = document.getElementById('btn-edit-save');
     btn.disabled = true;
     btn.innerText = "Zapisywanie...";
+
+    // 1. Wgrywanie nowych zdjęć (jeśli są)
+    const nowePliki = document.getElementById('e-nowe-pliki').files;
+    let noweLinki = [];
+    for (let f of nowePliki) {
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) noweLinki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    }
+
+    // 2. Połączenie starych (zostawionych) z nowymi
+    const ostateczneZdjecia = [...edytowaneZdjecia, ...noweLinki];
+    if (ostateczneZdjecia.length === 0) ostateczneZdjecia.push('https://via.placeholder.com/600');
+
+    // 3. Update w bazie
     const { error } = await baza.from('ogloszenia').update({
         tytul: document.getElementById('e-tytul').value,
         kategoria: document.getElementById('e-kat').value,
@@ -336,9 +376,17 @@ window.zapiszEdycje = async (e, id) => {
         cena: parseFloat(document.getElementById('e-cena').value),
         lokalizacja: document.getElementById('e-lok').value,
         opis: document.getElementById('e-opis').value,
-        telefon: document.getElementById('e-tel').value
+        telefon: document.getElementById('e-tel').value,
+        zdjecia: ostateczneZdjecia
     }).eq('id', id);
-    if (error) alert("Błąd zapisu: " + error.message); else location.reload();
+
+    if (error) {
+        alert("Błąd zapisu: " + error.message);
+        btn.disabled = false;
+        btn.innerText = "Zapisz zmiany";
+    } else {
+        location.reload();
+    }
 };
 
 // --- RENDER I INIT ---
