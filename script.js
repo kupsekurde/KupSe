@@ -23,6 +23,13 @@ const SUB_DATA = {
     'Inne': ['Różne']
 };
 
+// --- POMOCNICZE ---
+function formatujDate(isoString) {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 // --- LOGOWANIE I REJESTRACJA ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
@@ -156,6 +163,7 @@ window.pokazSzczegoly = (id) => {
                 </div>
             </div>
             <div style="flex:1;">
+                <div style="font-size:12px; color:gray; margin-bottom:5px;">Dodano: ${formatujDate(o.created_at)}</div>
                 <h2>${o.tytul}</h2>
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
@@ -272,19 +280,17 @@ window.wyslijOgloszenie = async (e) => {
     location.reload();
 };
 
-// --- LOGIKA KATEGORII (POPRAWIONA: TYLKO ROZWIJA PODKATEGORIE) ---
+// --- LOGIKA KATEGORII ---
 window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
     
-    // Jeśli kliknięto w już aktywną kategorię (ukrywamy panel)
     if (p.dataset.activeKat === kat && p.style.display === 'flex') {
         p.style.display = 'none';
         p.dataset.activeKat = '';
         return;
     }
 
-    // Wyświetlamy pigułki podkategorii
     p.style.display = 'flex';
     p.dataset.activeKat = kat;
     p.innerHTML = (SUB_DATA[kat] || []).map(s => 
@@ -320,7 +326,10 @@ function renderCardHTML(o) {
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
-                <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
+                <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between;">
+                    <span>📍 ${o.lokalizacja}</span>
+                    <span style="font-size:10px; opacity:0.7;">${formatujDate(o.created_at).split(',')[0]}</span>
+                </div>
             </div>
         </div>`;
 }
