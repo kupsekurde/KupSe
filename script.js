@@ -24,47 +24,6 @@ const SUB_DATA = {
     'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
-// --- BAZA DANYCH DLA DYNAMICZNYCH LIST (MARKI I MODELE) ---
-const AUTO_DATA = {
-    'Audi': ['A3', 'A4', 'A6', 'Q5', 'Q7', 'TT'],
-    'BMW': ['Seria 3', 'Seria 5', 'X3', 'X5', 'M3'],
-    'Ford': ['Focus', 'Mondeo', 'S-Max', 'Fiesta', 'Kuga', 'Mustang'],
-    'Mercedes-Benz': ['Klasa C', 'Klasa E', 'Klasa S', 'GLC', 'GLE'],
-    'Opel': ['Astra', 'Insignia', 'Corsa', 'Mokka'],
-    'Toyota': ['Corolla', 'Yaris', 'Avensis', 'RAV4'],
-    'Volkswagen': ['Golf', 'Passat', 'Tiguan', 'Polo']
-};
-
-const PHONE_DATA = {
-    'Apple': ['iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone SE'],
-    'Samsung': ['Galaxy S23', 'Galaxy S24', 'Galaxy A54', 'Galaxy Z Flip'],
-    'Xiaomi': ['Redmi Note 12', 'Xiaomi 13', 'POCO F5'],
-    'Huawei': ['P60 Pro', 'Mate 50', 'Nova 11']
-};
-
-// --- NOWA KONFIGURACJA FILTRÓW SPECJALISTYCZNYCH ---
-const FILTER_CONFIG = {
-    'Samochody osobowe': [
-        { id: 'marka', label: 'Marka', type: 'select', options: Object.keys(AUTO_DATA) },
-        { id: 'model', label: 'Model', type: 'select', options: [], dependent: 'marka' },
-        { id: 'paliwo', label: 'Paliwo', type: 'select', options: ['Benzyna', 'Diesel', 'LPG', 'Elektryczny', 'Hybryda'] },
-        { id: 'cena', label: 'Cena', type: 'range' },
-        { id: 'rok', label: 'Rok produkcji', type: 'range' },
-        { id: 'nadwozie', label: 'Nadwozie', type: 'select', options: ['Sedan', 'Kombi', 'Hatchback', 'SUV', 'Coupe', 'Kabriolet'] }
-    ],
-    'Telefony': [
-        { id: 'marka', label: 'Marka', type: 'select', options: Object.keys(PHONE_DATA) },
-        { id: 'model', label: 'Model', type: 'select', options: [], dependent: 'marka' },
-        { id: 'stan', label: 'Stan', type: 'select', options: ['Nowy', 'Używany', 'Uszkodzony'] },
-        { id: 'cena', label: 'Cena', type: 'range' }
-    ],
-    'Mieszkania': [ 
-        { id: 'cena', label: 'Cena', type: 'range' },
-        { id: 'metraz', label: 'Metraż (m2)', type: 'range' },
-        { id: 'pokoje', label: 'Liczba pokoi', type: 'select', options: ['1', '2', '3', '4+'] }
-    ]
-};
-
 // --- POMOCNICZE ---
 function formatujDate(isoString) {
     if (!isoString) return '';
@@ -125,7 +84,7 @@ async function sprawdzUzytkownika() {
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                     <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
-                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
+                <button onclick="otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
             </div>`;
     }
 }
@@ -141,7 +100,7 @@ window.addEventListener('click', (e) => {
     if (menu && menu.style.display === 'block' && !menu.contains(e.target)) menu.style.display = 'none';
 });
 
-// --- SZUKANIE ---
+// --- SZUKANIE GŁÓWNE ---
 window.szukaj = () => {
     const fraza = document.getElementById('find-text').value.toLowerCase().trim();
     const lok = document.getElementById('find-loc').value.toLowerCase().trim();
@@ -182,7 +141,7 @@ window.wyslijWiadomosc = async (odbiorca, tytul) => {
     }
 };
 
-// --- GALERIA I SZCZEGÓŁY ---
+// --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -215,8 +174,12 @@ window.pokazSzczegoly = (id) => {
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                      </button>
                 </div>
+                <h3 style="margin-top:20px;">Dane techniczne</h3>
+                <div style="background:#f9f9f9; padding:15px; border-radius:10px; font-size:14px; border:1px solid #eee;">
+                    ${o.opis.includes('--- DANE ---') ? o.opis.split('--- DANE ---')[1].trim().replace(/\n/g, '<br>') : 'Brak dodatkowych danych'}
+                </div>
                 <h3 style="margin-top:20px;">Opis</h3>
-                <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis}</p>
+                <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis.split('--- DANE ---')[0]}</p>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
@@ -254,6 +217,151 @@ window.navFullFoto = (dir) => {
     if(img) img.src = aktualneFotki[aktualneZdjecieIndex];
 };
 
+// --- FILTROWANIE SPECJALISTYCZNE ---
+window.otworzFiltry = (kat, podkat) => {
+    if (kat !== 'Motoryzacja' || podkat !== 'Samochody osobowe') {
+        filtrujPoPodkat(kat, podkat);
+        return;
+    }
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h3>Szukaj: ${podkat}</h3>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <input type="text" id="f-marka" placeholder="Marka (np. BMW)">
+            <input type="text" id="f-model" placeholder="Model (np. Seria 3)">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="f-rok-min" placeholder="Rok od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="number" id="f-rok-max" placeholder="Rok do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="f-cena-min" placeholder="Cena od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="number" id="f-cena-max" placeholder="Cena do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+            </div>
+            <select id="f-paliwo" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <option value="">Wszystkie paliwa</option>
+                <option value="Benzyna">Benzyna</option>
+                <option value="Diesel">Diesel</option>
+                <option value="LPG">LPG</option>
+                <option value="Hybryda">Hybryda</option>
+                <option value="Elektryczny">Elektryczny</option>
+            </select>
+            <button onclick="zastosujFiltryAut('${kat}', '${podkat}')" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">POKAŻ OGŁOSZENIA</button>
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.zastosujFiltryAut = (kat, podkat) => {
+    const marka = document.getElementById('f-marka').value.toLowerCase().trim();
+    const model = document.getElementById('f-model').value.toLowerCase().trim();
+    const rMin = parseInt(document.getElementById('f-rok-min').value) || 0;
+    const rMax = parseInt(document.getElementById('f-rok-max').value) || 9999;
+    const cMin = parseFloat(document.getElementById('f-cena-min').value) || 0;
+    const cMax = parseFloat(document.getElementById('f-cena-max').value) || 99999999;
+    const paliwo = document.getElementById('f-paliwo').value.toLowerCase();
+
+    const wyniki = daneOgloszen.filter(o => {
+        if (o.kategoria !== kat || o.podkategoria !== podkat) return false;
+        const tresc = (o.tytul + " " + o.opis).toLowerCase();
+        
+        const rokMatch = o.opis.match(/Rok: (\d{4})/);
+        const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+
+        const mOk = marka === "" || tresc.includes(marka);
+        const modOk = model === "" || tresc.includes(model);
+        const cOk = o.cena >= cMin && o.cena <= cMax;
+        const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+        const pOk = paliwo === "" || tresc.includes(paliwo);
+
+        return mOk && modOk && cOk && rOk && pOk;
+    });
+
+    pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
+};
+
+// --- DODAWANIE OGŁOSZEŃ ---
+window.otworzFormularzDodawania = () => {
+    document.getElementById('modal-form').style.display = 'flex';
+    updateFormSubcats('f-');
+};
+
+window.updateFormSubcats = (prefix) => {
+    const k = document.getElementById(`${prefix}kat`).value;
+    const s = document.getElementById(`${prefix}podkat`);
+    const extra = document.getElementById('extra-fields');
+    
+    if (s) {
+        s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    }
+    
+    if (k === 'Motoryzacja' && extra) {
+        extra.innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#f4f4f4; padding:15px; border-radius:10px; margin-bottom:15px; border:1px dashed #ccc;">
+                <input type="text" id="f-marka-ins" placeholder="Marka (np. Audi)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                <input type="text" id="f-model-ins" placeholder="Model (np. A6)" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                <input type="number" id="f-rok-ins" placeholder="Rok produkcji" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                <select id="f-paliwo-ins" required style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <option value="Benzyna">Benzyna</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="LPG">LPG</option>
+                    <option value="Hybryda">Hybryda</option>
+                    <option value="Elektryczny">Elektryczny</option>
+                </select>
+            </div>`;
+    } else if (extra) {
+        extra.innerHTML = '';
+    }
+};
+
+window.wyslijOgloszenie = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.innerText = "Wysyłanie...";
+    
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) {
+        alert("Musisz być zalogowany!");
+        location.reload();
+        return;
+    }
+    
+    const pliki = document.getElementById('f-plik').files;
+    let linki = [];
+    for (let f of pliki) {
+        const n = `${Date.now()}_${f.name}`;
+        const { data } = await baza.storage.from('zdjecia').upload(n, f);
+        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    }
+
+    let dodatek = "";
+    if (document.getElementById('f-kat').value === 'Motoryzacja') {
+        const marka = document.getElementById('f-marka-ins').value;
+        const model = document.getElementById('f-model-ins').value;
+        const rok = document.getElementById('f-rok-ins').value;
+        const paliwo = document.getElementById('f-paliwo-ins').value;
+        dodatek = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
+    }
+
+    const { error } = await baza.from('ogloszenia').insert([{
+        tytul: document.getElementById('f-tytul').value,
+        kategoria: document.getElementById('f-kat').value,
+        podkategoria: document.getElementById('f-podkat').value,
+        cena: parseFloat(document.getElementById('f-cena').value),
+        lokalizacja: document.getElementById('f-lok').value,
+        opis: document.getElementById('f-opis').value + dodatek,
+        telefon: document.getElementById('f-tel').value,
+        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
+        user_email: user.email 
+    }]);
+
+    if (error) {
+        alert("Błąd zapisu: " + error.message);
+        btn.disabled = false; btn.innerText = "Spróbuj ponownie";
+    } else {
+        location.reload();
+    }
+};
+
 // --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
@@ -281,7 +389,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                         <b style="font-size:13px;">${o.cena} zł</b>
                         <div style="display:flex; gap:5px; margin-top:8px;">
                             <button onclick="edytujOgloszenie(${o.id})" style="flex:1; padding:5px; font-size:11px;">Edytuj</button>
-                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; color:red;">🗑️</button>
+                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; color:red; border:none; background:none; cursor:pointer;">🗑️</button>
                         </div>
                     </div>
                 </div>`).join('')}
@@ -290,145 +398,22 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Usunąć ogłoszenie na stałe?")) { await baza.from('ogloszenia').delete().eq('id', id); location.reload(); }
-};
-
-// --- DODAWANIE ---
-window.wyslijOgloszenie = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true; btn.innerText = "Wysyłanie...";
-    const { data: { user } } = await baza.auth.getUser();
-    
-    const pliki = document.getElementById('f-plik').files;
-    let linki = [];
-    for (let f of pliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+    if (confirm("Usunąć ogłoszenie na stałe?")) { 
+        await baza.from('ogloszenia').delete().eq('id', id); 
+        location.reload(); 
     }
-
-    await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
-        cena: parseFloat(document.getElementById('f-cena').value),
-        lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
-        user_email: user.email 
-    }]);
-    location.reload();
 };
 
-// --- LOGIKA KATEGORII I FILTRÓW ---
+// --- KATEGORIE I RENDEROWANIE ---
 window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-    
     if (p.dataset.activeKat === kat && p.style.display === 'flex') {
-        p.style.display = 'none';
-        p.dataset.activeKat = '';
-        return;
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
-
     p.style.display = 'flex';
     p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => 
-        `<div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>`
-    ).join('');
-};
-
-// --- NOWA FUNKCJA: OTWIERANIE OKNA FILTRÓW ---
-window.otworzFiltry = (kat, podkat) => {
-    const config = FILTER_CONFIG[podkat];
-    
-    // Jeśli nie ma specyficznej konfiguracji dla podkategorii, filtrujemy od razu
-    if (!config) {
-        filtrujPoPodkat(kat, podkat);
-        return;
-    }
-
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h3>Filtruj: ${podkat}</h3>
-        <div id="filter-form" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:15px;">
-            ${config.map(f => {
-                if (f.type === 'text') {
-                    return `<div><label>${f.label}</label><input type="text" id="filter-${f.id}" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;"></div>`;
-                }
-                if (f.type === 'select') {
-                    return `<div><label>${f.label}</label>
-                        <select id="filter-${f.id}" onchange="handleFilterChange('${podkat}', '${f.id}')" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
-                            <option value="">Wszystkie</option>
-                            ${(f.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                        </select>
-                    </div>`;
-                }
-                if (f.type === 'range') {
-                    return `<div style="grid-column: span 2; display:flex; gap:10px; align-items:center;">
-                        <label style="min-width:100px;">${f.label}:</label>
-                        <input type="number" id="filter-${f.id}-min" placeholder="Od" style="flex:1; padding:8px; border-radius:5px; border:1px solid #ccc;">
-                        <input type="number" id="filter-${f.id}-max" placeholder="Do" style="flex:1; padding:8px; border-radius:5px; border:1px solid #ccc;">
-                    </div>`;
-                }
-            }).join('')}
-            <button onclick="zastosujFiltry('${kat}', '${podkat}')" style="grid-column: span 2; background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:10px;">Pokaż ogłoszenia</button>
-        </div>
-    `;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-// --- DYNAMICZNA ZMIANA MODELI ---
-window.handleFilterChange = (podkat, fieldId) => {
-    if (fieldId === 'marka') {
-        const marka = document.getElementById('filter-marka').value;
-        const modelSelect = document.getElementById('filter-model');
-        
-        if (!modelSelect) return;
-
-        let modele = [];
-        if (podkat === 'Samochody osobowe') modele = AUTO_DATA[marka] || [];
-        if (podkat === 'Telefony') modele = PHONE_DATA[marka] || [];
-
-        modelSelect.innerHTML = '<option value="">Wszystkie modele</option>' + modele.map(m => `<option value="${m}">${m}</option>`).join('');
-    }
-};
-
-window.zastosujFiltry = (kat, podkat) => {
-    const config = FILTER_CONFIG[podkat];
-    let wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
-
-    config.forEach(f => {
-        if (f.type === 'text') {
-            const val = document.getElementById(`filter-${f.id}`).value.toLowerCase();
-            if (val) wyniki = wyniki.filter(o => o.opis.toLowerCase().includes(val) || o.tytul.toLowerCase().includes(val));
-        }
-        if (f.type === 'select') {
-            const val = document.getElementById(`filter-${f.id}`).value.toLowerCase();
-            if (val) wyniki = wyniki.filter(o => o.opis.toLowerCase().includes(val) || o.tytul.toLowerCase().includes(val));
-        }
-        if (f.type === 'range') {
-            const min = parseFloat(document.getElementById(`filter-${f.id}-min`).value);
-            const max = parseFloat(document.getElementById(`filter-${f.id}-max`).value);
-            
-            if (f.id === 'cena') {
-                if (!isNaN(min)) wyniki = wyniki.filter(o => o.cena >= min);
-                if (!isNaN(max)) wyniki = wyniki.filter(o => o.cena <= max);
-            } else {
-                // Dla innych pól typu 'rok' szukamy w opisie (wymaga, by użytkownik wpisał rok w opisie/polu dodatkowym)
-                // W profesjonalnej wersji te dane powinny być w osobnych kolumnach DB
-                if (!isNaN(min)) wyniki = wyniki.filter(o => {
-                    const found = o.opis.match(/\d{4}/);
-                    return found && parseInt(found[0]) >= min;
-                });
-            }
-        }
-    });
-
-    pokazWynikiModal(`${kat} > ${podkat} (Filtrowane)`, wyniki);
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
@@ -442,9 +427,8 @@ function pokazWynikiModal(tytul, wyniki) {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
         <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:70vh; overflow-y:auto;">
-            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń spełniających kryteria.</p>'}
-        </div>
-    `;
+            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń w tej kategorii.</p>'}
+        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 }
 
@@ -452,7 +436,7 @@ function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
     return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
-            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                 ${isFav ? '❤️' : '🤍'}
             </div>
             <img src="${o.zdjecia[0]}" style="width:100%; height:150px; object-fit:cover;">
@@ -467,7 +451,6 @@ function renderCardHTML(o) {
         </div>`;
 }
 
-// --- RENDER GŁÓWNY (12 NAJNOWSZYCH) ---
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
@@ -475,9 +458,8 @@ function renderTop12(lista) {
     const limit = 1000 * 60 * 60 * 24 * 28;
     const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
     const top12 = aktywne.slice(0, 12);
-    
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(4, 1fr)'; 
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))'; 
     k.style.gap = '20px';
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
@@ -486,7 +468,7 @@ function renderTop12(lista) {
 window.toggleUlubione = async (e, id) => {
     e.stopPropagation();
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
+    if (!user) return alert("Zaloguj się, aby dodać do ulubionych!");
     const index = mojeUlubione.indexOf(id);
     if (index > -1) {
         await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
@@ -497,7 +479,11 @@ window.toggleUlubione = async (e, id) => {
     }
     const favBtn = document.getElementById(`fav-btn-${id}`);
     if(favBtn) favBtn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
-    renderTop12(daneOgloszen);
+    
+    // Odświeżamy widok jeśli jesteśmy w "Ulubionych"
+    if(document.getElementById('view-content').innerText.includes("Twoje Ulubione")) {
+        pokazUlubione();
+    }
 };
 
 window.pokazUlubione = () => {
@@ -505,14 +491,9 @@ window.pokazUlubione = () => {
     pokazWynikiModal("Twoje Ulubione", ulubioneLista);
 };
 
-window.updateFormSubcats = (prefix) => {
-    const k = document.getElementById(`${prefix}kat`).value;
-    const s = document.getElementById(`${prefix}podkat`);
-    if(s) s.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[k] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-};
-
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
+// --- INICJALIZACJA ---
 async function init() {
     await sprawdzUzytkownika();
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
@@ -534,9 +515,9 @@ function renderujFormularzEdycji(o) {
     const content = document.getElementById('view-content');
     content.innerHTML = `
         <button class="close-btn" onclick="pokazMojeOgloszenia()">&times;</button>
-        <h3 style="margin-bottom:15px;">Edytuj ogłoszenie</h3>
+        <h3>Edytuj ogłoszenie</h3>
         <form onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:12px;">
-            <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł" style="padding:10px; border:1px solid #ccc; border-radius:8px;">
+            <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <div style="display:flex; gap:10px;">
                 <select id="e-kat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px;">
                     ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
@@ -545,65 +526,26 @@ function renderujFormularzEdycji(o) {
                     ${(SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}" ${o.podkategoria === x ? 'selected' : ''}>${x}</option>`).join('')}
                 </select>
             </div>
-            
-            <label style="font-size:12px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>
-            <div id="edit-preview" style="display:flex; gap:8px; flex-wrap:wrap; background:#f0f0f0; padding:10px; border-radius:10px; min-height:50px;">
-                ${edytowaneZdjecia.map((src, i) => `
-                    <div style="position:relative; width:60px; height:60px;">
-                        <img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;">
-                        <div onclick="usunFotoZEdycji(${i}, ${o.id})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold;">&times;</div>
-                    </div>
-                `).join('')}
-            </div>
-            <input type="file" id="e-pliki" multiple accept="image/*" style="font-size:12px;">
-            <p style="font-size:10px; color:gray; margin-top:-10px;">Pozostało miejsca: ${5 - edytowaneZdjecia.length} zdjęć</p>
-
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="e-cena" value="${o.cena}" required placeholder="Cena" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="text" id="e-lok" value="${o.lokalizacja}" required placeholder="Lokalizacja" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-            </div>
-            <input type="text" id="e-tel" value="${o.telefon || ''}" placeholder="Telefon" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-            <textarea id="e-opis" rows="5" required placeholder="Opis" style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;">${o.opis}</textarea>
+            <input type="number" id="e-cena" value="${o.cena}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+            <input type="text" id="e-lok" value="${o.lokalizacja}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+            <textarea id="e-opis" rows="8" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;">${o.opis}</textarea>
             <button type="submit" id="btn-e-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
         </form>`;
 }
 
-window.usunFotoZEdycji = (idx, id) => {
-    edytowaneZdjecia.splice(idx, 1);
-    renderujFormularzEdycji(daneOgloszen.find(x => x.id === id));
-};
-
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
-    const nowePliki = document.getElementById('e-pliki').files;
-    
-    if ((edytowaneZdjecia.length + nowePliki.length) > 5) {
-        return alert("Łącznie możesz mieć maksymalnie 5 zdjęć.");
-    }
-
     const btn = document.getElementById('btn-e-save');
     btn.disabled = true; btn.innerText = "Zapisywanie...";
-
-    let noweLinki = [];
-    for (let f of nowePliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) noweLinki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
-    }
-
-    const ostateczneZdjecia = [...edytowaneZdjecia, ...noweLinki];
-    if (ostateczneZdjecia.length === 0) ostateczneZdjecia.push('https://via.placeholder.com/600');
-
+    
     await baza.from('ogloszenia').update({
         tytul: document.getElementById('e-tytul').value,
         kategoria: document.getElementById('e-kat').value,
         podkategoria: document.getElementById('e-podkat').value,
         cena: parseFloat(document.getElementById('e-cena').value),
         lokalizacja: document.getElementById('e-lok').value,
-        opis: document.getElementById('e-opis').value,
-        telefon: document.getElementById('e-tel').value,
-        zdjecia: ostateczneZdjecia
+        opis: document.getElementById('e-opis').value
     }).eq('id', id);
-
+    
     location.reload();
 };
