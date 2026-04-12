@@ -25,7 +25,7 @@ const SUB_DATA = {
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-    const { error } = await baza.auth.signInWithPassword({ email, password });
+    const { data, error } = await baza.auth.signInWithPassword({ email, password });
     if (error) alert("Błąd logowania: " + error.message);
     else location.reload();
 };
@@ -43,48 +43,69 @@ window.wyloguj = async () => {
     location.reload();
 };
 
-// --- USER STATUS ---
+// --- USER STATUS (NAPRAWIONE) ---
 async function sprawdzUzytkownika() {
-nav.innerHTML = `
-    <div style="display:flex; gap:15px; align-items:center;">
-        <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Moje Konto ▼</button>
-        <div id="drop-menu" style="display:none; position:absolute; top:60px; right:5%; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:1001; min-width:200px;">
-            <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px; font-size:12px; color:gray;">
-                Zalogowany jako:<br><b style="color:black; font-size:14px;">${user.email}</b>
+    const { data: { user } } = await baza.auth.getUser();
+    const nav = document.getElementById('user-nav');
+    
+    if (user) {
+        // Ukrywamy formularze logowania jeśli użytkownik jest zalogowany
+        const authBox = document.getElementById('auth-box');
+        if (authBox) authBox.style.display = 'none';
+
+        // Pobieramy ulubione dla tego użytkownika
+        const { data } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = data ? data.map(x => x.ogloszenie_id) : [];
+
+        nav.innerHTML = `
+        <div style="display:flex; gap:15px; align-items:center; position:relative;">
+            <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">Moje Konto ▼</button>
+            <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:1001; min-width:220px;">
+                <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px; font-size:12px; color:gray;">
+                    Zalogowany jako:<br><b style="color:black; font-size:14px;">${user.email}</b>
+                </div>
+                <div onclick="alert('Wiadomości wkrótce')" style="padding:10px 0; cursor:pointer; display:flex; justify-content:space-between;">
+                    <span>✉️ Wiadomości</span>
+                    <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px;">0</span>
+                </div>
+                <div onclick="alert('Twoje ulubione id: ' + mojeUlubione.join(', '))" style="padding:10px 0; cursor:pointer;">❤️ Ulubione</div>
+                <div onclick="wyloguj()" style="padding:10px 0; cursor:pointer; color:red; border-top:1px solid #eee; margin-top:10px;">🚪 Wyloguj</div>
             </div>
-            <div onclick="alert('Wiadomości')" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                <span>✉️ Wiadomości</span>
-                <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px;">2</span>
-            </div>
-            <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
-            <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; border-top:1px solid #eee; margin-top:10px;">🚪 Wyloguj</div>
-        </div>
-        <button onclick="otworzModal()" style="background:#111; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer;">+ Dodaj</button>
-    </div>`;
+            <button onclick="otworzModal()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+        </div>`;
     }
 }
 
 window.toggleUserMenu = (e) => {
     e.stopPropagation();
     const m = document.getElementById('drop-menu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    if (m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
 // --- POBIERANIE I RENDEROWANIE ---
 async function pobierz() {
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    if (error) {
+        console.error("Błąd pobierania:", error);
+        return;
+    }
     daneOgloszen = data || [];
     render(daneOgloszen, true);
 }
 
 function render(lista, limit = false) {
     const kontener = document.getElementById('lista');
-    // Jeśli limit jest true, bierzemy 12 ostatnich. Jeśli false (np. kategoria), bierzemy wszystko.
+    if (!kontener) return;
+    
     const dane = limit ? lista.slice(0, 12) : lista;
     
+    if (dane.length === 0) {
+        kontener.innerHTML = "<p>Brak ogłoszeń do wyświetlenia.</p>";
+        return;
+    }
+
     kontener.innerHTML = dane.map(o => {
-        const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjecia || 'https://via.placeholder.com/300');
-        // Usunąłem serce stąd (Punkt 3)
+        const foto = Array.isArray(o.zdjecia) && o.zdjecia.length > 0 ? o.zdjecia[0] : (o.zdjecia || 'https://via.placeholder.com/300');
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
@@ -97,44 +118,50 @@ function render(lista, limit = false) {
     }).join('');
 }
 
-// --- FILTROWANIE I PODKATEGORIE ---
+// --- FILTROWANIE ---
 window.toggleSubcats = (kat) => {
     const panel = document.getElementById('subcat-panel');
+    if (!panel) return;
+    
     const subs = SUB_DATA[kat] || [];
     panel.style.display = 'flex';
     panel.innerHTML = subs.map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
     
     const filtr = daneOgloszen.filter(o => o.kategoria === kat);
-    document.getElementById('grid-title').innerText = "Kategoria: " + kat;
-    render(filtr);
+    const title = document.getElementById('grid-title');
+    if (title) title.innerText = "Kategoria: " + kat;
+    render(filtr, false);
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
     const filtr = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
-    render(filtr);
+    render(filtr, false);
 };
 
 window.filtruj = () => {
     const txt = document.getElementById('find-text').value.toLowerCase();
-    const wyniki = daneOgloszen.filter(o => o.tytul.toLowerCase().includes(txt) || (o.opis && o.opis.toLowerCase().includes(txt)));
-    render(wyniki);
+    const wyniki = daneOgloszen.filter(o => 
+        o.tytul.toLowerCase().includes(txt) || 
+        (o.opis && o.opis.toLowerCase().includes(txt))
+    );
+    render(wyniki, false);
 };
 
 // --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    
     const box = document.getElementById('view-content');
     const fotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     const liked = mojeUlubione.includes(o.id);
     
-    // Formatowanie daty (Punkt 1)
-    const data = new Date(o.created_at).toLocaleString('pl-PL', {
+    const data = o.created_at ? new Date(o.created_at).toLocaleString('pl-PL', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    }) : "Nieznana data";
 
     box.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
             <div>
                 <h2 style="margin:0;">${o.tytul}</h2>
@@ -144,41 +171,38 @@ window.pokazSzczegoly = (id) => {
                 ${liked ? '❤️' : '🤍'}
             </button>
         </div>
-
         <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div style="flex:1.5; min-width:300px;">
-                <div style="position:relative; overflow:hidden; border-radius:15px;">
-                    <img id="mainFoto" src="${fotki[0]}" 
-                         onclick="window.open(this.src)" 
-                         title="Kliknij, aby powiększyć"
-                         style="width:100%; height:400px; object-fit:cover; cursor:zoom-in; transition: transform 0.3s ease;">
-                </div>
+                <img id="mainFoto" src="${fotki[0] || 'https://via.placeholder.com/300'}" 
+                     onclick="window.open(this.src)" 
+                     style="width:100%; height:400px; object-fit:cover; border-radius:15px; cursor:zoom-in;">
                 <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;">
                     ${fotki.map((f) => `<img src="${f}" onclick="document.getElementById('mainFoto').src='${f}'" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #ddd;">`).join('')}
                 </div>
             </div>
-            
             <div style="flex:1; min-width:250px; background:#f9f9f9; padding:20px; border-radius:15px;">
                 <h1 style="color:var(--primary); margin:0;">${o.cena} zł</h1>
-                <p style="color:gray;">📍 ${o.lokalizacja}</p>
+                <p style="color:gray;">📍 ${o.lokalizacja || 'Polska'}</p>
                 <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
                 <div style="font-size:18px; color:#111; margin-bottom:15px;">📞 ${o.telefon || 'Brak numeru'}</div>
-                <button onclick="alert('Kontaktowanie się z: ${o.user_email}')" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">Wyślij wiadomość</button>
+                <button onclick="alert('Wiadomość do: ' + '${o.user_email || 'sprzedawcy'}')" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">Wyślij wiadomość</button>
             </div>
         </div>
-
         <div style="margin-top:30px;">
             <h3>Opis</h3>
-            <p style="white-space:pre-line; color:#333;">${o.opis}</p>
+            <p style="white-space:pre-line; color:#333;">${o.opis || 'Brak opisu'}</p>
         </div>
     `;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-// --- FUNKCJE POMOCNICZE ---
+// --- DODATKI ---
 window.toggleUlubione = async (id) => {
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
+    if (!user) {
+        alert("Zaloguj się!");
+        return;
+    }
 
     if (mojeUlubione.includes(id)) {
         await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
@@ -187,21 +211,26 @@ window.toggleUlubione = async (id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    
-    // Odświeżamy widok ogłoszenia, żeby serce zmieniło kolor
     pokazSzczegoly(id); 
-    // I listę w tle
     render(daneOgloszen, true); 
 };
 
+window.zamknijModal = () => {
+    document.getElementById('modal-view').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'none';
+};
+
+window.otworzModal = () => {
+    document.getElementById('modal-form').style.display = 'flex';
+};
+
+// Zamykanie menu po kliknięciu poza nie
 window.onclick = (e) => {
     if (e.target.className === 'modal') zamknijModal();
     const m = document.getElementById('drop-menu');
     if (m && !e.target.closest('button')) m.style.display = 'none';
 };
 
-window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
-
-// START
+// --- START ---
 sprawdzUzytkownika();
 pobierz();
