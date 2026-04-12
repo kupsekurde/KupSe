@@ -15,84 +15,78 @@ const MAPA_KATEGORII = {
     "Sport": ["Rowery", "Siłownia"],
     "Nauka": ["Książki", "Instrumenty"],
     "Usługi": ["Remonty", "Transport"],
-    "Praca": ["Stała", "Dodatkowa"],
     "Inne": ["Różne"]
 };
 
-// --- KOMPRESYJA ---
-async function zmniejszZdjecie(plik) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(plik);
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width, h = img.height;
-                if (w > 1200) { h *= 1200 / w; w = 1200; }
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
-            };
-        };
-    });
-}
-
-// --- POBIERANIE (LIMIT 12) ---
+// --- START ---
 async function init() { await checkUser(); await pobierz(); }
 
+// Pobiera 12 najnowszych na stronę główną (nie starszych niż 30 dni)
 async function pobierz() {
-    const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false }).limit(12);
-    if(error) console.error(error);
+    const dataMiesiacTemu = new Date();
+    dataMiesiacTemu.setDate(dataMiesiacTemu.getDate() - 30);
+    
+    const { data, error } = await baza.from('ogloszenia')
+        .select('*')
+        .gt('created_at', dataMiesiacTemu.toISOString()) // Tylko z ostatniego miesiąca
+        .order('created_at', { ascending: false })
+        .limit(12);
+
     daneOgloszen = data || [];
-    render(daneOgloszen);
+    render(daneOgloszen, 'lista');
 }
 
-// --- WYSZUKIWARKA ---
-window.filtruj = () => {
-    const txt = document.getElementById('find-text').value.toLowerCase();
-    const wynik = daneOgloszen.filter(o => o.tytul.toLowerCase().includes(txt) || o.opis.toLowerCase().includes(txt));
-    render(wynik);
-};
+// Formatowanie daty: 12.04 11:30
+function formatujDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl-PL', {hour:'2-digit', minute:'2-digit'});
+}
 
-// --- RENDER ---
-function render(lista) {
-    const div = document.getElementById('lista');
-    div.style.display = "grid";
-    div.style.gridTemplateColumns = "repeat(4, 1fr)"; // 4 kolumny
-    div.style.gap = "20px";
-    
+function render(lista, kontenerId) {
+    const div = document.getElementById(kontenerId);
     div.innerHTML = lista.map(o => {
-        let foto = 'https://via.placeholder.com/300';
-        if (o.zdjecia) {
-            const arr = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
-            foto = arr[0].trim();
-        }
+        let foto = o.zdjecia ? (Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia.replace(/[\[\]"']/g, "").split(',')[0].trim()) : 'https://via.placeholder.com/300';
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
             <img class="ad-img" src="${foto}">
             <div class="ad-body">
                 <div class="ad-price">${o.cena} zł</div>
-                <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${o.tytul}</div>
-                <div style="font-size:12px; color:gray">📍 ${o.lokalizacja}</div>
+                <div style="font-weight:600; font-size:14px; margin:5px 0">${o.tytul}</div>
+                <div style="font-size:11px; color:gray">📍 ${o.lokalizacja} | 🕒 ${formatujDate(o.created_at)}</div>
             </div>
         </div>`;
     }).join('');
 }
 
-// --- SZCZEGÓŁY (Miniaturki i Zoom) ---
+// --- KLIKNIĘCIE W KATEGORIĘ (Otwiera nowe okno z WSZYSTKIMI wynikami) ---
+window.toggleSubcats = async (kat) => {
+    // 1. Pobierz absolutnie WSZYSTKIE ogłoszenia z tej kategorii z bazy
+    const { data, error } = await baza.from('ogloszenia')
+        .select('*')
+        .eq('kategoria', kat)
+        .order('created_at', { ascending: false });
+
+    // 2. Otwórz modal z listą
+    const panel = document.getElementById('msg-content'); // Używamy modala od wiadomości jako kontenera na wyniki
+    document.getElementById('modal-messages').style.display = 'flex';
+    
+    panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <h2>Kategoria: ${kat}</h2>
+            <button onclick="zamknijModal()" style="background:#eee; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold">ZAMKNIJ</button>
+        </div>
+        <div id="kat-wyniki" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; max-height:70vh; overflow-y:auto">
+            </div>
+    `;
+    render(data || [], 'kat-wyniki');
+};
+
+// --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = async (id) => {
-    const o = daneOgloszen.find(i => i.id === id);
+    const { data: o } = await baza.from('ogloszenia').select('*').eq('id', id).single();
     const { data: { user } } = await baza.auth.getUser();
     let zdjecia = Array.isArray(o.zdjecia) ? o.zdjecia : o.zdjecia.replace(/[\[\]"']/g, "").split(',');
     
-    const miniaturyHTML = zdjecia.map(u => `
-        <img src="${u.trim()}" style="width:60px; height:60px; object-fit:cover; border-radius:10px; cursor:pointer; border:1px solid #ddd" 
-        onclick="event.stopPropagation(); document.getElementById('main-zoom').src='${u.trim()}'">
-    `).join('');
-
     let serce = "gray";
     if(user) {
         const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
@@ -100,106 +94,39 @@ window.pokazSzczegoly = async (id) => {
     }
 
     document.getElementById('view-content').innerHTML = `
-        <span class="close-btn" onclick="zamknijModal()">&times;</span>
-        <div style="display:grid; grid-template-columns: 1fr 350px; gap:25px;">
+        <div style="display:flex; justify-content:flex-end; padding:10px">
+            <button onclick="zamknijModal()" style="background:none; border:none; font-weight:bold; cursor:pointer; color:gray; font-size:16px">ZAMKNIJ</button>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 350px; gap:25px; padding:0 20px 20px 20px">
             <div>
-                <img id="main-zoom" src="${zdjecia[0].trim()}" style="width:100%; border-radius:20px; cursor:zoom-in" onclick="window.open(this.src)">
-                <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto; padding-bottom:5px">${miniaturyHTML}</div>
+                <img id="main-zoom" src="${zdjecia[0].trim()}" style="width:100%; border-radius:20px;">
+                <div style="display:flex; gap:10px; margin-top:10px">${zdjecia.map(z => `<img src="${z.trim()}" onclick="document.getElementById('main-zoom').src='${z.trim()}'" style="width:60px; height:60px; object-fit:cover; cursor:pointer; border-radius:8px">`).join('')}</div>
             </div>
-            <div>
-                <div style="display:flex; justify-content:space-between">
-                    <h1 style="margin:0">${o.tytul}</h1>
-                    <div onclick="event.stopPropagation(); toggleUlubione(${o.id})" style="font-size:35px; cursor:pointer; color:${serce}">❤</div>
-                </div>
-                <h2 style="color:var(--primary); font-size:30px; margin:15px 0">${o.cena} zł</h2>
-                <div style="background:#f3f4f7; padding:20px; border-radius:15px; margin-bottom:20px">${o.opis}</div>
-                <p>📍 Lokalizacja: <b>${o.lokalizacja}</b></p>
-                <p>📞 Telefon: <b>${o.telefon}</b></p>
-                <button onclick="alert('Zadzwoń: ${o.telefon}')" style="width:100%; padding:15px; background:black; color:white; border-radius:12px; border:none; font-weight:800; cursor:pointer">ZADZWOŃ TERAZ</button>
+            <div style="position:relative">
+                <div onclick="toggleUlubione(${o.id})" style="position:absolute; right:0; top:0; font-size:30px; cursor:pointer; color:${serce}; z-index:10">❤</div>
+                
+                <h1 style="margin:0; padding-right:40px">${o.tytul}</h1>
+                <h2 style="color:var(--primary); font-size:32px">${o.cena} zł</h2>
+                <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin:20px 0; font-size:14px">${o.opis}</div>
+                <p>📍 ${o.lokalizacja} | 🕒 ${formatujDate(o.created_at)}</p>
+                <button onclick="alert('Tel: ${o.telefon}')" style="width:100%; padding:15px; background:black; color:white; border-radius:10px; border:none; font-weight:800; cursor:pointer">ZADZWOŃ: ${o.telefon}</button>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-// --- KONTO I DODAWANIE ---
+window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
+
 async function checkUser() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
     if (user) {
-        const nick = user.user_metadata.display_name || user.email;
-        nav.innerHTML = `
-            <button onclick="otworzModal()" class="btn-account" style="background:var(--primary); color:white; margin-right:10px">+ Dodaj</button>
-            <button class="btn-account" onclick="document.getElementById('drop').classList.toggle('show')">Konto ▾</button>
-            <div id="drop" class="dropdown-content">
-                <div style="font-weight:800; padding:10px">${nick}</div>
-                <button onclick="otworzUlubione()">Ulubione ❤️</button>
-                <button onclick="wyloguj()" style="color:red">Wyloguj</button>
-            </div>`;
+        nav.innerHTML = `<button onclick="otworzModal()" class="btn-account" style="background:var(--primary); color:white">+ Dodaj</button>
+                         <button class="btn-account" onclick="wyloguj()">Wyloguj</button>`;
         document.getElementById('auth-box').style.display = 'none';
     }
 }
-
-window.updateFormSubcats = () => {
-    const k = document.getElementById('f-kat').value;
-    const p = document.getElementById('f-podkat');
-    p.innerHTML = '<option value="">Podkategoria</option>';
-    if(MAPA_KATEGORII[k]) MAPA_KATEGORII[k].forEach(s => p.innerHTML += `<option value="${s}">${s}</option>`);
-};
-
-window.wyslijOgloszenie = async (e) => {
-    e.preventDefault();
-    const { data: { user } } = await baza.auth.getUser();
-    const btn = document.getElementById('btn-save'); btn.innerText = "Przetwarzanie..."; btn.disabled = true;
-    try {
-        const pliki = document.getElementById('f-plik').files;
-        const urls = [];
-        for (let i = 0; i < pliki.length; i++) {
-            const blob = await zmniejszZdjecie(pliki[i]);
-            const path = `img_${Date.now()}_${i}.jpg`;
-            await baza.storage.from('zdjecia').upload(path, blob);
-            urls.push(baza.storage.from('zdjecia').getPublicUrl(path).data.publicUrl);
-        }
-        await baza.from('ogloszenia').insert([{
-            tytul: document.getElementById('f-tytul').value,
-            cena: parseInt(document.getElementById('f-cena').value),
-            opis: document.getElementById('f-opis').value,
-            lokalizacja: document.getElementById('f-lok').value,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: urls, email_autora: user.email,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value
-        }]);
-        location.reload();
-    } catch (err) { alert(err.message); btn.disabled = false; }
-};
-
-window.toggleSubcats = (k) => {
-    const panel = document.getElementById('subcat-panel');
-    const filtered = daneOgloszen.filter(o => o.kategoria === k);
-    render(filtered);
-    panel.innerHTML = MAPA_KATEGORII[k].map(s => `<div class="sub-pill" onclick="render(daneOgloszen.filter(o=>o.podkategoria==='${s}'))">${s}</div>`).join('') + `<button onclick="location.reload()" style="border:none; background:none; cursor:pointer; font-weight:bold">✕</button>`;
-    panel.style.display = 'flex';
-};
-
-window.toggleUlubione = async (id) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-    const { data } = await baza.from('ulubione').select('*').eq('user_id', user.id).eq('ogloszenie_id', id);
-    if (data?.length > 0) await baza.from('ulubione').delete().eq('user_id', user.id).eq('ogloszenie_id', id);
-    else await baza.from('ulubione').insert([{ user_id: user.id, ogloszenie_id: id }]);
-    pokazSzczegoly(id);
-};
-
-window.otworzModal = () => document.getElementById('modal-form').style.display = 'flex';
-window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
-window.loguj = async () => {
-    const { error } = await baza.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('pass').value });
-    if (error) alert(error.message); else location.reload();
-};
-window.zarejestruj = async () => {
-    const { error } = await baza.auth.signUp({ email: document.getElementById('reg-email').value, password: document.getElementById('reg-pass').value, options: { data: { display_name: document.getElementById('reg-nick').value } } });
-    if (error) alert(error.message); else alert("Sprawdź email!");
-};
 
 init();
