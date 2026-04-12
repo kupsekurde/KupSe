@@ -79,16 +79,14 @@ async function pobierz() {
 
 function render(lista, limit = false) {
     const kontener = document.getElementById('lista');
+    // Jeśli limit jest true, bierzemy 12 ostatnich. Jeśli false (np. kategoria), bierzemy wszystko.
     const dane = limit ? lista.slice(0, 12) : lista;
     
     kontener.innerHTML = dane.map(o => {
         const foto = Array.isArray(o.zdjecia) ? o.zdjecia[0] : (o.zdjecia || 'https://via.placeholder.com/300');
-        const liked = mojeUlubione.includes(o.id);
+        // Usunąłem serce stąd (Punkt 3)
         return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})">
-            <div onclick="event.stopPropagation(); toggleUlubione(${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; font-size:20px; cursor:pointer; background:rgba(255,255,255,0.8); border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center;">
-                ${liked ? '❤️' : '🤍'}
-            </div>
             <img src="${foto}" style="width:100%; height:180px; object-fit:cover;">
             <div style="padding:15px;">
                 <b style="font-size:18px;">${o.cena} zł</b>
