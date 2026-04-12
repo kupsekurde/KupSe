@@ -24,6 +24,28 @@ const SUB_DATA = {
     'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
+// --- NOWA KONFIGURACJA FILTRÓW SPECJALISTYCZNYCH ---
+const FILTER_CONFIG = {
+    'Samochody osobowe': [
+        { id: 'marka', label: 'Marka', type: 'text' },
+        { id: 'model', label: 'Model', type: 'text' },
+        { id: 'paliwo', label: 'Paliwo', type: 'select', options: ['Benzyna', 'Diesel', 'LPG', 'Elektryczny', 'Hybryda'] },
+        { id: 'cena', label: 'Cena', type: 'range' },
+        { id: 'rok', label: 'Rok produkcji', type: 'range' },
+        { id: 'nadwozie', label: 'Nadwozie', type: 'select', options: ['Sedan', 'Kombi', 'Hatchback', 'SUV', 'Coupe', 'Kabriolet'] }
+    ],
+    'Telefony': [
+        { id: 'marka', label: 'Marka', type: 'select', options: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Inne'] },
+        { id: 'stan', label: 'Stan', type: 'select', options: ['Nowy', 'Używany', 'Uszkodzony'] },
+        { id: 'cena', label: 'Cena', type: 'range' }
+    ],
+    'Mieszkania': [ // Przykład dla przyszłych kategorii
+        { id: 'cena', label: 'Cena', type: 'range' },
+        { id: 'metraz', label: 'Metraż (m2)', type: 'range' },
+        { id: 'pokoje', label: 'Liczba pokoi', type: 'select', options: ['1', '2', '3', '4+'] }
+    ]
+};
+
 // --- POMOCNICZE ---
 function formatujDate(isoString) {
     if (!isoString) return '';
@@ -281,7 +303,7 @@ window.wyslijOgloszenie = async (e) => {
     location.reload();
 };
 
-// --- LOGIKA KATEGORII ---
+// --- LOGIKA KATEGORII I FILTRÓW ---
 window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
@@ -295,8 +317,81 @@ window.toggleSubcats = (kat) => {
     p.style.display = 'flex';
     p.dataset.activeKat = kat;
     p.innerHTML = (SUB_DATA[kat] || []).map(s => 
-        `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`
+        `<div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>`
     ).join('');
+};
+
+// --- NOWA FUNKCJA: OTWIERANIE OKNA FILTRÓW ---
+window.otworzFiltry = (kat, podkat) => {
+    const config = FILTER_CONFIG[podkat];
+    
+    // Jeśli nie ma specyficznej konfiguracji dla podkategorii, filtrujemy od razu
+    if (!config) {
+        filtrujPoPodkat(kat, podkat);
+        return;
+    }
+
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h3>Filtruj: ${podkat}</h3>
+        <div id="filter-form" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:15px;">
+            ${config.map(f => {
+                if (f.type === 'text') {
+                    return `<div><label>${f.label}</label><input type="text" id="filter-${f.id}" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;"></div>`;
+                }
+                if (f.type === 'select') {
+                    return `<div><label>${f.label}</label><select id="filter-${f.id}" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="">Wszystkie</option>
+                        ${f.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    </select></div>`;
+                }
+                if (f.type === 'range') {
+                    return `<div style="grid-column: span 2; display:flex; gap:10px; align-items:center;">
+                        <label style="min-width:100px;">${f.label}:</label>
+                        <input type="number" id="filter-${f.id}-min" placeholder="Od" style="flex:1; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <input type="number" id="filter-${f.id}-max" placeholder="Do" style="flex:1; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    </div>`;
+                }
+            }).join('')}
+            <button onclick="zastosujFiltry('${kat}', '${podkat}')" style="grid-column: span 2; background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:10px;">Pokaż ogłoszenia</button>
+        </div>
+    `;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.zastosujFiltry = (kat, podkat) => {
+    const config = FILTER_CONFIG[podkat];
+    let wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+
+    config.forEach(f => {
+        if (f.type === 'text') {
+            const val = document.getElementById(`filter-${f.id}`).value.toLowerCase();
+            if (val) wyniki = wyniki.filter(o => o.opis.toLowerCase().includes(val) || o.tytul.toLowerCase().includes(val));
+        }
+        if (f.type === 'select') {
+            const val = document.getElementById(`filter-${f.id}`).value;
+            if (val) wyniki = wyniki.filter(o => o.opis.includes(val) || o.tytul.includes(val));
+        }
+        if (f.type === 'range') {
+            const min = parseFloat(document.getElementById(`filter-${f.id}-min`).value);
+            const max = parseFloat(document.getElementById(`filter-${f.id}-max`).value);
+            
+            if (f.id === 'cena') {
+                if (!isNaN(min)) wyniki = wyniki.filter(o => o.cena >= min);
+                if (!isNaN(max)) wyniki = wyniki.filter(o => o.cena <= max);
+            } else {
+                // Dla innych pól typu 'rok' szukamy w opisie (wymaga, by użytkownik wpisał rok w opisie/polu dodatkowym)
+                // W profesjonalnej wersji te dane powinny być w osobnych kolumnach DB
+                if (!isNaN(min)) wyniki = wyniki.filter(o => {
+                    const found = o.opis.match(/\d{4}/);
+                    return found && parseInt(found[0]) >= min;
+                });
+            }
+        }
+    });
+
+    pokazWynikiModal(`${kat} > ${podkat} (Filtrowane)`, wyniki);
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
@@ -310,7 +405,7 @@ function pokazWynikiModal(tytul, wyniki) {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
         <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:70vh; overflow-y:auto;">
-            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
+            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń spełniających kryteria.</p>'}
         </div>
     `;
     document.getElementById('modal-view').style.display = 'flex';
