@@ -8,6 +8,9 @@ let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
 let edytowaneZdjecia = [];
 
+// Parametry paginacji
+const OGLOSZENIA_NA_STRONE = 40;
+
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
     'Dom': ['Meble', 'Oświetlenie', 'Dekoracje', 'AGD', 'RTV', 'Pozostałe'],
@@ -449,15 +452,42 @@ window.filtrujPoPodkat = (kat, podkat) => {
     pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 
-function pokazWynikiModal(tytul, wyniki) {
+// --- PAGINACJA WYNIKÓW ---
+function pokazWynikiModal(tytul, wyniki, strona = 1) {
     const content = document.getElementById('view-content');
+    
+    // Obliczanie stron
+    const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
+    const koniec = start + OGLOSZENIA_NA_STRONE;
+    const porcja = wyniki.slice(start, koniec);
+    const lacznieStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
+
+    let paginacjaHTML = '';
+    if (lacznieStron > 1) {
+        paginacjaHTML = `<div style="display:flex; justify-content:center; gap:8px; margin-top:30px; padding-bottom:20px; flex-wrap:wrap;">`;
+        for (let i = 1; i <= lacznieStron; i++) {
+            const active = i === strona;
+            paginacjaHTML += `
+                <button onclick="pokazWynikiModal('${tytul.replace(/'/g, "\\'")}', JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(wyniki))}')), ${i})" 
+                    style="padding:8px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:bold; background:${active ? 'var(--primary)' : '#eee'}; color:${active ? 'white' : '#333'};">
+                    ${i}
+                </button>`;
+        }
+        paginacjaHTML += `</div>`;
+    }
+
     content.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
-        <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:70vh; overflow-y:auto;">
-            ${wyniki.length ? wyniki.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń w tej kategorii.</p>'}
-        </div>`;
+        <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:65vh; overflow-y:auto; padding-right:5px;">
+            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
+        </div>
+        ${paginacjaHTML}`;
+    
     document.getElementById('modal-view').style.display = 'flex';
+    // Przewiń górę siatki po zmianie strony
+    const grid = document.getElementById('modal-grid');
+    if(grid) grid.scrollTop = 0;
 }
 
 function renderCardHTML(o) {
