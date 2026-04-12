@@ -49,20 +49,21 @@ async function sprawdzUzytkownika() {
     if (user && nav) {
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
         
-        // Pobieranie liczby wiadomości do mnie
+        // Pobieranie liczby NIEPRZECZYTANYCH wiadomości
         const { count: msgCount } = await baza
             .from('wiadomosci')
             .select('*', { count: 'exact', head: true })
-            .eq('odbiorca', user.email);
+            .eq('odbiorca', user.email)
+            .eq('przeczytane', false); // Filtr na nowe wiadomości
 
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
         nav.innerHTML = `
-            <div style="position:relative; display:flex; gap:10px; align-items:center;">
-                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+            <div id="menu-container" style="position:relative; display:flex; gap:10px; align-items:center;">
+                <button id="menu-btn" onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                     Moje Konto ▼
-                    ${msgCount > 0 ? `<span style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
@@ -72,7 +73,7 @@ async function sprawdzUzytkownika() {
                     <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
                     <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
                         <span>✉️ Wiadomości</span>
-                        ${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}
+                        <span id="menu-msg-count">${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}</span>
                     </div>
                     <div onclick="alert('Ulubione: ' + mojeUlubione.length)" style="padding:10px; cursor:pointer;">❤️ Ulubione</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
@@ -83,16 +84,40 @@ async function sprawdzUzytkownika() {
     }
 }
 
+// Obsługa otwierania menu
 window.toggleUserMenu = (e) => { 
     e.stopPropagation(); 
     const m = document.getElementById('drop-menu'); 
     if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
 };
 
+// Zamykanie menu po kliknięciu poza obszar
+window.addEventListener('click', (e) => {
+    const menu = document.getElementById('drop-menu');
+    const btn = document.getElementById('menu-btn');
+    if (menu && menu.style.display === 'block') {
+        if (!menu.contains(e.target) && e.target !== btn) {
+            menu.style.display = 'none';
+        }
+    }
+});
+
 // --- SYSTEM WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
+
+    // Po otwarciu skrzynki oznaczamy wiadomości jako PRZECZYTANE w bazie
+    await baza.from('wiadomosci')
+        .update({ przeczytane: true })
+        .eq('odbiorca', user.email)
+        .eq('przeczytane', false);
+
+    // Usuwamy licznik z widoku (UI)
+    const badge = document.getElementById('msg-badge');
+    const menuCount = document.getElementById('menu-msg-count');
+    if (badge) badge.remove();
+    if (menuCount) menuCount.innerHTML = '';
 
     const { data: msg, error } = await baza
         .from('wiadomosci')
@@ -132,7 +157,8 @@ window.wyslijWiadomosc = async (odbiorca, tytul) => {
         const { error } = await baza.from('wiadomosci').insert([{ 
             nadawca: user.email, 
             odbiorca: odbiorca, 
-            tresc: tresc 
+            tresc: tresc,
+            przeczytane: false // Domyślnie nowa wiadomość jest nieprzeczytana
         }]);
         if (error) alert("Błąd wysyłania: " + error.message); 
         else alert("Wiadomość została wysłana!");
@@ -293,7 +319,11 @@ function render(lista, glowna = false) {
 }
 
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-window.onclick = (e) => { if (e.target.className === 'modal') zamknijModal(); };
+
+// Kliknięcie w tło modala zamyka go
+window.onclick = (e) => { 
+    if (e.target.className === 'modal') zamknijModal(); 
+};
 
 async function init() {
     await sprawdzUzytkownika();
