@@ -272,14 +272,24 @@ window.wyslijOgloszenie = async (e) => {
     location.reload();
 };
 
-// --- LOGIKA KATEGORII I WYNIKÓW ---
+// --- LOGIKA KATEGORII (POPRAWIONA: TYLKO ROZWIJA PODKATEGORIE) ---
 window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
-    p.style.display = 'flex';
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`).join('');
+    if (!p) return;
     
-    const wyniki = daneOgloszen.filter(o => o.kategoria === kat);
-    pokazWynikiModal(`Kategoria: ${kat}`, wyniki);
+    // Jeśli kliknięto w już aktywną kategorię (ukrywamy panel)
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none';
+        p.dataset.activeKat = '';
+        return;
+    }
+
+    // Wyświetlamy pigułki podkategorii
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => 
+        `<div class="sub-pill" onclick="filtrujPoPodkat('${kat}', '${s}')">${s}</div>`
+    ).join('');
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
@@ -343,7 +353,6 @@ window.toggleUlubione = async (e, id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    // Odśwież widok jeśli jesteśmy w sekcji ulubionych lub zaktualizuj ikony
     const favBtn = document.getElementById(`fav-btn-${id}`);
     if(favBtn) favBtn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
     renderTop12(daneOgloszen);
