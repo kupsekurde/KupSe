@@ -156,11 +156,9 @@ window.toggleUlubione = async (e, id) => {
         if (!error) mojeUlubione.push(id);
     }
     
-    // Odśwież widok bez przeładowania strony
     render(daneOgloszen, document.getElementById('subcat-panel').style.display === 'none');
-    sprawdzUzytkownika(); // Aktualizacja licznika w menu
+    sprawdzUzytkownika(); 
     
-    // Jeśli modal szczegółów jest otwarty, odśwież serce w modalu
     const heartBtn = document.getElementById('modal-heart');
     if (heartBtn) {
         const isFav = mojeUlubione.includes(id);
@@ -189,14 +187,14 @@ window.pokazSzczegoly = (id) => {
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
             <div style="flex:1.5; min-width:300px;">
                 <div style="position:relative; background:#000; border-radius:15px; overflow:hidden; height:400px; display:flex; align-items:center; justify-content:center;">
-                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in;" onclick="window.open(this.src)">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in;" onclick="otworzFullFoto()">
                     <button id="modal-heart" onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:15px; right:15px; background:white; border:none; width:45px; height:45px; border-radius:50%; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);">${isFav ? '❤️' : '🤍'}</button>
                     ${aktualneFotki.length > 1 ? `
-                        <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">◀</button>
-                        <button onclick="zmienFoto(1)" style="position:absolute; right:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▶</button>
+                        <button onclick="zmienFoto(-1)" style="position:absolute; left:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:20px;">◀</button>
+                        <button onclick="zmienFoto(1)" style="position:absolute; right:10px; background:rgba(0,0,0,0.5); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:20px;">▶</button>
                     ` : ''}
                 </div>
-                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;">
+                <div style="display:flex; gap:10px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
                     ${aktualneFotki.map((img, i) => `
                         <img src="${img}" onclick="ustawFoto(${i})" class="mini-foto" style="width:60px; height:45px; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid ${i === 0 ? 'var(--primary)' : '#ddd'}">
                     `).join('')}
@@ -222,6 +220,9 @@ window.pokazSzczegoly = (id) => {
 window.zmienFoto = (dir) => {
     aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
     ustawFoto(aktualneZdjecieIndex);
+    // Jeśli lightbox jest otwarty, zaktualizuj też tam
+    const fullImg = document.getElementById('full-img-view');
+    if (fullImg) fullImg.src = aktualneFotki[aktualneZdjecieIndex];
 };
 
 window.ustawFoto = (idx) => {
@@ -229,6 +230,37 @@ window.ustawFoto = (idx) => {
     const img = document.getElementById('mainFoto');
     if (img) img.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((m, i) => m.style.borderColor = i === idx ? 'var(--primary)' : '#ddd');
+};
+
+// --- NOWA FUNKCJA LIGHTBOX (POWIĘKSZONE ZDJĘCIE) ---
+window.otworzFullFoto = () => {
+    let lightbox = document.getElementById('lightbox-overlay');
+    if (!lightbox) {
+        lightbox = document.createElement('div');
+        lightbox.id = 'lightbox-overlay';
+        lightbox.style = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 5000;
+            display: flex; align-items: center; justify-content: center;
+        `;
+        lightbox.onclick = (e) => { if (e.target === lightbox) window.zamknijFullFoto(); };
+        document.body.appendChild(lightbox);
+    }
+
+    lightbox.innerHTML = `
+        <button onclick="window.zamknijFullFoto()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:40px; cursor:pointer; z-index:5001;">&times;</button>
+        ${aktualneFotki.length > 1 ? `
+            <button onclick="zmienFoto(-1)" style="position:absolute; left:20px; background:rgba(255,255,255,0.1); color:white; border:none; width:60px; height:60px; border-radius:50%; cursor:pointer; font-size:30px;">◀</button>
+            <button onclick="zmienFoto(1)" style="position:absolute; right:20px; background:rgba(255,255,255,0.1); color:white; border:none; width:60px; height:60px; border-radius:50%; cursor:pointer; font-size:30px;">▶</button>
+        ` : ''}
+        <img id="full-img-view" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain; border-radius:5px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    `;
+    lightbox.style.display = 'flex';
+};
+
+window.zamknijFullFoto = () => {
+    const lightbox = document.getElementById('lightbox-overlay');
+    if (lightbox) lightbox.style.display = 'none';
 };
 
 // --- FILTROWANIE I KATEGORIE ---
@@ -318,7 +350,7 @@ window.usunOgloszenie = async (id) => {
 function render(lista, glowna = false) {
     const k = document.getElementById('lista');
     if (!k) return;
-    const d = glowna ? lista.slice(0, 12) : lista;
+    const d = glowna ? lista.slice(0, 48) : lista; // Zmienione na 48, żeby widzieć więcej ogłoszeń testowych
     k.innerHTML = d.map(o => {
         const isFav = mojeUlubione.includes(o.id);
         const dataStr = new Date(o.created_at).toLocaleString('pl-PL', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
