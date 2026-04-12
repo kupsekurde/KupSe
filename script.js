@@ -24,22 +24,41 @@ const SUB_DATA = {
     'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
+// --- BAZA DANYCH DLA DYNAMICZNYCH LIST (MARKI I MODELE) ---
+const AUTO_DATA = {
+    'Audi': ['A3', 'A4', 'A6', 'Q5', 'Q7', 'TT'],
+    'BMW': ['Seria 3', 'Seria 5', 'X3', 'X5', 'M3'],
+    'Ford': ['Focus', 'Mondeo', 'S-Max', 'Fiesta', 'Kuga', 'Mustang'],
+    'Mercedes-Benz': ['Klasa C', 'Klasa E', 'Klasa S', 'GLC', 'GLE'],
+    'Opel': ['Astra', 'Insignia', 'Corsa', 'Mokka'],
+    'Toyota': ['Corolla', 'Yaris', 'Avensis', 'RAV4'],
+    'Volkswagen': ['Golf', 'Passat', 'Tiguan', 'Polo']
+};
+
+const PHONE_DATA = {
+    'Apple': ['iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone SE'],
+    'Samsung': ['Galaxy S23', 'Galaxy S24', 'Galaxy A54', 'Galaxy Z Flip'],
+    'Xiaomi': ['Redmi Note 12', 'Xiaomi 13', 'POCO F5'],
+    'Huawei': ['P60 Pro', 'Mate 50', 'Nova 11']
+};
+
 // --- NOWA KONFIGURACJA FILTRÓW SPECJALISTYCZNYCH ---
 const FILTER_CONFIG = {
     'Samochody osobowe': [
-        { id: 'marka', label: 'Marka', type: 'text' },
-        { id: 'model', label: 'Model', type: 'text' },
+        { id: 'marka', label: 'Marka', type: 'select', options: Object.keys(AUTO_DATA) },
+        { id: 'model', label: 'Model', type: 'select', options: [], dependent: 'marka' },
         { id: 'paliwo', label: 'Paliwo', type: 'select', options: ['Benzyna', 'Diesel', 'LPG', 'Elektryczny', 'Hybryda'] },
         { id: 'cena', label: 'Cena', type: 'range' },
         { id: 'rok', label: 'Rok produkcji', type: 'range' },
         { id: 'nadwozie', label: 'Nadwozie', type: 'select', options: ['Sedan', 'Kombi', 'Hatchback', 'SUV', 'Coupe', 'Kabriolet'] }
     ],
     'Telefony': [
-        { id: 'marka', label: 'Marka', type: 'select', options: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Inne'] },
+        { id: 'marka', label: 'Marka', type: 'select', options: Object.keys(PHONE_DATA) },
+        { id: 'model', label: 'Model', type: 'select', options: [], dependent: 'marka' },
         { id: 'stan', label: 'Stan', type: 'select', options: ['Nowy', 'Używany', 'Uszkodzony'] },
         { id: 'cena', label: 'Cena', type: 'range' }
     ],
-    'Mieszkania': [ // Przykład dla przyszłych kategorii
+    'Mieszkania': [ 
         { id: 'cena', label: 'Cena', type: 'range' },
         { id: 'metraz', label: 'Metraż (m2)', type: 'range' },
         { id: 'pokoje', label: 'Liczba pokoi', type: 'select', options: ['1', '2', '3', '4+'] }
@@ -341,10 +360,12 @@ window.otworzFiltry = (kat, podkat) => {
                     return `<div><label>${f.label}</label><input type="text" id="filter-${f.id}" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;"></div>`;
                 }
                 if (f.type === 'select') {
-                    return `<div><label>${f.label}</label><select id="filter-${f.id}" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
-                        <option value="">Wszystkie</option>
-                        ${f.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                    </select></div>`;
+                    return `<div><label>${f.label}</label>
+                        <select id="filter-${f.id}" onchange="handleFilterChange('${podkat}', '${f.id}')" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                            <option value="">Wszystkie</option>
+                            ${(f.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                        </select>
+                    </div>`;
                 }
                 if (f.type === 'range') {
                     return `<div style="grid-column: span 2; display:flex; gap:10px; align-items:center;">
@@ -360,6 +381,22 @@ window.otworzFiltry = (kat, podkat) => {
     document.getElementById('modal-view').style.display = 'flex';
 };
 
+// --- DYNAMICZNA ZMIANA MODELI ---
+window.handleFilterChange = (podkat, fieldId) => {
+    if (fieldId === 'marka') {
+        const marka = document.getElementById('filter-marka').value;
+        const modelSelect = document.getElementById('filter-model');
+        
+        if (!modelSelect) return;
+
+        let modele = [];
+        if (podkat === 'Samochody osobowe') modele = AUTO_DATA[marka] || [];
+        if (podkat === 'Telefony') modele = PHONE_DATA[marka] || [];
+
+        modelSelect.innerHTML = '<option value="">Wszystkie modele</option>' + modele.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
+};
+
 window.zastosujFiltry = (kat, podkat) => {
     const config = FILTER_CONFIG[podkat];
     let wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
@@ -370,8 +407,8 @@ window.zastosujFiltry = (kat, podkat) => {
             if (val) wyniki = wyniki.filter(o => o.opis.toLowerCase().includes(val) || o.tytul.toLowerCase().includes(val));
         }
         if (f.type === 'select') {
-            const val = document.getElementById(`filter-${f.id}`).value;
-            if (val) wyniki = wyniki.filter(o => o.opis.includes(val) || o.tytul.includes(val));
+            const val = document.getElementById(`filter-${f.id}`).value.toLowerCase();
+            if (val) wyniki = wyniki.filter(o => o.opis.toLowerCase().includes(val) || o.tytul.toLowerCase().includes(val));
         }
         if (f.type === 'range') {
             const min = parseFloat(document.getElementById(`filter-${f.id}-min`).value);
