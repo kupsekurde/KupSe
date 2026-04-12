@@ -9,18 +9,19 @@ let aktualneFotki = [];
 let edytowaneZdjecia = [];
 
 const SUB_DATA = {
-    'Motoryzacja': ['Samochody', 'Motocykle', 'Części'],
-    'Dom': ['Meble', 'Ogrzewanie', 'Dekoracje'],
-    'Elektronika': ['Telefony', 'Laptopy', 'Konsole'],
-    'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe'],
-    'Moda': ['Ubrania', 'Buty', 'Dodatki'],
-    'Rolnictwo': ['Traktory', 'Maszyny', 'Zwierzęta hodowlane'],
-    'Zwierzęta': ['Psy', 'Koty', 'Akcesoria'],
-    'Dzieci': ['Zabawki', 'Wózki', 'Ubranka'],
-    'Sport': ['Rowery', 'Siłownia', 'Turystyka'],
-    'Nauka': ['Książki', 'Korepetycje', 'Instrumenty'],
-    'Usługi': ['Budowlane', 'Transport', 'Naprawa'],
-    'Inne': ['Różne']
+    'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
+    'Dom': ['Meble', 'Oświetlenie', 'Dekoracje', 'AGD', 'RTV', 'Pozostałe'],
+    'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
+    'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
+    'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
+    'Rolnictwo': ['Ciągniki', 'Maszyny rolnicze', 'Zwierzęta hodowlane', 'Pasze i ziarno', 'Opony rolnicze', 'Pozostałe'],
+    'Zwierzęta': ['Psy', 'Koty', 'Ptaki', 'Akwarystyka', 'Akcesoria', 'Pozostałe'],
+    'Dzieci': ['Zabawki', 'Wózki i foteliki', 'Ubranka', 'Akcesoria dla niemowląt', 'Meble dziecięce', 'Pozostałe'],
+    'Sport': ['Rowery', 'Siłownia i fitness', 'Turystyka', 'Sporty wodne', 'Sporty zimowe', 'Pozostałe'],
+    'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
+    'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
+    'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
+    'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
 // --- POMOCNICZE ---
@@ -409,7 +410,7 @@ function renderujFormularzEdycji(o) {
                     ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
                 </select>
                 <select id="e-podkat" required style="flex:1; padding:10px; border-radius:8px;">
-                    <option value="${o.podkategoria}">${o.podkategoria}</option>
+                    ${(SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}" ${o.podkategoria === x ? 'selected' : ''}>${x}</option>`).join('')}
                 </select>
             </div>
             
