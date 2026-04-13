@@ -31,7 +31,13 @@ const SUB_DATA = {
 function formatujDate(isoString) {
     if (!isoString) return '';
     const d = new Date(isoString);
-    return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString('pl-PL', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
 }
 
 // --- LOGOWANIE I REJESTRACJA ---
@@ -71,20 +77,23 @@ window.zarejestruj = async () => {
         email, 
         password,
         options: {
-            emailRedirectTo: window.location.origin
+            emailRedirectTo: window.location.origin 
         }
     });
 
     if (error) {
         alert("Błąd rejestracji: " + error.message); 
     } else {
-        alert("Rejestracja pomyślna! Wysłaliśmy link potwierdzający na Twój e-mail. Musisz go kliknąć, aby móc się zalogować.");
+        alert("Rejestracja pomyślna! Sprawdź e-mail, aby aktywować konto.");
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-pass').value = '';
     }
 };
 
-window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+window.wyloguj = async () => { 
+    await baza.auth.signOut(); 
+    location.reload(); 
+};
 
 // --- INTERFEJS UŻYTKOWNIKA ---
 async function sprawdzUzytkownika() {
@@ -157,13 +166,24 @@ window.pokazSkrzynke = async () => {
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email);
     const { data: msg } = await baza.from('wiadomosci').select('*').eq('odbiorca', user.email).order('created_at', { ascending: false });
     const content = document.getElementById('view-content');
+    
     let htmlMsg = msg && msg.length > 0 ? msg.map(m => `
         <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
             <div style="font-size:11px; color:gray;">Od: ${m.nadawca}</div>
             <div style="font-size:14px; margin-top:5px;">${m.tresc}</div>
-            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Re: wiadomość')" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; margin-top:5px;">Odpowiedz</button>
+            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Re: wiadomość')" 
+                    style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; margin-top:5px;">
+                Odpowiedz
+            </button>
         </div>`).join('') : '<p>Brak wiadomości.</p>';
-    content.innerHTML = `<button class="close-btn" onclick="zamknijModal()">&times;</button><h2>Wiadomości</h2><div style="max-height:60vh; overflow-y:auto;">${htmlMsg}</div>`;
+
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <h2>Wiadomości</h2>
+        <div style="max-height:60vh; overflow-y:auto;">
+            ${htmlMsg}
+        </div>`;
+    
     document.getElementById('modal-view').style.display = 'flex';
 };
 
@@ -172,7 +192,12 @@ window.wyslijWiadomosc = async (odbiorca, tytul) => {
     if (!user) return alert("Zaloguj się!");
     const tresc = prompt(`Wiadomość do: ${odbiorca}`);
     if (tresc) {
-        await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+        await baza.from('wiadomosci').insert([{ 
+            nadawca: user.email, 
+            odbiorca, 
+            tresc, 
+            przeczytane: false 
+        }]);
         alert("Wysłano!");
     }
 };
@@ -239,10 +264,19 @@ window.otworzFullFoto = () => {
         document.body.appendChild(lb);
     }
     lb.innerHTML = `
-        <button onclick="document.getElementById('lightbox-box').style.display='none'" style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">&times;</button>
-        <button onclick="navFullFoto(-1)" style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❮</button>
+        <button onclick="document.getElementById('lightbox-box').style.display='none'" 
+                style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">
+            &times;
+        </button>
+        <button onclick="navFullFoto(-1)" 
+                style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
+            ❮
+        </button>
         <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain;">
-        <button onclick="navFullFoto(1)" style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">❯</button>
+        <button onclick="navFullFoto(1)" 
+                style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
+            ❯
+        </button>
     `;
     lb.style.display = 'flex';
 };
@@ -264,8 +298,8 @@ window.otworzFiltry = (kat, podkat) => {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h3>Szukaj: ${podkat}</h3>
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-            <input type="text" id="f-marka" placeholder="Marka">
-            <input type="text" id="f-model" placeholder="Model">
+            <input type="text" id="f-marka" placeholder="Marka" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+            <input type="text" id="f-model" placeholder="Model" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <div style="display:flex; gap:10px;">
                 <input type="number" id="f-cena-min" placeholder="Cena od" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 <input type="number" id="f-cena-max" placeholder="Cena do" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
@@ -284,7 +318,10 @@ window.otworzFiltry = (kat, podkat) => {
                     <option value="Elektryczny">Elektryczny</option>
                 </select>
             ` : ''}
-            <button onclick="zastosujFiltrySpec('${kat}', '${podkat}')" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">POKAŻ OGŁOSZENIA</button>
+            <button onclick="zastosujFiltrySpec('${kat}', '${podkat}')" 
+                    style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">
+                POKAŻ OGŁOSZENIA
+            </button>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
@@ -317,7 +354,6 @@ window.zastosujFiltrySpec = (kat, podkat) => {
             const pOk = paliwo === "" || tresc.includes(paliwo);
             return mOk && modOk && cOk && rOk && pOk;
         }
-
         return mOk && modOk && cOk;
     });
 
@@ -375,7 +411,8 @@ window.updateFormSubcats = (prefix = 'f-', forceUpdate = false) => {
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    btn.disabled = true; btn.innerText = "Wysyłanie...";
+    btn.disabled = true; 
+    btn.innerText = "Wysyłanie...";
     
     const { data: { user } } = await baza.auth.getUser();
     if (!user) {
@@ -442,8 +479,14 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>Moje ogłoszenia</h2>
         <div style="display:flex; gap:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
-            <div onclick="pokazMojeOgloszenia('aktywne')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">Aktywne (${aktywne.length})</div>
-            <div onclick="pokazMojeOgloszenia('zakonczone')" style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">Zakończone (${zakonczone.length})</div>
+            <div onclick="pokazMojeOgloszenia('aktywne')" 
+                 style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">
+                 Aktywne (${aktywne.length})
+            </div>
+            <div onclick="pokazMojeOgloszenia('zakonczone')" 
+                 style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">
+                 Zakończone (${zakonczone.length})
+            </div>
         </div>
         <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
             ${wyswietlane.map(o => `
@@ -477,7 +520,9 @@ window.toggleSubcats = (kat) => {
     }
     p.style.display = 'flex';
     p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `<div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
@@ -511,7 +556,7 @@ function pokazWynikiModal(tytul, wyniki, strona = 1) {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
         <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:65vh; overflow-y:auto; padding-right:5px;">
-            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p'}
+            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
         </div>
         ${paginacjaHTML}`;
     
@@ -617,14 +662,17 @@ function renderujFormularzEdycji(o) {
             <input type="number" id="e-cena" value="${o.cena}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <input type="text" id="e-lok" value="${o.lokalizacja}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <textarea id="e-opis" rows="8" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;">${o.opis}</textarea>
-            <button type="submit" id="btn-e-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Zapisz zmiany</button>
+            <button type="submit" id="btn-e-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">
+                Zapisz zmiany
+            </button>
         </form>`;
 }
 
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
     const btn = document.getElementById('btn-e-save');
-    btn.disabled = true; btn.innerText = "Zapisywanie...";
+    btn.disabled = true; 
+    btn.innerText = "Zapisywanie...";
     
     await baza.from('ogloszenia').update({
         tytul: document.getElementById('e-tytul').value,
