@@ -298,23 +298,23 @@ window.otworzFormularzDodawania = () => {
     updateFormSubcats('f-', true);
 };
 
-window.updateFormSubcats = (prefix, forceUpdate = false) => {
+window.updateFormSubcats = (prefix = 'f-', forceUpdate = false) => {
     const katSelect = document.getElementById(`${prefix}kat`);
     const podkatSelect = document.getElementById(`${prefix}podkat`);
-    const extraFields = document.getElementById('extra-fields');
+    const extraFields = document.getElementById(prefix === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
     if (!katSelect || !podkatSelect) return;
     
     const k = katSelect.value;
     
-    // 1. Aktualizuj listę podkategorii jeśli kategoria się zmieniła lub wymuszono (otwarcie okna)
+    // 1. Aktualizuj listę podkategorii
     const podkategorie = SUB_DATA[k] || [];
     podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
         podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
     
+    // 2. Obsługa dodatkowych okienek (wykonujemy po wyrenderowaniu podkategorii)
     const p = podkatSelect.value;
     
-    // 2. Obsługa dodatkowych okienek
     if (extraFields) {
         extraFields.innerHTML = '';
         
