@@ -717,14 +717,47 @@ window.zapiszEdycje = async (e, id) => {
     btn.disabled = true; 
     btn.innerText = "Zapisywanie...";
     
-    await baza.from('ogloszenia').update({
-        tytul: document.getElementById('e-tytul').value,
-        kategoria: document.getElementById('e-kat').value,
-        podkategoria: document.getElementById('e-podkat').value,
-        cena: parseFloat(document.getElementById('e-cena').value),
-        lokalizacja: document.getElementById('e-lok').value,
-        opis: document.getElementById('e-opis').value
-    }).eq('id', id);
-    
-    location.reload();
+    // 1. Zbieramy dane techniczne (jeśli istnieją)
+    let dodatkoweDane = "";
+    const marka = document.getElementById('extra-marka')?.value;
+    const model = document.getElementById('extra-model')?.value;
+    const rok = document.getElementById('extra-rok')?.value;
+    const przebieg = document.getElementById('extra-przebieg')?.value;
+    const poj = document.getElementById('extra-pojemnosc')?.value;
+    const moc = document.getElementById('extra-moc')?.value;
+    const paliwo = document.getElementById('extra-paliwo')?.value;
+
+    if (marka) {
+        dodatkoweDane = "\n\n--- DANE ---" + 
+                        `\nMarka: ${marka}` + 
+                        `\nModel: ${model}` + 
+                        `\nRok produkcji: ${rok}` + 
+                        `\nPrzebieg: ${przebieg} km` + 
+                        `\nPojemność: ${poj}` + 
+                        `\nMoc: ${moc} KM` + 
+                        `\nPaliwo: ${paliwo}`;
+    }
+
+    // 2. Czyścimy stary opis z poprzednich danych technicznych i łączymy z nowymi
+    const obecnyOpis = document.getElementById('e-opis').value;
+    const czystyOpis = obecnyOpis.split('--- DANE ---')[0].trim();
+    const opisFinalny = czystyOpis + dodatkoweDane;
+
+    try {
+        const { error } = await baza.from('ogloszenia').update({
+            tytul: document.getElementById('e-tytul').value,
+            kategoria: document.getElementById('e-kat').value,
+            podkategoria: document.getElementById('e-podkat').value,
+            cena: parseFloat(document.getElementById('e-cena').value),
+            lokalizacja: document.getElementById('e-lok').value,
+            opis: opisFinalny
+        }).eq('id', id);
+
+        if (error) throw error;
+        location.reload();
+    } catch (err) {
+        alert("Błąd: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Zapisz zmiany";
+    }
 };
