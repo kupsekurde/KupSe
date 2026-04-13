@@ -445,63 +445,77 @@ window.updateFormSubcats = (p = 'f-') => {
 };
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-save');
+    const user = (await baza.auth.getUser()).data.user;
+    if (!user) return alert("Zaloguj się!");
+
+    const btn = document.querySelector('#form-dodaj button');
     btn.disabled = true;
-    btn.innerText = "Wysyłanie...";
+    btn.innerText = "Kompresja zdjęć...";
 
-    try {
-        const { data: { user } } = await baza.auth.getUser();
-        if (!user) throw new Error("Musisz być zalogowany!");
-
-        const pliki = document.getElementById('f-plik').files;
-        let linki = [];
-        for (let f of pliki) {
-            const n = `${Date.now()}_${f.name}`;
-            await baza.storage.from('zdjecia').upload(n, f);
-            linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
-        }
-
-        // --- Zbieranie danych dodatkowych (jeśli są widoczne) ---
-        let dodatkoweDane = "";
-        const marka = document.getElementById('extra-marka')?.value;
-        const model = document.getElementById('extra-model')?.value;
-        const rok = document.getElementById('extra-rok')?.value;
-        const przebieg = document.getElementById('extra-przebieg')?.value;
-        const poj = document.getElementById('extra-pojemnosc')?.value;
-        const moc = document.getElementById('extra-moc')?.value;
-        const paliwo = document.getElementById('extra-paliwo')?.value;
-
-        if (marka) {
-            dodatkoweDane = "\n\n--- DANE ---" + 
-                            `\nMarka: ${marka}` + 
-                            `\nModel: ${model}` + 
-                            `\nRok produkcji: ${rok}` + 
-                            `\nPrzebieg: ${przebieg} km` + 
-                            `\nPojemność: ${poj}` + 
-                            `\nMoc: ${moc} KM` + 
-                            `\nPaliwo: ${paliwo}`;
-        }
-
-        const opisFinalny = document.getElementById('f-opis').value + dodatkoweDane;
-
-        const { error } = await baza.from('ogloszenia').insert([{
-            tytul: document.getElementById('f-tytul').value,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value,
-            cena: parseFloat(document.getElementById('f-cena').value),
-            lokalizacja: document.getElementById('f-lok').value,
-            opis: opisFinalny,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: linki,
-            user_email: user.email
-        }]);
-
-        if (error) throw error;
-        location.reload();
-    } catch (err) {
-        alert("Błąd: " + err.message);
+    const files = Array.from(document.getElementById('f-img').files);
+    
+    // Limit 5 zdjęć
+    if (files.length > 5) {
+        alert("Możesz dodać maksymalnie 5 zdjęć!");
         btn.disabled = false;
-        btn.innerText = "Opublikuj ogłoszenie";
+        btn.innerText = "Wystaw ogłoszenie";
+        return;
+    }
+
+    const zdjeciaUrls = [];
+    const compressionOptions = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1280,
+        useWebWorker: true
+    };
+
+    for (const file of files) {
+        try {
+            const compressedFile = await imageCompression(file, compressionOptions);
+            const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            const { data, error } = await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
+            if (error) throw error;
+            const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+            zdjeciaUrls.push(publicUrl);
+        } catch (error) {
+            console.error("Błąd zdjęcia:", error);
+        }
+    }
+
+    btn.innerText = "Wysyłanie danych...";
+
+    let dodatkoweDane = "";
+    const marka = document.getElementById('f-marka')?.value;
+    if (marka) {
+        dodatkoweDane = "\n\n--- DANE ---" + 
+            `\nMarka: ${marka}` + 
+            `\nModel: ${document.getElementById('f-model').value}` + 
+            `\nRok produkcji: ${document.getElementById('f-rok').value}` + 
+            `\nPrzebieg: ${document.getElementById('f-przebieg').value} km` + 
+            `\nPojemność: ${document.getElementById('f-pojemnosc').value}` + 
+            `\nMoc: ${document.getElementById('f-moc').value} KM` + 
+            `\nPaliwo: ${document.getElementById('f-paliwo').value}`;
+    }
+
+    const { error } = await baza.from('ogloszenia').insert([{
+        user_email: user.email,
+        tytul: document.getElementById('f-tytul').value,
+        kategoria: document.getElementById('f-kat').value,
+        podkategoria: document.getElementById('f-podkat').value,
+        cena: parseFloat(document.getElementById('f-cena').value),
+        lokalizacja: document.getElementById('f-lok').value,
+        opis: document.getElementById('f-opis').value + dodatkoweDane,
+        zdjecia: zdjeciaUrls,
+        telefon: document.getElementById('f-tel').value
+    }]);
+
+    if (error) {
+        alert("Błąd: " + error.message);
+        btn.disabled = false;
+        btn.innerText = "Wystaw ogłoszenie";
+    } else {
+        alert("Ogłoszenie dodane!");
+        location.reload();
     }
 };
 // --- MOJE OGŁOSZENIA ---
@@ -546,16 +560,22 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
 };
 
 window.usunOgloszenie = async (id) => {
-    if (confirm("Usunąć ogłoszenie na stałe?")) { 
+    if (!confirm("Czy na pewno chcesz usunąć to ogłoszenie i zdjęcia z serwera?")) return;
+
+    try {
         const o = daneOgloszen.find(x => x.id === id);
-        // Opcjonalne kasowanie plików ze Storage przed usunięciem wpisu z bazy
         if (o && o.zdjecia && o.zdjecia.length > 0) {
-            const nazwyPlikow = o.zdjecia.map(url => url.split('/').pop());
-            await baza.storage.from('zdjecia').remove(nazwyPlikow);
+            const plikiDoUsuniecia = o.zdjecia.map(url => url.split('/').pop());
+            await baza.storage.from('zdjecia').remove(plikiDoUsuniecia);
         }
-        
-        await baza.from('ogloszenia').delete().eq('id', id); 
-        location.reload(); 
+
+        const { error } = await baza.from('ogloszenia').delete().eq('id', id);
+        if (error) throw error;
+
+        alert("Usunięto pomyślnie.");
+        location.reload();
+    } catch (err) {
+        alert("Błąd: " + err.message);
     }
 };
 
