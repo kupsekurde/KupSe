@@ -10,19 +10,16 @@
         :root { --primary: #ff4f00; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* Nawigacja */
         .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .main-logo { height: 50px; cursor: pointer; }
         
-        /* Ulepszona Wyszukiwarka */
         .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
         .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; }
         #find-text { width: 200px; }
         #find-loc { width: 150px; }
         .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
         
-        /* Kategorie */
         .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
         .cat-container { display: flex; justify-content: flex-start; gap: 15px; padding: 15px 5%; overflow-x: auto; scrollbar-width: none; }
         .cat-container::-webkit-scrollbar { display: none; }
@@ -31,29 +28,26 @@
         .cat-icon img { width: 70%; height: 70%; object-fit: contain; }
         .cat-item span { font-size: 11px; font-weight: 700; display: block; margin-top: 8px; color: #444; }
 
-        /* Panel podkategorii */
         .subcat-panel { display: none; background: #f8f9fa; padding: 12px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
         .sub-pill { padding: 6px 15px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
         .sub-pill:hover { background: var(--primary); color: white; }
 
-        /* Grid ogłoszeń */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
         .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
-        .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
-        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
-        /* Modale */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
         .modal-box { background: white; width: 90%; max-width: 850px; max-height: 90vh; border-radius: 25px; padding: 30px; overflow-y: auto; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #666; font-weight: bold; border: none; background: none; }
 
-        /* Formularz */
         form input, form select, form textarea { padding: 12px; border-radius: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; font-family: inherit; }
         .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
 
         .btn-account { background: #f3f4f6; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 800; cursor: pointer; }
         .hidden { display: none; }
         footer { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; background: white; border-top: 1px solid #eee; margin-top: 40px; }
+        
+        .pass-requirements { text-align: left; font-size: 11px; color: #666; margin: 10px 0; background: #f9f9f9; padding: 10px; border-radius: 10px; }
+        .pass-requirements b { color: var(--text); }
     </style>
 </head>
 <body>
@@ -63,11 +57,8 @@
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
             <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') szukaj()">
-            
             <div class="search-divider"></div>
-            
             <input type="text" id="find-loc" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') szukaj()">
-            
             <button onclick="szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
         </div>
     </div>
@@ -106,7 +97,13 @@
         <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
             <h3>Rejestracja</h3>
             <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
-            <input type="password" id="reg-pass" placeholder="Hasło (min. 6 znaków)" style="margin-bottom:15px;">
+            <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
+            <div class="pass-requirements">
+                <b>Wymagania hasła:</b><br>
+                • Minimum 8 znaków<br>
+                • Minimum jedna wielka litera<br>
+                • Minimum jeden znak specjalny
+            </div>
             <button onclick="zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
             <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
         </div>
@@ -146,18 +143,16 @@
                     <option value="">Podkategoria</option>
                 </select>
             </div>
+            <div id="extra-fields"></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <input type="number" id="f-cena" placeholder="Cena (zł)" required>
                 <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required>
             </div>
             <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
             <input type="tel" id="f-tel" placeholder="Numer telefonu" required>
-            
             <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
                 <input type="file" id="f-plik" accept="image/*" multiple required>
             </div>
-            
             <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
         </form>
     </div>
