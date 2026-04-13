@@ -547,6 +547,13 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
 
 window.usunOgloszenie = async (id) => {
     if (confirm("Usunąć ogłoszenie na stałe?")) { 
+        const o = daneOgloszen.find(x => x.id === id);
+        // Opcjonalne kasowanie plików ze Storage przed usunięciem wpisu z bazy
+        if (o && o.zdjecia && o.zdjecia.length > 0) {
+            const nazwyPlikow = o.zdjecia.map(url => url.split('/').pop());
+            await baza.storage.from('zdjecia').remove(nazwyPlikow);
+        }
+        
         await baza.from('ogloszenia').delete().eq('id', id); 
         location.reload(); 
     }
