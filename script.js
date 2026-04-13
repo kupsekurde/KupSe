@@ -38,17 +38,52 @@ function formatujDate(isoString) {
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
-    const { error } = await baza.auth.signInWithPassword({ email, password });
-    if (error) alert("Błąd logowania: " + error.message); else location.reload();
+    const { data, error } = await baza.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+        if (error.message.includes("Email not confirmed")) {
+            alert("Błąd: Twój e-mail nie został jeszcze potwierdzony. Sprawdź skrzynkę odbiorczą.");
+        } else {
+            alert("Błąd logowania: " + error.message);
+        }
+    } else {
+        location.reload();
+    }
 };
 
 window.zarejestruj = async () => {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-pass').value;
-    if (password.length < 6) return alert("Hasło min. 6 znaków!");
-    const { error } = await baza.auth.signUp({ email, password });
-    if (error) alert("Błąd rejestracji: " + error.message); 
-    else alert("Zarejestrowano! Sprawdź e-mail lub zaloguj się.");
+
+    // Walidacja hasła
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasMinLength = password.length >= 8;
+
+    if (!hasMinLength || !hasUpperCase || !hasSpecialChar) {
+        let msg = "Hasło nie spełnia wymagań:\n";
+        if (!hasMinLength) msg += "- minimum 8 znaków\n";
+        if (!hasUpperCase) msg += "- minimum jedna wielka litera\n";
+        if (!hasSpecialChar) msg += "- minimum jeden znak specjalny";
+        return alert(msg);
+    }
+
+    const { data, error } = await baza.auth.signUp({ 
+        email, 
+        password,
+        options: {
+            emailRedirectTo: window.location.origin // Przekieruje z powrotem na Twoją stronę po kliknięciu w link
+        }
+    });
+
+    if (error) {
+        alert("Błąd rejestracji: " + error.message); 
+    } else {
+        alert("Rejestracja pomyślna! Wysłaliśmy link potwierdzający na Twój e-mail. Musisz go kliknąć, aby móc się zalogować.");
+        // Opcjonalnie wyczyść pola
+        document.getElementById('reg-email').value = '';
+        document.getElementById('reg-pass').value = '';
+    }
 };
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
@@ -294,7 +329,6 @@ window.zastosujFiltrySpec = (kat, podkat) => {
 // --- DODAWANIE OGŁOSZEŃ ---
 window.otworzFormularzDodawania = () => {
     document.getElementById('modal-form').style.display = 'flex';
-    // Wymuszenie załadowania podkategorii dla domyślnie wybranej kategorii
     updateFormSubcats('f-', true);
 };
 
@@ -306,18 +340,14 @@ window.updateFormSubcats = (prefix = 'f-', forceUpdate = false) => {
     if (!katSelect || !podkatSelect) return;
     
     const k = katSelect.value;
-    
-    // 1. Aktualizuj listę podkategorii
     const podkategorie = SUB_DATA[k] || [];
     podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
         podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
     
-    // 2. Obsługa dodatkowych okienek (wykonujemy po wyrenderowaniu podkategorii)
     const p = podkatSelect.value;
     
     if (extraFields) {
         extraFields.innerHTML = '';
-        
         if (k === 'Motoryzacja' && p !== '' && p !== 'Części samochodowe' && p !== 'Pozostałe') {
             extraFields.innerHTML = `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
@@ -364,7 +394,6 @@ window.wyslijOgloszenie = async (e) => {
         if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
 
-    // Pobieranie dodatkowych danych
     let dodatkoweDane = "";
     const markaVal = document.getElementById('extra-marka')?.value;
     const modelVal = document.getElementById('extra-model')?.value;
@@ -461,8 +490,6 @@ window.filtrujPoPodkat = (kat, podkat) => {
 // --- PAGINACJA WYNIKÓW ---
 function pokazWynikiModal(tytul, wyniki, strona = 1) {
     const content = document.getElementById('view-content');
-    
-    // Obliczanie stron
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const koniec = start + OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, koniec);
