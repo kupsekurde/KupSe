@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+`<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
@@ -149,10 +149,14 @@
                 <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required>
             </div>
             <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
-            <input type="tel" id="f-tel" placeholder="Numer telefonu" required>
-            <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
-                <input type="file" id="f-plik" accept="image/*" multiple required>
-            </div>
+           <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+       pattern="[0-9]{9}" maxlength="9" 
+       oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+
+<div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
+    <p style="margin-top:0; font-size:0.85em; color:var(--gray);">Dodaj zdjęcia (Max 5 sztuk, zostaną zoptymalizowane)</p>
+    <input type="file" id="f-img" accept="image/*" multiple required>
+</div>
             <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
         </form>
     </div>
