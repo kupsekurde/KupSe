@@ -709,12 +709,13 @@ function renderujFormularzEdycji(o) {
             </button>
         </form>`;
 }
-
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
     const btn = document.getElementById('btn-e-save');
-    btn.disabled = true; 
-    btn.innerText = "Zapisywanie...";
+    if (btn) {
+        btn.disabled = true; 
+        btn.innerText = "Zapisywanie...";
+    }
     
     try {
         await baza.from('ogloszenia').update({
@@ -729,20 +730,23 @@ window.zapiszEdycje = async (e, id) => {
         location.reload();
     } catch (err) {
         alert("Błąd zapisu: " + err.message);
-        btn.disabled = false;
-        btn.innerText = "Zapisz zmiany";
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Zapisz zmiany";
+        }
     }
 };
 
 // --- RENDEROWANIE KART ---
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
+    const foto = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/150';
     return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
             <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <img src="${(o.zdjecia && o.zdjecia[0]) || 'https://via.placeholder.com/150'}" style="width:100%; height:150px; object-fit:cover;">
+            <img src="${foto}" style="width:100%; height:150px; object-fit:cover;">
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; font-weight:600;">${o.tytul}</div>
