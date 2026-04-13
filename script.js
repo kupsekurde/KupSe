@@ -305,23 +305,22 @@ window.updateFormSubcats = (prefix) => {
     if (!katSelect || !podkatSelect) return;
     
     const k = katSelect.value;
-    const p = podkatSelect.value;
     
-    // 1. Zawsze aktualizuj listę podkategorii, jeśli zmieniono kategorię główną
-    // (Jeśli funkcja jest wywołana przez zmianę kategorii, odświeżamy listę)
+    // 1. Zawsze aktualizuj listę podkategorii, jeśli zmieniono główną kategorię
     if (event && event.target && event.target.id === `${prefix}kat`) {
         const podkategorie = SUB_DATA[k] || [];
         podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
             podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
-    // 2. Obsługa dodatkowych okienek (Marka, Model itd.)
+    const p = podkatSelect.value;
+    
+    // 2. Obsługa dodatkowych okienek w zależności od wybranej kategorii i podkategorii
     if (extraFields) {
         extraFields.innerHTML = '';
-        const wybranaPodkat = podkatSelect.value;
-
-        // Warunek dla Motoryzacji: Kategoria Motoryzacja, ale NIE 'Części samochodowe' i NIE 'Pozostałe'
-        if (k === 'Motoryzacja' && wybranaPodkat !== '' && wybranaPodkat !== 'Części samochodowe' && wybranaPodkat !== 'Pozostałe') {
+        
+        // Motoryzacja: Wszystko oprócz Części i Pozostałe
+        if (k === 'Motoryzacja' && p !== '' && p !== 'Części samochodowe' && p !== 'Pozostałe') {
             extraFields.innerHTML = `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
                     <input type="text" id="extra-marka" placeholder="Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
@@ -337,11 +336,11 @@ window.updateFormSubcats = (prefix) => {
                     </select>
                 </div>`;
         } 
-        // Warunek dla Elektroniki: Kategoria Elektronika, ale NIE 'Pozostałe'
-        else if (k === 'Elektronika' && wybranaPodkat !== '' && wybranaPodkat !== 'Pozostałe') {
+        // Elektronika: Wszystko oprócz Pozostałe
+        else if (k === 'Elektronika' && p !== '' && p !== 'Pozostałe') {
             extraFields.innerHTML = `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
-                    <input type="text" id="extra-marka" placeholder="Producent/Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="text" id="extra-marka" placeholder="Producent / Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
                     <input type="text" id="extra-model" placeholder="Model" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>`;
         }
@@ -368,7 +367,7 @@ window.wyslijOgloszenie = async (e) => {
         if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
     }
 
-    // Pobieranie dodatkowych danych z pól dynamicznych
+    // Pobieranie dodatkowych danych
     let dodatkoweDane = "";
     const markaVal = document.getElementById('extra-marka')?.value;
     const modelVal = document.getElementById('extra-model')?.value;
