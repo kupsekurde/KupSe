@@ -55,7 +55,6 @@ window.zarejestruj = async () => {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-pass').value;
 
-    // Walidacja hasła
     const hasUpperCase = /[A-Z]/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
     const hasMinLength = password.length >= 8;
@@ -72,7 +71,7 @@ window.zarejestruj = async () => {
         email, 
         password,
         options: {
-            emailRedirectTo: window.location.origin // Przekieruje z powrotem na Twoją stronę po kliknięciu w link
+            emailRedirectTo: window.location.origin
         }
     });
 
@@ -80,7 +79,6 @@ window.zarejestruj = async () => {
         alert("Błąd rejestracji: " + error.message); 
     } else {
         alert("Rejestracja pomyślna! Wysłaliśmy link potwierdzający na Twój e-mail. Musisz go kliknąć, aby móc się zalogować.");
-        // Opcjonalnie wyczyść pola
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-pass').value = '';
     }
@@ -513,7 +511,7 @@ function pokazWynikiModal(tytul, wyniki, strona = 1) {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>${tytul}</h2>
         <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; margin-top:20px; max-height:65vh; overflow-y:auto; padding-right:5px;">
-            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
+            ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p'}
         </div>
         ${paginacjaHTML}`;
     
