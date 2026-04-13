@@ -446,58 +446,64 @@ window.updateFormSubcats = (p = 'f-') => {
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    btn.disabled = true; 
+    btn.disabled = true;
     btn.innerText = "Wysyłanie...";
-    
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) {
-        alert("Musisz być zalogowany!");
+
+    try {
+        const { data: { user } } = await baza.auth.getUser();
+        if (!user) throw new Error("Musisz być zalogowany!");
+
+        const pliki = document.getElementById('f-plik').files;
+        let linki = [];
+        for (let f of pliki) {
+            const n = `${Date.now()}_${f.name}`;
+            await baza.storage.from('zdjecia').upload(n, f);
+            linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
+        }
+
+        // --- Zbieranie danych dodatkowych (jeśli są widoczne) ---
+        let dodatkoweDane = "";
+        const marka = document.getElementById('extra-marka')?.value;
+        const model = document.getElementById('extra-model')?.value;
+        const rok = document.getElementById('extra-rok')?.value;
+        const przebieg = document.getElementById('extra-przebieg')?.value;
+        const poj = document.getElementById('extra-pojemnosc')?.value;
+        const moc = document.getElementById('extra-moc')?.value;
+        const paliwo = document.getElementById('extra-paliwo')?.value;
+
+        if (marka) {
+            dodatkoweDane = "\n\n--- DANE ---" + 
+                            `\nMarka: ${marka}` + 
+                            `\nModel: ${model}` + 
+                            `\nRok produkcji: ${rok}` + 
+                            `\nPrzebieg: ${przebieg} km` + 
+                            `\nPojemność: ${poj}` + 
+                            `\nMoc: ${moc} KM` + 
+                            `\nPaliwo: ${paliwo}`;
+        }
+
+        const opisFinalny = document.getElementById('f-opis').value + dodatkoweDane;
+
+        const { error } = await baza.from('ogloszenia').insert([{
+            tytul: document.getElementById('f-tytul').value,
+            kategoria: document.getElementById('f-kat').value,
+            podkategoria: document.getElementById('f-podkat').value,
+            cena: parseFloat(document.getElementById('f-cena').value),
+            lokalizacja: document.getElementById('f-lok').value,
+            opis: opisFinalny,
+            telefon: document.getElementById('f-tel').value,
+            zdjecia: linki,
+            user_email: user.email
+        }]);
+
+        if (error) throw error;
         location.reload();
-        return;
-    }
-    
-    const pliki = document.getElementById('f-plik').files;
-    let linki = [];
-    for (let f of pliki) {
-        const n = `${Date.now()}_${f.name}`;
-        const { data } = await baza.storage.from('zdjecia').upload(n, f);
-        if (data) linki.push(baza.storage.from('zdjecia').getPublicUrl(n).data.publicUrl);
-    }
-
-    let dodatkoweDane = "";
-    const markaVal = document.getElementById('extra-marka')?.value;
-    const modelVal = document.getElementById('extra-model')?.value;
-    const rokVal = document.getElementById('extra-rok')?.value;
-    const paliwoVal = document.getElementById('extra-paliwo')?.value;
-
-    if (markaVal || modelVal) {
-        dodatkoweDane = "\n\n--- DANE ---";
-        if (markaVal) dodatkoweDane += `\nMarka: ${markaVal}`;
-        if (modelVal) dodatkoweDane += `\nModel: ${modelVal}`;
-        if (rokVal) dodatkoweDane += `\nRok: ${rokVal}`;
-        if (paliwoVal) dodatkoweDane += `\nPaliwo: ${paliwoVal}`;
-    }
-
-    const { error } = await baza.from('ogloszenia').insert([{
-        tytul: document.getElementById('f-tytul').value,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
-        cena: parseFloat(document.getElementById('f-cena').value),
-        lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value + dodatkoweDane,
-        telefon: document.getElementById('f-tel').value,
-        zdjecia: linki.length ? linki : ['https://via.placeholder.com/600'],
-        user_email: user.email 
-    }]);
-
-    if (error) {
-        alert("Błąd zapisu: " + error.message);
-        btn.disabled = false; btn.innerText = "Spróbuj ponownie";
-    } else {
-        location.reload();
+    } catch (err) {
+        alert("Błąd: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Opublikuj ogłoszenie";
     }
 };
-
 // --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
