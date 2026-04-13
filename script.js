@@ -757,7 +757,9 @@ function renderCardHTML(o) {
 
 function renderTop12(lista) {
     const k = document.getElementById('lista');
-    if (k) k.innerHTML = lista.slice(0, 12).map(o => renderCardHTML(o)).join('');
+    if (k && lista) {
+        k.innerHTML = lista.slice(0, 12).map(o => renderCardHTML(o)).join('');
+    }
 }
 
 // --- START ---
