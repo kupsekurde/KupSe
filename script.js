@@ -376,51 +376,73 @@ window.zastosujFiltrySpec = (kat, podkat) => {
 // --- DODAWANIE OGŁOSZEŃ ---
 window.otworzFormularzDodawania = () => {
     document.getElementById('modal-form').style.display = 'flex';
-    updateFormSubcats('f-', true);
+    const formContent = document.getElementById('form-dynamic-content');
+    formContent.innerHTML = `
+        <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+        <div style="display:flex; gap:10px;">
+            <select id="f-kat" onchange="updateFormSubcats('f-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <option value="">Kategoria</option>
+                ${Object.keys(SUB_DATA).map(k => `<option value="${k}">${k}</option>`).join('')}
+            </select>
+            <select id="f-podkat" onchange="updateFormSubcats('f-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <option value="">Podkategoria</option>
+            </select>
+        </div>
+        <div id="extra-fields"></div>
+        <input type="number" id="f-cena" placeholder="Cena (zł)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+        <input type="text" id="f-lok" placeholder="Lokalizacja" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+        <input type="tel" id="f-tel" placeholder="Numer telefonu" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+        <textarea id="f-opis" placeholder="Opis ogłoszenia..." rows="5" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;"></textarea>
+        <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ccc;">
+            <label style="display:block; margin-bottom:10px; font-weight:bold;">Dodaj zdjęcia (max 10):</label>
+            <input type="file" id="f-plik" multiple accept="image/*" style="width:100%;">
+        </div>
+        <button type="submit" id="btn-save" style="background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; font-size:16px; font-weight:bold; cursor:pointer; transition:0.3s;">
+            Opublikuj ogłoszenie
+        </button>
+    `;
+    updateFormSubcats('f-');
 };
 
-window.updateFormSubcats = (prefix = 'f-', forceUpdate = false) => {
-    const katSelect = document.getElementById(`${prefix}kat`);
-    const podkatSelect = document.getElementById(`${prefix}podkat`);
-    const extraFields = document.getElementById(prefix === 'e-' ? 'extra-fields-edit' : 'extra-fields');
+window.updateFormSubcats = (p = 'f-') => {
+    const kat = document.getElementById(`${p}kat`).value;
+    const podkatSelect = document.getElementById(`${p}podkat`);
+    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    if (!katSelect || !podkatSelect) return;
+    // Zapamiętujemy wybraną podkategorię przed odświeżeniem listy
+    const poprzedniaPodkat = podkatSelect.value;
     
-    const k = katSelect.value;
-    const podkategorie = SUB_DATA[k] || [];
-    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-        podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
+    // Jeśli zmieniono kategorię główną (target id zawiera 'kat'), odświeżamy listę podkategorii
+    if (event && event.target && event.target.id.includes('kat')) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    }
     
-    const p = podkatSelect.value;
-    
-    if (extraFields) {
-        extraFields.innerHTML = '';
-        if (k === 'Motoryzacja' && p !== '' && p !== 'Części samochodowe' && p !== 'Pozostałe') {
-            extraFields.innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
-                    <input type="text" id="extra-marka" placeholder="Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                    <input type="text" id="extra-model" placeholder="Model" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                    <input type="number" id="extra-rok" placeholder="Rok produkcji" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                    <select id="extra-paliwo" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                        <option value="">Paliwo</option>
-                        <option value="Benzyna">Benzyna</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="LPG">LPG</option>
-                        <option value="Hybryda">Hybryda</option>
-                        <option value="Elektryczny">Elektryczny</option>
-                    </select>
-                </div>`;
-        } 
-        else if (k === 'Elektronika' && p !== '' && p !== 'Pozostałe') {
-            extraFields.innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
-                    <input type="text" id="extra-marka" placeholder="Producent / Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                    <input type="text" id="extra-model" placeholder="Model" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                </div>`;
-        }
+    if (!extraFields) return;
+    extraFields.innerHTML = ''; 
+
+    const wybranaPodkat = podkatSelect.value;
+    const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
+
+    if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+        extraFields.innerHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
+                <input type="text" id="extra-marka" placeholder="Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="extra-model" placeholder="Model" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="number" id="extra-rok" placeholder="Rok produkcji" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="number" id="extra-przebieg" placeholder="Przebieg (km)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="extra-pojemnosc" placeholder="Pojemność silnika" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="number" id="extra-moc" placeholder="Moc (KM)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <select id="extra-paliwo" required style="padding:10px; border-radius:8px; border:1px solid #ccc; grid-column: span 2;">
+                    <option value="">Rodzaj paliwa</option>
+                    <option value="Benzyna">Benzyna</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="LPG">LPG</option>
+                    <option value="Hybryda">Hybryda</option>
+                    <option value="Elektryczny">Elektryczny</option>
+                </select>
+            </div>`;
     }
 };
-
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
