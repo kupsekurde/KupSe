@@ -203,12 +203,25 @@ window.wyslijWiadomosc = async (odbiorca, tytul) => {
 };
 
 // --- SZCZEGÓŁY OGŁOSZENIA ---
-window.pokazSzczegoly = (id) => {
+window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
+
+    // Sprawdzamy czy użytkownik jest zalogowany
+    const { data: { user } } = await baza.auth.getUser();
+
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
     
+    // Logika blokady danych
+    const telefonWidok = user 
+        ? `<b>${o.telefon || 'Brak numeru'}</b>` 
+        : `<span style="color:red; font-weight:bold;">[Zaloguj się, aby zobaczyć numer]</span>`;
+    
+    const przyciskWiadomosci = user 
+        ? `<button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>`
+        : `<button onclick="alert('Musisz się zalogować, aby wysłać wiadomość!')" style="flex:1; padding:12px; background:#ccc; color:white; border:none; border-radius:10px; font-weight:bold; cursor:not-allowed;">Wyślij wiadomość (wymaga logowania)</button>`;
+
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
@@ -228,9 +241,9 @@ window.pokazSzczegoly = (id) => {
                 <div style="font-size:12px; color:gray; margin-bottom:5px;">Dodano: ${formatujDate(o.created_at)}</div>
                 <h2>${o.tytul}</h2>
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
-                <p>📍 ${o.lokalizacja} | 📞 ${o.telefon || 'Brak'}</p>
+                <p>📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                     <button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                     ${przyciskWiadomosci}
                      <button onclick="toggleUlubione(event, ${o.id})" id="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                      </button>
