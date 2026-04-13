@@ -682,7 +682,6 @@ window.edytujOgloszenie = (id) => {
     if (!o) return;
     edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     renderujFormularzEdycji(o);
-    // Dodaj to, żeby pola specjalne (np. dla aut) pojawiły się od razu:
     updateFormSubcats('e-'); 
 };
 
@@ -694,10 +693,10 @@ function renderujFormularzEdycji(o) {
         <form onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:12px;">
             <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <div style="display:flex; gap:10px;">
-                <select id="e-kat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px;">
+                <select id="e-kat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
                     ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
                 </select>
-                <select id="e-podkat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px;">
+                <select id="e-podkat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
                     ${(SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}" ${o.podkategoria === x ? 'selected' : ''}>${x}</option>`).join('')}
                 </select>
             </div>
@@ -717,14 +716,52 @@ window.zapiszEdycje = async (e, id) => {
     btn.disabled = true; 
     btn.innerText = "Zapisywanie...";
     
-    await baza.from('ogloszenia').update({
-        tytul: document.getElementById('e-tytul').value,
-        kategoria: document.getElementById('e-kat').value,
-        podkategoria: document.getElementById('e-podkat').value,
-        cena: parseFloat(document.getElementById('e-cena').value),
-        lokalizacja: document.getElementById('e-lok').value,
-        opis: document.getElementById('e-opis').value
-    }).eq('id', id);
-    
-    location.reload();
+    try {
+        await baza.from('ogloszenia').update({
+            tytul: document.getElementById('e-tytul').value,
+            kategoria: document.getElementById('e-kat').value,
+            podkategoria: document.getElementById('e-podkat').value,
+            cena: parseFloat(document.getElementById('e-cena').value),
+            lokalizacja: document.getElementById('e-lok').value,
+            opis: document.getElementById('e-opis').value
+        }).eq('id', id);
+        
+        location.reload();
+    } catch (err) {
+        alert("Błąd zapisu: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Zapisz zmiany";
+    }
 };
+
+// --- RENDEROWANIE KART ---
+function renderCardHTML(o) {
+    const isFav = mojeUlubione.includes(o.id);
+    return `
+        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
+            <div onclick="toggleUlubione(event, ${o.id})" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                ${isFav ? '❤️' : '🤍'}
+            </div>
+            <img src="${(o.zdjecia && o.zdjecia[0]) || 'https://via.placeholder.com/150'}" style="width:100%; height:150px; object-fit:cover;">
+            <div style="padding:12px;">
+                <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
+                <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; font-weight:600;">${o.tytul}</div>
+                <div style="font-size:11px; color:gray; margin-top:8px;">📍 ${o.lokalizacja}</div>
+            </div>
+        </div>`;
+}
+
+function renderTop12(lista) {
+    const k = document.getElementById('lista');
+    if (k) k.innerHTML = lista.slice(0, 12).map(o => renderCardHTML(o)).join('');
+}
+
+// --- START ---
+async function init() {
+    await sprawdzUzytkownika();
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    renderTop12(daneOgloszen);
+}
+
+init();
