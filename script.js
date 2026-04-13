@@ -641,6 +641,8 @@ window.edytujOgloszenie = (id) => {
     if (!o) return;
     edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     renderujFormularzEdycji(o);
+    // Dodaj to, żeby pola specjalne (np. dla aut) pojawiły się od razu:
+    updateFormSubcats('e-'); 
 };
 
 function renderujFormularzEdycji(o) {
