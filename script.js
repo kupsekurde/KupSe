@@ -294,10 +294,11 @@ window.zastosujFiltrySpec = (kat, podkat) => {
 // --- DODAWANIE OGŁOSZEŃ ---
 window.otworzFormularzDodawania = () => {
     document.getElementById('modal-form').style.display = 'flex';
-    updateFormSubcats('f-');
+    // Wymuszenie załadowania podkategorii dla domyślnie wybranej kategorii
+    updateFormSubcats('f-', true);
 };
 
-window.updateFormSubcats = (prefix) => {
+window.updateFormSubcats = (prefix, forceUpdate = false) => {
     const katSelect = document.getElementById(`${prefix}kat`);
     const podkatSelect = document.getElementById(`${prefix}podkat`);
     const extraFields = document.getElementById('extra-fields');
@@ -306,20 +307,17 @@ window.updateFormSubcats = (prefix) => {
     
     const k = katSelect.value;
     
-    // 1. Zawsze aktualizuj listę podkategorii, jeśli zmieniono główną kategorię
-    if (event && event.target && event.target.id === `${prefix}kat`) {
-        const podkategorie = SUB_DATA[k] || [];
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-            podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
-    }
+    // 1. Aktualizuj listę podkategorii jeśli kategoria się zmieniła lub wymuszono (otwarcie okna)
+    const podkategorie = SUB_DATA[k] || [];
+    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
+        podkategorie.map(x => `<option value="${x}">${x}</option>`).join('');
     
     const p = podkatSelect.value;
     
-    // 2. Obsługa dodatkowych okienek w zależności od wybranej kategorii i podkategorii
+    // 2. Obsługa dodatkowych okienek
     if (extraFields) {
         extraFields.innerHTML = '';
         
-        // Motoryzacja: Wszystko oprócz Części i Pozostałe
         if (k === 'Motoryzacja' && p !== '' && p !== 'Części samochodowe' && p !== 'Pozostałe') {
             extraFields.innerHTML = `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
@@ -336,7 +334,6 @@ window.updateFormSubcats = (prefix) => {
                     </select>
                 </div>`;
         } 
-        // Elektronika: Wszystko oprócz Pozostałe
         else if (k === 'Elektronika' && p !== '' && p !== 'Pozostałe') {
             extraFields.innerHTML = `
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
