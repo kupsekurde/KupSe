@@ -782,9 +782,3 @@ window.zapiszEdycje = async (e, id) => {
         btn.innerText = "Zapisz zmiany";
     }
 };
-// Ta linia mówi przeglądarce: "Kiedy ktoś wyśle formularz, uruchom funkcję wyslijOgloszenie"
-document.addEventListener('submit', (e) => {
-    if (e.target.id === 'form-dodaj') {
-        window.wyslijOgloszenie(e);
-    }
-});
