@@ -445,58 +445,52 @@ window.updateFormSubcats = (p = 'f-') => {
 };
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
-    const user = (await baza.auth.getUser()).data.user;
-    if (!user) return alert("Zaloguj się!");
+    
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Musisz być zalogowany!");
 
-    const btn = document.querySelector('#form-dodaj button');
+    const btn = document.getElementById('btn-save');
     btn.disabled = true;
     btn.innerText = "Kompresja zdjęć...";
 
-    const files = Array.from(document.getElementById('f-img').files);
+    // 1. Pobieramy pliki (f-plik to ID z Twojego HTML)
+    const inputPlik = document.getElementById('f-plik');
+    const files = Array.from(inputPlik.files);
     
-    // Limit 5 zdjęć
-    if (files.length > 5) {
-        alert("Możesz dodać maksymalnie 5 zdjęć!");
+    if (files.length === 0) {
+        alert("Dodaj chociaż jedno zdjęcie!");
         btn.disabled = false;
-        btn.innerText = "Wystaw ogłoszenie";
+        btn.innerText = "Opublikuj ogłoszenie";
         return;
     }
 
     const zdjeciaUrls = [];
     const compressionOptions = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1280,
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1200,
         useWebWorker: true
     };
 
+    // 2. Magia kompresji i wysyłania
     for (const file of files) {
         try {
+            // Używamy biblioteki, którą dodałeś przed chwilą do HTML
             const compressedFile = await imageCompression(file, compressionOptions);
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            
             const { data, error } = await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
             if (error) throw error;
+
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (error) {
-            console.error("Błąd zdjęcia:", error);
+        } catch (err) {
+            console.error("Błąd zdjęcia:", err);
         }
     }
 
-    btn.innerText = "Wysyłanie danych...";
+    btn.innerText = "Zapisywanie ogłoszenia...";
 
-    let dodatkoweDane = "";
-    const marka = document.getElementById('f-marka')?.value;
-    if (marka) {
-        dodatkoweDane = "\n\n--- DANE ---" + 
-            `\nMarka: ${marka}` + 
-            `\nModel: ${document.getElementById('f-model').value}` + 
-            `\nRok produkcji: ${document.getElementById('f-rok').value}` + 
-            `\nPrzebieg: ${document.getElementById('f-przebieg').value} km` + 
-            `\nPojemność: ${document.getElementById('f-pojemnosc').value}` + 
-            `\nMoc: ${document.getElementById('f-moc').value} KM` + 
-            `\nPaliwo: ${document.getElementById('f-paliwo').value}`;
-    }
-
+    // 3. Zapis danych do tabeli
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -504,7 +498,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value + dodatkoweDane,
+        opis: document.getElementById('f-opis').value,
         zdjecia: zdjeciaUrls,
         telefon: document.getElementById('f-tel').value
     }]);
@@ -512,9 +506,9 @@ window.wyslijOgloszenie = async (e) => {
     if (error) {
         alert("Błąd: " + error.message);
         btn.disabled = false;
-        btn.innerText = "Wystaw ogłoszenie";
+        btn.innerText = "Opublikuj ogłoszenie";
     } else {
-        alert("Ogłoszenie dodane!");
+        alert("Ogłoszenie dodane pomyślnie!");
         location.reload();
     }
 };
@@ -788,3 +782,9 @@ window.zapiszEdycje = async (e, id) => {
         btn.innerText = "Zapisz zmiany";
     }
 };
+// Ta linia mówi przeglądarce: "Kiedy ktoś wyśle formularz, uruchom funkcję wyslijOgloszenie"
+document.addEventListener('submit', (e) => {
+    if (e.target.id === 'form-dodaj') {
+        window.wyslijOgloszenie(e);
+    }
+});
