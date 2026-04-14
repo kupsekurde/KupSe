@@ -128,7 +128,7 @@
     <div class="modal-box">
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <h2>Dodaj ogłoszenie</h2>
-        <form onsubmit="wyslijOgloszenie(event)" style="display:grid; gap:15px">
+        <form id="form-dodaj" onsubmit="window.wyslijOgloszenie(event)" style="display:grid; gap:15px">
             <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <select id="f-kat" onchange="updateFormSubcats()" required>
