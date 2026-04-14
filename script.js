@@ -446,6 +446,11 @@ window.updateFormSubcats = (p = 'f-') => {
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     
+    const btn = document.getElementById('btn-save');
+    if (btn.disabled) return; // Jeśli przycisk jest już wyłączony, nic nie rób
+    btn.disabled = true;      // Wyłączamy przycisk OD RAZU po kliknięciu
+    btn.innerText = "Wysyłanie...";
+    
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
 
