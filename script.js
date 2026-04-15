@@ -10,6 +10,7 @@ let aktualneFotki = [];
 let edytowaneZdjecia = [];
 let ostatnieWyniki = [];
 let ostatniTytul = "";
+let wynikiBazowe = [];
 
 // Parametry paginacji
 const OGLOSZENIA_NA_STRONE = 40;
@@ -609,11 +610,14 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    // Zapamiętujemy bazowe wyniki tylko jeśli to nowe otwarcie kategorii (nie filtrowanie)
+    // Jeśli wchodzimy do kategorii pierwszy raz (tytuł nie zawiera "(wyniki)")
+    // zapisujemy wyniki jako bazę, której nie będziemy uczyć przy filtrowaniu
     if (!tytul.includes("(wyniki)")) {
-        ostatnieWyniki = wyniki;
+        wynikiBazowe = [...wyniki]; 
         ostatniTytul = tytul;
     }
+    
+    ostatnieWyniki = wyniki; // To co aktualnie pokazujemy
     
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
@@ -622,14 +626,13 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     content.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <div style="display:flex; gap:20px; margin-top:20px;">
-            <!-- PANEL FILTRÓW (LEWO) -->
             <div style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Filtruj wyniki</h4>
                 
-                <label style="font-size:11px; font-weight:bold; color:gray;">SŁOWO KLUCZOWE</label>
-                <input type="text" id="side-szukaj" placeholder="Np. iPhone 15..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
+                <input type="text" id="side-szukaj" placeholder="Np. Opel, iPhone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
 
-                <label style="font-size:11px; font-weight:bold; color:gray;">CENA</label>
+                <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
@@ -641,11 +644,10 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <button onclick="zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj filtry</button>
             </div>
 
-            <!-- LISTA (PRAWO) -->
             <div style="flex:1;">
                 <h2 style="margin-top:0;">${tytul}</h2>
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto; padding-right:10px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Brak ogłoszeń spełniających kryteria.</p>'}
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń o tych parametrach.</p>'}
                 </div>
             </div>
         </div>`;
@@ -655,25 +657,28 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
     const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
-    const max = parseFloat(document.getElementById('side-cena-max').value) || 9999999;
+    const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
     const lok = document.getElementById('side-lok').value.toLowerCase().trim();
 
-    // Filtrujemy ZAWSZE bazowe wyniki kategorii (ostatnieWyniki)
-    const przefiltrowane = ostatnieWyniki.filter(o => {
-        const tekstOk = fraza === "" || o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
+    // Filtrujemy ZAWSZE bazowe wyniki (wynikiBazowe), żeby nie tracić ogłoszeń przy zmianie filtrów
+    const przefiltrowane = wynikiBazowe.filter(o => {
+        // Inteligentne szukanie: sprawdź tytuł, opis i kategorię
+        const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
+        
+        const tekstOk = fraza === "" || tekstDoPrzeszukania.includes(fraza);
         const cenaOk = o.cena >= min && o.cena <= max;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
         
         return tekstOk && cenaOk && lokOk;
     });
 
-    // Odświeżamy widok
+    // Odświeżamy widok, przekazując przefiltrowaną listę
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
     
-    // Uzupełniamy wpisane wartości z powrotem do pól (żeby nie zniknęły po odświeżeniu)
+    // Przywracamy wartości do pól, żeby użytkownik widział co wpisał
     document.getElementById('side-szukaj').value = fraza;
-    document.getElementById('side-cena-min').value = min > 0 ? min : '';
-    document.getElementById('side-cena-max').value = max < 9999999 ? max : '';
+    if(min > 0) document.getElementById('side-cena-min').value = min;
+    if(max < 99999999) document.getElementById('side-cena-max').value = max;
     document.getElementById('side-lok').value = lok;
 };
 
