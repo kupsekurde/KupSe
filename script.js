@@ -62,18 +62,24 @@ window.zarejestruj = async () => {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-pass').value;
 
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const hasMinLength = password.length >= 8;
+    // Sprawdzamy warunki:
+    const hasUpperCase = /[A-Z]/.test(password); // Czy jest duża litera
+    const hasNumber = /\d/.test(password);        // Czy jest cyfra (liczba)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Czy jest znak specjalny
+    const hasMinLength = password.length >= 8;    // Czy ma min. 8 znaków
 
-    if (!hasMinLength || !hasUpperCase || !hasSpecialChar) {
+    // Jeśli którykolwiek warunek NIE jest spełniony:
+    if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
         let msg = "Hasło nie spełnia wymagań:\n";
-        if (!hasMinLength) msg += "- minimum 8 znaków\n";
-        if (!hasUpperCase) msg += "- minimum jedna wielka litera\n";
-        if (!hasSpecialChar) msg += "- minimum jeden znak specjalny";
+        msg += "- minimum 8 znaków\n";
+        msg += "- duża litera\n";
+        msg += "- liczba\n";
+        msg += "- znak specjalny";
+        
         return alert(msg);
     }
 
+    // Jeśli wszystko ok, wysyłamy do bazy:
     const { data, error } = await baza.auth.signUp({ 
         email, 
         password,
