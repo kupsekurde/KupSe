@@ -448,59 +448,37 @@ window.wyslijOgloszenie = async (e) => {
     
     const btn = document.getElementById('btn-save');
     if (btn.disabled) return;
-    btn.disabled = true;
-    btn.innerText = "Wysyłanie...";
     
     const { data: { user } } = await baza.auth.getUser();
-    
     if (!user) {
         alert("Musisz być zalogowany!");
-        btn.disabled = false;
-        btn.innerText = "Opublikuj ogłoszenie";
         return;
     }
 
-    // Usunięto powtórną deklarację const btn
-    btn.innerText = "Kompresja zdjęć...";
-
-    // 1. Pobieramy pliki (f-plik to ID z Twojego HTML)
     const inputPlik = document.getElementById('f-plik');
     const files = Array.from(inputPlik.files);
     
-    if (files.length === 0) {
-        alert("Dodaj chociaż jedno zdjęcie!");
-        btn.disabled = false;
-        btn.innerText = "Opublikuj ogłoszenie";
-        return;
-    }
+    if (files.length === 0) return alert("Dodaj chociaż jedno zdjęcie!");
+    if (files.length > 5) return alert("Maksymalna liczba zdjęć to 5!"); // DODANY LIMIT
+
+    btn.disabled = true;
+    btn.innerText = "Kompresja zdjęć...";
 
     const zdjeciaUrls = [];
-    const compressionOptions = {
-        maxSizeMB: 0.8,
-        maxWidthOrHeight: 1200,
-        useWebWorker: true
-    };
+    const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
 
-    // 2. Magia kompresji i wysyłania
     for (const file of files) {
         try {
-            // Używamy biblioteki, którą dodałeś przed chwilą do HTML
             const compressedFile = await imageCompression(file, compressionOptions);
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            
-            const { data, error } = await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
+            const { error } = await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
             if (error) throw error;
-
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) {
-            console.error("Błąd zdjęcia:", err);
-        }
+        } catch (err) { console.error("Błąd zdjęcia:", err); }
     }
 
-    btn.innerText = "Zapisywanie ogłoszenia...";
-
-    // 3. Zapis danych do tabeli
+    btn.innerText = "Zapisywanie...";
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -518,7 +496,7 @@ window.wyslijOgloszenie = async (e) => {
         btn.disabled = false;
         btn.innerText = "Opublikuj ogłoszenie";
     } else {
-        alert("Ogłoszenie dodane pomyślnie!");
+        alert("Ogłoszenie dodane!");
         location.reload();
     }
 };
