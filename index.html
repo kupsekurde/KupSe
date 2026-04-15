@@ -6,10 +6,9 @@
     <title>KupSe - Twój Portal Ogłoszeniowy</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <style>
         :root { --primary: #ff4f00; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
@@ -19,7 +18,7 @@
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .main-logo { height: 50px; cursor: pointer; }
         
-        /* Ulepszona Wyszukiwarka */
+        /* Wyszukiwarka */
         .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
         .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; }
         #find-text { width: 200px; }
@@ -67,11 +66,8 @@
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
             <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
-            
             <div class="search-divider"></div>
-            
             <input type="text" id="find-loc" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
-            
             <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
         </div>
     </div>
@@ -107,6 +103,7 @@
             <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
             <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
+        
         <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
             <h3>Rejestracja</h3>
             <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
