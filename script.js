@@ -609,8 +609,11 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    ostatnieWyniki = wyniki; // Zapamiętujemy wyniki dla przycisku Wstecz
-    ostatniTytul = tytul;
+    // Zapamiętujemy bazowe wyniki tylko jeśli to nowe otwarcie kategorii (nie filtrowanie)
+    if (!tytul.includes("(wyniki)")) {
+        ostatnieWyniki = wyniki;
+        ostatniTytul = tytul;
+    }
     
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
@@ -620,19 +623,29 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
         <div style="display:flex; gap:20px; margin-top:20px;">
             <!-- PANEL FILTRÓW (LEWO) -->
-            <div style="width:200px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
-                <h4 style="margin-top:0;">Filtry</h4>
-                <input type="number" id="side-cena-min" placeholder="Cena od" style="width:100%; margin-bottom:8px; padding:8px; border-radius:5px; border:1px solid #ddd;">
-                <input type="number" id="side-cena-max" placeholder="Cena do" style="width:100%; margin-bottom:8px; padding:8px; border-radius:5px; border:1px solid #ddd;">
-                <input type="text" id="side-lok" placeholder="Miasto" style="width:100%; margin-bottom:15px; padding:8px; border-radius:5px; border:1px solid #ddd;">
-                <button onclick="zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Filtruj</button>
+            <div style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
+                <h4 style="margin-top:0;">Filtruj wyniki</h4>
+                
+                <label style="font-size:11px; font-weight:bold; color:gray;">SŁOWO KLUCZOWE</label>
+                <input type="text" id="side-szukaj" placeholder="Np. iPhone 15..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+
+                <label style="font-size:11px; font-weight:bold; color:gray;">CENA</label>
+                <div style="display:flex; gap:5px; margin-bottom:12px;">
+                    <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                </div>
+
+                <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
+                <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+
+                <button onclick="zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj filtry</button>
             </div>
 
             <!-- LISTA (PRAWO) -->
             <div style="flex:1;">
                 <h2 style="margin-top:0;">${tytul}</h2>
-                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto;">
-                    ${porcja.map(o => renderCardHTML(o)).join('')}
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto; padding-right:10px;">
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Brak ogłoszeń spełniających kryteria.</p>'}
                 </div>
             </div>
         </div>`;
@@ -640,17 +653,30 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 };
 
 window.zastosujFiltryBoczne = () => {
+    const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
     const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
     const max = parseFloat(document.getElementById('side-cena-max').value) || 9999999;
-    const lok = document.getElementById('side-lok').value.toLowerCase();
+    const lok = document.getElementById('side-lok').value.toLowerCase().trim();
 
+    // Filtrujemy ZAWSZE bazowe wyniki kategorii (ostatnieWyniki)
     const przefiltrowane = ostatnieWyniki.filter(o => {
-        return o.cena >= min && o.cena <= max && o.lokalizacja.toLowerCase().includes(lok);
+        const tekstOk = fraza === "" || o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
+        const cenaOk = o.cena >= min && o.cena <= max;
+        const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
+        
+        return tekstOk && cenaOk && lokOk;
     });
 
+    // Odświeżamy widok
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
-    ostatnieWyniki = przefiltrowane; 
+    
+    // Uzupełniamy wpisane wartości z powrotem do pól (żeby nie zniknęły po odświeżeniu)
+    document.getElementById('side-szukaj').value = fraza;
+    document.getElementById('side-cena-min').value = min > 0 ? min : '';
+    document.getElementById('side-cena-max').value = max < 9999999 ? max : '';
+    document.getElementById('side-lok').value = lok;
 };
+
 
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
