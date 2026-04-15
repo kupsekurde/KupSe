@@ -26,14 +26,59 @@
         .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
         
         /* Kategorie */
-        .cat-wrapper { background: white; border-bottom: 1px solid #eee; }
-        .cat-container { display: flex; justify-content: flex-start; gap: 15px; padding: 15px 5%; overflow-x: auto; scrollbar-width: none; }
-        .cat-container::-webkit-scrollbar { display: none; }
-        .cat-item { min-width: 80px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .cat-icon { width: 60px; height: 60px; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; }
-        .cat-icon img { width: 70%; height: 70%; object-fit: contain; }
-        .cat-item span { font-size: 11px; font-weight: 700; display: block; margin-top: 8px; color: #444; }
-
+.cat-wrapper { 
+    background: white; 
+    border-bottom: 1px solid #eee; 
+    width: 100%;
+}
+.cat-container { 
+    display: flex; 
+    /* justify-content: space-between sprawi, że pierwsza ikona będzie pod logo, 
+       a ostatnia pod przyciskiem "Dodaj" */
+    justify-content: space-between; 
+    align-items: flex-start;
+    padding: 25px 5%; /* 5% marginesu bocznego - tak samo jak w .navbar */
+    max-width: 1400px; 
+    margin: 0 auto;
+    gap: 10px;
+}
+.cat-item { 
+    flex: 0 1 auto;
+    text-align: center; 
+    cursor: pointer; 
+    transition: 0.3s;
+    min-width: 90px;
+}
+.cat-icon { 
+    width: 85px;  /* Powiększona ikona */
+    height: 85px; /* Powiększona ikona */
+    background: white; 
+    border-radius: 22px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto; 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06); 
+    border: 1px solid #f0f0f0;
+    transition: 0.3s;
+}
+.cat-item:hover .cat-icon {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(255, 79, 0, 0.15);
+    border-color: var(--primary);
+}
+.cat-icon img { 
+    width: 65%; 
+    height: 65%; 
+    object-fit: contain; 
+}
+.cat-item span { 
+    font-size: 13px; /* Powiększony tekst */
+    font-weight: 800; 
+    display: block; 
+    margin-top: 12px; 
+    color: var(--text); 
+}
         /* Panel podkategorii */
         .subcat-panel { display: none; background: #f8f9fa; padding: 12px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
         .sub-pill { padding: 6px 15px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
