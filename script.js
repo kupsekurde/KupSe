@@ -8,6 +8,8 @@ let mojeUlubione = [];
 let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
 let edytowaneZdjecia = [];
+let ostatnieWyniki = [];
+let ostatniTytul = "";
 
 // Parametry paginacji
 const OGLOSZENIA_NA_STRONE = 40;
@@ -221,53 +223,42 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
-    // Sprawdzamy czy użytkownik jest zalogowany
     const { data: { user } } = await baza.auth.getUser();
-
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
     
-    // Logika blokady danych
-    const telefonWidok = user 
-        ? `<b>${o.telefon || 'Brak numeru'}</b>` 
-        : `<span style="color:red; font-weight:bold;">[Zaloguj się, aby zobaczyć numer]</span>`;
+    const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
     
-    const przyciskWiadomosci = user 
-        ? `<button onclick="wyslijWiadomosc('${o.user_email}', '${o.tytul}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>`
-        : `<button onclick="alert('Musisz się zalogować, aby wysłać wiadomość!')" style="flex:1; padding:12px; background:#ccc; color:white; border:none; border-radius:10px; font-weight:bold; cursor:not-allowed;">Wyślij wiadomość (wymaga logowania)</button>`;
+    // Przycisk wstecz pojawia się tylko, jeśli mamy do czego wrócić
+    const btnWstecz = ostatnieWyniki.length > 0 
+        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
+        : "";
 
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        ${btnWstecz}
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
             <div style="flex:1.5; min-width:300px;">
                 <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
                     <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="otworzFullFoto()">
                 </div>
-                <div id="miniaturki-container" style="display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
-                    ${aktualneFotki.map((img, i) => `
-                        <img src="${img}" onclick="zmienGlowneZdjecie(${i})" 
-                             style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:${i===0 ? '2px solid var(--primary)' : '2px solid transparent'}; transition:0.2s;" 
-                             class="mini-foto">
-                    `).join('')}
+                <div style="display:flex; gap:8px; margin-top:10px; overflow-x:auto;">
+                    ${aktualneFotki.map((img, i) => `<img src="${img}" onclick="zmienGlowneZdjecie(${i})" class="mini-foto" style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
                 </div>
             </div>
             <div style="flex:1;">
-                <div style="font-size:12px; color:gray; margin-bottom:5px;">Dodano: ${formatujDate(o.created_at)}</div>
+                <div style="font-size:12px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
                 <h2>${o.tytul}</h2>
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                     ${przyciskWiadomosci}
-                     <button onclick="toggleUlubione(event, ${o.id})" id="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+                    <button onclick="wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                    <button onclick="toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
-                     </button>
-                </div>
-                <h3 style="margin-top:20px;">Dane techniczne</h3>
-                <div style="background:#f9f9f9; padding:15px; border-radius:10px; font-size:14px; border:1px solid #eee;">
-                    ${o.opis.includes('--- DANE ---') ? o.opis.split('--- DANE ---')[1].trim().replace(/\n/g, '<br>') : 'Brak dodatkowych danych'}
+                    </button>
                 </div>
                 <h3 style="margin-top:20px;">Opis</h3>
-                <p style="white-space:pre-line; color:#444; line-height:1.5;">${o.opis.split('--- DANE ---')[0]}</p>
+                <p style="white-space:pre-line;">${o.opis}</p>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
@@ -618,27 +609,51 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    wynikiDlaPaginacji = wyniki; // Zapisujemy wyniki do "szuflady"
+    ostatnieWyniki = wyniki; // Zapamiętujemy wyniki dla przycisku Wstecz
+    ostatniTytul = tytul;
+    
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
-    const koniec = start + OGLOSZENIA_NA_STRONE;
-    const porcja = wyniki.slice(start, koniec);
-    const lacznieStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
+    const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
 
-    let paginacjaHTML = '';
-    if (lacznieStron > 1) {
-        paginacjaHTML = `<div style="display:flex; justify-content:center; gap:8px; margin-top:30px; padding-bottom:20px;">`;
-        for (let i = 1; i <= lacznieStron; i++) {
-            const active = (i === strona);
-            // Teraz przesyłamy tylko numer strony, a nie wszystkie dane!
-            paginacjaHTML += `
-                <button onclick="pokazWynikiModal('${tytul}', wynikiDlaPaginacji, ${i})" 
-                    style="padding:8px 14px; border-radius:8px; border:none; cursor:pointer; background:${active ? 'var(--primary)' : '#eee'}; color:${active ? 'white' : '#333'};">
-                    ${i}
-                </button>`;
-        }
-        paginacjaHTML += `</div>`;
-    }
+    content.innerHTML = `
+        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <div style="display:flex; gap:20px; margin-top:20px;">
+            <!-- PANEL FILTRÓW (LEWO) -->
+            <div style="width:200px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
+                <h4 style="margin-top:0;">Filtry</h4>
+                <input type="number" id="side-cena-min" placeholder="Cena od" style="width:100%; margin-bottom:8px; padding:8px; border-radius:5px; border:1px solid #ddd;">
+                <input type="number" id="side-cena-max" placeholder="Cena do" style="width:100%; margin-bottom:8px; padding:8px; border-radius:5px; border:1px solid #ddd;">
+                <input type="text" id="side-lok" placeholder="Miasto" style="width:100%; margin-bottom:15px; padding:8px; border-radius:5px; border:1px solid #ddd;">
+                <button onclick="zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Filtruj</button>
+            </div>
+
+            <!-- LISTA (PRAWO) -->
+            <div style="flex:1;">
+                <h2 style="margin-top:0;">${tytul}</h2>
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto;">
+                    ${porcja.map(o => renderCardHTML(o)).join('')}
+                </div>
+            </div>
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.zastosujFiltryBoczne = () => {
+    const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
+    const max = parseFloat(document.getElementById('side-cena-max').value) || 9999999;
+    const lok = document.getElementById('side-lok').value.toLowerCase();
+
+    // Filtrujemy dane, które już mamy w oknie
+    const przefiltrowane = ostatnieWyniki.filter(o => {
+        return o.cena >= min && o.cena <= max && o.lokalizacja.toLowerCase().includes(lok);
+    });
+
+    // Odświeżamy okno z nowymi wynikami (bez zmiany 'ostatnieWyniki', żeby móc cofnąć filtry)
+    window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
+    // Przywracamy bazowe wyniki, żeby przycisk wstecz w ogłoszeniu działał poprawnie
+    ostatnieWyniki = przefiltrowane; 
+};
 
     content.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
@@ -665,8 +680,9 @@ function renderCardHTML(o) {
                 <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between;">
                     <span>📍 ${o.lokalizacja}</span>
                     <span style="font-size:10px; opacity:0.7;">${formatujDate(o.created_at).split(',')[0]}</span>
-                </div>
-            </div>
+                <div onclick="toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="...">
+    ${isFav ? '❤️' : '🤍'}
+</div>
         </div>`;
 }
 
@@ -687,7 +703,8 @@ function renderTop12(lista) {
 window.toggleUlubione = async (e, id) => {
     e.stopPropagation();
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się, aby dodać do ulubionych!");
+    if (!user) return alert("Zaloguj się!");
+
     const index = mojeUlubione.indexOf(id);
     if (index > -1) {
         await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
@@ -696,12 +713,14 @@ window.toggleUlubione = async (e, id) => {
         await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
         mojeUlubione.push(id);
     }
-    const favBtn = document.getElementById(`fav-btn-${id}`);
-    if(favBtn) favBtn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
-    
-    if(document.getElementById('view-content').innerText.includes("Twoje Ulubione")) {
-        pokazUlubione();
-    }
+
+    // AKTUALIZACJA WSZYSTKICH SERC NA STRONIE O TYM ID
+    const wszystkieSerca = document.querySelectorAll(`.fav-btn-${id}`);
+    wszystkieSerca.forEach(serce => {
+        serce.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
+        // Opcjonalnie zmiana koloru jeśli używasz ikon
+        serce.style.color = mojeUlubione.includes(id) ? 'red' : 'gray';
+    });
 };
 
 window.pokazUlubione = () => {
