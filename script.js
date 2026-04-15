@@ -111,31 +111,16 @@ async function sprawdzUzytkownika() {
     const nav = document.getElementById('user-nav');
     
     if (user && nav) {
-        // --- LOGIKA NAZWY UŻYTKOWNIKA ---
-        const nazwaZMaila = user.email.split('@')[0]; // bierze wszystko przed @
-        const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1); // Duża litera
+        // 1. Ukrywamy formularz logowania/rejestracji
+        if (document.getElementById('auth-box')) {
+            document.getElementById('auth-box').style.display = 'none';
+        }
 
-        if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
-        
-        const { count: msgCount } = await baza
-            .from('wiadomosci')
-            .select('*', { count: 'exact', head: true })
-            .eq('odbiorca', user.email)
-            .eq('przeczytane', false);
-
-        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
-
-        async function sprawdzUzytkownika() {
-    const { data: { user } } = await baza.auth.getUser();
-    const nav = document.getElementById('user-nav');
-    
-    if (user && nav) {
+        // 2. Przygotowujemy nazwę użytkownika
         const nazwaZMaila = user.email.split('@')[0];
         const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
 
-        if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
-        
+        // 3. Pobieramy liczbę nieprzeczytanych wiadomości i ulubione
         const { count: msgCount } = await baza
             .from('wiadomosci')
             .select('*', { count: 'exact', head: true })
@@ -145,15 +130,14 @@ async function sprawdzUzytkownika() {
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
+        // 4. Wstawiamy przyciski do paska nawigacji
         nav.innerHTML = `
             <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
                 
-                <!-- Przycisk DODAJ jest teraz PIERWSZY -->
-                <button onclick="otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
                 
-                <!-- Przycisk MOJE KONTO jest teraz DRUGI -->
-                <button id="menu-btn" onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                     Moje Konto ▼
                     ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
@@ -163,11 +147,11 @@ async function sprawdzUzytkownika() {
                         <small style="color:gray;">Zalogowany jako:</small><br>
                         <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                     </div>
-                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
-                    <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
             </div>`;
     }
