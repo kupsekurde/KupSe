@@ -152,12 +152,17 @@
                 <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required>
             </div>
             <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
-            <input type="tel" id="f-tel" placeholder="Numer telefonu" required>
-            
-            <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
-                <input type="file" id="f-plik" accept="image/*" multiple required>
-            </div>
+            <!-- Zmień pole telefonu -->
+<input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+       pattern="[0-9]{9}" maxlength="9" 
+       oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+
+<!-- Zmień sekcję zdjęć -->
+<div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
+    <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia (maks. 5):</label>
+    <input type="file" id="f-plik" accept="image/*" multiple required 
+           onchange="if(this.files.length > 5) { alert('Możesz wybrać maksymalnie 5 zdjęć!'); this.value = ''; }">
+</div>
             
             <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
         </form>
