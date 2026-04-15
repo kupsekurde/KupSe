@@ -680,6 +680,9 @@ window.zastosujFiltryBoczne = () => {
 
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
+    // Pobieramy sformatowaną datę i godzinę
+    const pelnaData = formatujDate(o.created_at); // Przykład: "24.05.2024, 14:30"
+    
     return `
         <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
             <div onclick="toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
@@ -689,9 +692,9 @@ function renderCardHTML(o) {
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
-                <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between;">
-                    <span>📍 ${o.lokalizacja}</span>
-                    <span style="font-size:10px; opacity:0.7;">${formatujDate(o.created_at).split(',')[0]}</span>
+                <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between; align-items: center;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">📍 ${o.lokalizacja}</span>
+                    <span style="font-size:10px; opacity:0.8; text-align: right;">${pelnaData}</span>
                 </div>
             </div>
         </div>`;
