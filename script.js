@@ -434,7 +434,7 @@ window.updateFormSubcats = (p = 'f-') => {
     const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
-    (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+  if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
     extraFields.innerHTML = `
         <div style="display:grid; gap:10px; margin-bottom:10px;">
             <input type="text" id="extra-marka" placeholder="Marka" required>
@@ -643,7 +643,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     
     document.getElementById('modal-view').style.display = 'flex';
 };
-}
 
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
