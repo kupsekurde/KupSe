@@ -447,15 +447,20 @@ window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     
     const btn = document.getElementById('btn-save');
-    if (btn.disabled) return; // Jeśli przycisk jest już wyłączony, nic nie rób
-    btn.disabled = true;      // Wyłączamy przycisk OD RAZU po kliknięciu
+    if (btn.disabled) return;
+    btn.disabled = true;
     btn.innerText = "Wysyłanie...";
     
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Musisz być zalogowany!");
+    
+    if (!user) {
+        alert("Musisz być zalogowany!");
+        btn.disabled = false;
+        btn.innerText = "Opublikuj ogłoszenie";
+        return;
+    }
 
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true;
+    // Usunięto powtórną deklarację const btn
     btn.innerText = "Kompresja zdjęć...";
 
     // 1. Pobieramy pliki (f-plik to ID z Twojego HTML)
