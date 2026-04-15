@@ -409,11 +409,7 @@ window.updateFormSubcats = (p = 'f-') => {
     const podkatSelect = document.getElementById(`${p}podkat`);
     const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    // Zapamiętujemy wybraną podkategorię przed odświeżeniem listy
-    const poprzedniaPodkat = podkatSelect.value;
-    
-    // Jeśli zmieniono kategorię główną (target id zawiera 'kat'), odświeżamy listę podkategorii
-    if (event && event.target && event.target.id.includes('kat')) {
+    if (event && event.target && event.target.id === `${p}kat`) {
         podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
@@ -425,44 +421,58 @@ window.updateFormSubcats = (p = 'f-') => {
 
     if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
         extraFields.innerHTML = `
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f0f7ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #cce4ff;">
-                <input type="text" id="extra-marka" placeholder="Marka" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="text" id="extra-model" placeholder="Model" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="extra-rok" placeholder="Rok produkcji" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="extra-przebieg" placeholder="Przebieg (km)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="text" id="extra-pojemnosc" placeholder="Pojemność silnika" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="extra-moc" placeholder="Moc (KM)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <select id="extra-paliwo" required style="padding:10px; border-radius:8px; border:1px solid #ccc; grid-column: span 2;">
-                    <option value="">Rodzaj paliwa</option>
-                    <option value="Benzyna">Benzyna</option>
-                    <option value="Diesel">Diesel</option>
-                    <option value="LPG">LPG</option>
-                    <option value="Hybryda">Hybryda</option>
-                    <option value="Elektryczny">Elektryczny</option>
-                </select>
+            <div style="display:grid; gap:10px; margin-bottom:10px;">
+                <input type="text" id="extra-marka" placeholder="Marka" required>
+                <input type="text" id="extra-model" placeholder="Model" required>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <input type="number" id="extra-rok" placeholder="Rok produkcji" required>
+                    <input type="number" id="extra-przebieg" placeholder="Przebieg" required>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <select id="extra-paliwo" required>
+                        <option value="">Paliwo</option>
+                        <option value="Benzyna">Benzyna</option>
+                        <option value="LPG">LPG</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Hybryda">Hybryda</option>
+                        <option value="Elektryczny">Elektryczny</option>
+                    </select>
+                    <select id="extra-skrzynia" required>
+                        <option value="">Skrzynia biegów</option>
+                        <option value="Automatyczna">Automatyczna</option>
+                        <option value="Manualna">Manualna</option>
+                    </select>
+                </div>
             </div>`;
     }
 };
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
-    
     const btn = document.getElementById('btn-save');
     if (btn.disabled) return;
-    
+
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) {
-        alert("Musisz być zalogowany!");
-        return;
-    }
+    if (!user) return alert("Musisz być zalogowany!");
 
     const inputPlik = document.getElementById('f-plik');
     const files = Array.from(inputPlik.files);
-    
-    if (files.length === 0) return alert("Dodaj chociaż jedno zdjęcie!");
-    if (files.length > 5) return alert("Maksymalna liczba zdjęć to 5!"); // DODANY LIMIT
+    if (files.length > 5) return alert("Maksymalnie 5 zdjęć!");
 
     btn.disabled = true;
-    btn.innerText = "Kompresja zdjęć...";
+    btn.innerText = "Przetwarzanie...";
+
+    // Zbieranie dodatkowych danych dla motoryzacji
+    let dodatkoweDane = "";
+    const marka = document.getElementById('extra-marka')?.value;
+    if (marka) {
+        dodatkoweDane = "\n\n--- DANE ---" + 
+            `\nMarka: ${marka}` + 
+            `\nModel: ${document.getElementById('extra-model').value}` + 
+            `\nRok: ${document.getElementById('extra-rok').value}` + 
+            `\nPrzebieg: ${document.getElementById('extra-przebieg').value} km` + 
+            `\nPaliwo: ${document.getElementById('extra-paliwo').value}` + 
+            `\nSkrzynia: ${document.getElementById('extra-skrzynia').value}`;
+    }
 
     const zdjeciaUrls = [];
     const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
@@ -471,14 +481,12 @@ window.wyslijOgloszenie = async (e) => {
         try {
             const compressedFile = await imageCompression(file, compressionOptions);
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            const { error } = await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
-            if (error) throw error;
+            await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error("Błąd zdjęcia:", err); }
+        } catch (err) { console.error(err); }
     }
 
-    btn.innerText = "Zapisywanie...";
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -486,7 +494,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value,
+        opis: document.getElementById('f-opis').value + dodatkoweDane,
         zdjecia: zdjeciaUrls,
         telefon: document.getElementById('f-tel').value
     }]);
@@ -496,7 +504,7 @@ window.wyslijOgloszenie = async (e) => {
         btn.disabled = false;
         btn.innerText = "Opublikuj ogłoszenie";
     } else {
-        alert("Ogłoszenie dodane!");
+        alert("Dodano pomyślnie!");
         location.reload();
     }
 };
