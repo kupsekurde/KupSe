@@ -126,46 +126,52 @@
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2>Dodaj ogłoszenie</h2>
         <form id="form-dodaj" onsubmit="window.wyslijOgloszenie(event)" style="display:grid; gap:15px">
-            <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <select id="f-kat" onchange="window.updateFormSubcats()" required>
-                    <option value="">Kategoria</option>
-                    <option value="Motoryzacja">Motoryzacja</option>
-                    <option value="Dom">Dom</option>
-                    <option value="Elektronika">Elektronika</option>
-                    <option value="Ogród">Ogród</option>
-                    <option value="Moda">Moda</option>
-                    <option value="Rolnictwo">Rolnictwo</option>
-                    <option value="Zwierzęta">Zwierzęta</option>
-                    <option value="Dzieci">Dzieci</option>
-                    <option value="Sport">Sport</option>
-                    <option value="Nauka">Nauka</option>
-                    <option value="Usługi">Usługi</option>
-                    <option value="Inne">Inne</option>
-                </select>
-                <select id="f-podkat" required>
-                    <option value="">Podkategoria</option>
-                </select>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="number" id="f-cena" placeholder="Cena (zł)" required>
-                <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required>
-            </div>
-            <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
-            <!-- Zmień pole telefonu -->
-<input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
-       pattern="[0-9]{9}" maxlength="9" 
-       oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+    <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <select id="f-kat" onchange="window.updateFormSubcats()" required>
+            <option value="">Kategoria</option>
+            <option value="Motoryzacja">Motoryzacja</option>
+            <option value="Dom">Dom</option>
+            <option value="Elektronika">Elektronika</option>
+            <option value="Ogród">Ogród</option>
+            <option value="Moda">Moda</option>
+            <option value="Rolnictwo">Rolnictwo</option>
+            <option value="Zwierzęta">Zwierzęta</option>
+            <option value="Dzieci">Dzieci</option>
+            <option value="Sport">Sport</option>
+            <option value="Nauka">Nauka</option>
+            <option value="Usługi">Usługi</option>
+            <option value="Inne">Inne</option>
+        </select>
+        <select id="f-podkat" onchange="window.updateFormSubcats()" required>
+            <option value="">Podkategoria</option>
+        </select>
+    </div>
 
-<!-- Zmień sekcję zdjęć -->
-<div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd">
-    <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia (maks. 5):</label>
-    <input type="file" id="f-plik" accept="image/*" multiple required 
-           onchange="if(this.files.length > 5) { alert('Możesz wybrać maksymalnie 5 zdjęć!'); this.value = ''; }">
-</div>
-            
-            <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
-        </form>
+    <!-- Tu pojawią się dodatkowe pola dla aut -->
+    <div id="extra-fields"></div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <input type="number" id="f-cena" placeholder="Cena (zł)" required>
+        <input type="text" id="f-lok" placeholder="Lokalizacja (Miasto)" required>
+    </div>
+
+    <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
+    
+    <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+           pattern="[0-9]{9}" maxlength="9" 
+           oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+    
+    <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
+        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
+        <input type="file" id="f-plik" accept="image/*" multiple required 
+               onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
+        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
+    </div>
+    
+    <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
+</form>
     </div>
 </div>
 
