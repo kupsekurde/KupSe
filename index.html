@@ -104,14 +104,26 @@
             <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
         
-        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
-            <h3>Rejestracja</h3>
-            <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
-            <input type="password" id="reg-pass" placeholder="Hasło (min. 6 znaków)" style="margin-bottom:15px;">
-            <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
-            <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
-        </div>
+       <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+    <h3>Rejestracja</h3>
+    <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
+    
+    <!-- Tutaj usunęliśmy napis o 6 znakach i zmniejszyliśmy margines dolny -->
+    <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
+    
+    <!-- Nowa informacja o wymaganiach -->
+    <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+        <strong>Hasło musi zawierać:</strong><br>
+        • min. 8 znaków<br>
+        • dużą literę<br>
+        • liczbę<br>
+        • znak specjalny
     </div>
+
+    <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
+    
+    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+</div>
 
     <h2 id="grid-title" style="margin-top:40px">Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
