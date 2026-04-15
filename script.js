@@ -57,79 +57,40 @@ window.loguj = async () => {
     }
 };
 
+// Nowa walidacja hasła
 window.zarejestruj = async () => {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-pass').value;
 
     const hasUpperCase = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
     const hasMinLength = password.length >= 8;
 
-    if (!hasMinLength || !hasUpperCase || !hasSpecialChar) {
-        let msg = "Hasło nie spełnia wymagań:\n";
-        if (!hasMinLength) msg += "- minimum 8 znaków\n";
-        if (!hasUpperCase) msg += "- minimum jedna wielka litera\n";
-        if (!hasSpecialChar) msg += "- minimum jeden znak specjalny";
-        return alert(msg);
+    if (!hasMinLength || !hasUpperCase || !hasDigit || !hasSpecialChar) {
+        return alert("Hasło musi mieć: min. 8 znaków, dużą literę, cyfrę i znak specjalny!");
     }
 
-    const { data, error } = await baza.auth.signUp({ 
-        email, 
-        password,
-        options: {
-            emailRedirectTo: window.location.origin 
-        }
-    });
-
-    if (error) {
-        alert("Błąd rejestracji: " + error.message); 
-    } else {
-        alert("Rejestracja pomyślna! Sprawdź e-mail, aby aktywować konto.");
-        document.getElementById('reg-email').value = '';
-        document.getElementById('reg-pass').value = '';
-    }
+    const { error } = await baza.auth.signUp({ email, password });
+    if (error) alert("Błąd: " + error.message); else alert("Rejestracja pomyślna! Sprawdź email.");
 };
 
-window.wyloguj = async () => { 
-    await baza.auth.signOut(); 
-    location.reload(); 
-};
-
-// --- INTERFEJS UŻYTKOWNIKA ---
+// Wyświetlanie nazwy sprzed @
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    
     if (user && nav) {
-        if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
-        
-        const { count: msgCount } = await baza
-            .from('wiadomosci')
-            .select('*', { count: 'exact', head: true })
-            .eq('odbiorca', user.email)
-            .eq('przeczytane', false);
-
-        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
-
+        const nazwaUzytkownika = user.email.split('@')[0]; // Pobiera tekst przed @
         nav.innerHTML = `
-            <div id="menu-container" style="position:relative; display:flex; gap:10px; align-items:center;">
-                <button id="menu-btn" onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">
+                    ${nazwaUzytkownika} ▾
                 </button>
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                        <small style="color:gray;">Zalogowany jako:</small><br>
-                        <b style="font-size:13px; word-break:break-all;">${user.email}</b>
-                    </div>
-                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
-                    <div onclick="pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
-                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                <div id="drop-menu" style="display:none; position:absolute; top:60px; right:5%; background:white; box-shadow:0 5px 20px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:180px;">
+                    <div onclick="pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">Moje ogłoszenia</div>
+                    <div onclick="wyloguj()" style="padding:10px; cursor:pointer; color:red;">Wyloguj</div>
                 </div>
-                <button onclick="otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
+                <button onclick="document.getElementById('modal-form').style.display='flex'" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
             </div>`;
     }
 }
@@ -415,86 +376,65 @@ window.otworzFormularzDodawania = () => {
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
-    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
+    const extraFields = document.getElementById('extra-fields');
     
-    if (event && event.target && event.target.id === `${p}kat`) {
+    if (event && event.target.id === `${p}kat`) {
         podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
-    if (!extraFields) return;
     extraFields.innerHTML = ''; 
-
-    const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
-    if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+    if (kat === 'Motoryzacja' && typyPojazdow.includes(podkatSelect.value)) {
         extraFields.innerHTML = `
-            <div style="display:grid; gap:10px; margin-bottom:10px;">
-                <input type="text" id="extra-marka" placeholder="Marka" required>
-                <input type="text" id="extra-model" placeholder="Model" required>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <input type="number" id="extra-rok" placeholder="Rok produkcji" required>
-                    <input type="number" id="extra-przebieg" placeholder="Przebieg" required>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <select id="extra-paliwo" required>
-                        <option value="">Paliwo</option>
-                        <option value="Benzyna">Benzyna</option>
-                        <option value="LPG">LPG</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="Hybryda">Hybryda</option>
-                        <option value="Elektryczny">Elektryczny</option>
-                    </select>
-                    <select id="extra-skrzynia" required>
-                        <option value="">Skrzynia biegów</option>
-                        <option value="Automatyczna">Automatyczna</option>
-                        <option value="Manualna">Manualna</option>
-                    </select>
-                </div>
+            <input type="text" id="extra-marka" placeholder="Marka" required style="margin-bottom:10px">
+            <input type="text" id="extra-model" placeholder="Model" required style="margin-bottom:10px">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <input type="number" id="extra-rok" placeholder="Rok produkcji" required>
+                <input type="number" id="extra-przebieg" placeholder="Przebieg" required>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <select id="extra-paliwo" required>
+                    <option value="">Paliwo (Benzyna / LPG / Diesel...)</option>
+                    <option value="Benzyna">Benzyna</option><option value="LPG">LPG</option><option value="Diesel">Diesel</option><option value="Hybryda">Hybryda</option><option value="Elektryczny">Elektryczny</option>
+                </select>
+                <select id="extra-skrzynia" required>
+                    <option value="">Skrzynia biegów (Automatyczna / Manualna)</option>
+                    <option value="Automatyczna">Automatyczna</option><option value="Manualna">Manualna</option>
+                </select>
             </div>`;
     }
 };
+
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-save');
+    const btn = document.getElementById('btn-save'); // Tutaj deklarujemy btn tylko RAZ
     if (btn.disabled) return;
 
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
 
-    const inputPlik = document.getElementById('f-plik');
-    const files = Array.from(inputPlik.files);
+    const files = Array.from(document.getElementById('f-plik').files);
     if (files.length > 5) return alert("Maksymalnie 5 zdjęć!");
 
     btn.disabled = true;
     btn.innerText = "Kompresja zdjęć...";
 
-    // Zbieranie danych technicznych
-    let dodatkoweDane = "";
-    const marka = document.getElementById('extra-marka')?.value;
-    if (marka) {
-        dodatkoweDane = "\n\n--- DANE ---" + 
-            `\nMarka: ${marka}` + 
-            `\nModel: ${document.getElementById('extra-model').value}` + 
-            `\nRok: ${document.getElementById('extra-rok').value}` + 
-            `\nPaliwo: ${document.getElementById('extra-paliwo').value}` + 
-            `\nSkrzynia: ${document.getElementById('extra-skrzynia').value}`;
+    let extraStr = "";
+    if (document.getElementById('extra-marka')) {
+        extraStr = `\n\n--- DANE ---\nMarka: ${document.getElementById('extra-marka').value}\nModel: ${document.getElementById('extra-model').value}\nRok: ${document.getElementById('extra-rok').value}\nPaliwo: ${document.getElementById('extra-paliwo').value}\nSkrzynia: ${document.getElementById('extra-skrzynia').value}`;
     }
 
-    const zdjeciaUrls = [];
-    const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
-
-    for (const file of files) {
+    const urls = [];
+    for (const f of files) {
         try {
-            const compressedFile = await imageCompression(file, compressionOptions);
-            const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
-            const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
-            zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error(err); }
+            const comp = await imageCompression(f, { maxSizeMB: 0.8, maxWidthOrHeight: 1200 });
+            const name = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            await baza.storage.from('zdjecia').upload(name, comp);
+            urls.push(baza.storage.from('zdjecia').getPublicUrl(name).data.publicUrl);
+        } catch(err) { console.error(err); }
     }
 
-    btn.innerText = "Zapisywanie...";
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -502,10 +442,13 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value + dodatkoweDane,
-        zdjecia: zdjeciaUrls,
+        opis: document.getElementById('f-opis').value + extraStr,
+        zdjecia: urls,
         telefon: document.getElementById('f-tel').value
     }]);
+
+    if (error) { alert(error.message); btn.disabled = false; } else location.reload();
+};
 
     if (error) {
         alert("Błąd: " + error.message);
@@ -738,7 +681,6 @@ function renderujFormularzEdycji(o) {
 
 window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-e-save');
     btn.disabled = true; 
     btn.innerText = "Zapisywanie...";
     
