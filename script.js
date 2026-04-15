@@ -108,6 +108,10 @@ async function sprawdzUzytkownika() {
     const nav = document.getElementById('user-nav');
     
     if (user && nav) {
+        // --- LOGIKA NAZWY UŻYTKOWNIKA ---
+        const nazwaZMaila = user.email.split('@')[0]; // bierze wszystko przed @
+        const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1); // Duża litera
+
         if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
         
         const { count: msgCount } = await baza
@@ -120,7 +124,10 @@ async function sprawdzUzytkownika() {
         mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
         nav.innerHTML = `
-            <div id="menu-container" style="position:relative; display:flex; gap:10px; align-items:center;">
+            <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
+                <!-- Tutaj dodany napis Witaj -->
+                <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
+                
                 <button id="menu-btn" onclick="toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                     Moje Konto ▼
                     ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
