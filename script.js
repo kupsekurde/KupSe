@@ -731,6 +731,7 @@ function renderujFormularzEdycji(o) {
         <h3>Edytuj ogłoszenie</h3>
         <form onsubmit="zapiszEdycje(event, ${o.id})" style="display:flex; flex-direction:column; gap:12px;">
             <input type="text" id="e-tytul" value="${o.tytul}" required placeholder="Tytuł" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+            
             <div style="display:flex; gap:10px;">
                 <select id="e-kat" onchange="updateFormSubcats('e-')" required style="flex:1; padding:10px; border-radius:8px;">
                     ${Object.keys(SUB_DATA).map(k => `<option value="${k}" ${o.kategoria === k ? 'selected' : ''}>${k}</option>`).join('')}
@@ -740,9 +741,26 @@ function renderujFormularzEdycji(o) {
                 </select>
             </div>
             <div id="extra-fields-edit"></div>
+
+            <!-- SEKCJA ZDJĘĆ -->
+            <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #eee;">
+                <label style="font-weight:bold; display:block; margin-bottom:10px;">Zdjęcia (max 5):</label>
+                <div id="edit-photos-preview" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                    ${edytowaneZdjecia.map((url, i) => `
+                        <div style="position:relative; width:80px; height:80px;">
+                            <img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">
+                            <button type="button" onclick="usunZdjecieZEdycji(${i}, ${o.id})" 
+                                    style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">&times;</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <input type="file" id="e-plik" multiple accept="image/*" onchange="sprawdzLimitZdjec(this)">
+            </div>
+
             <input type="number" id="e-cena" value="${o.cena}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <input type="text" id="e-lok" value="${o.lokalizacja}" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
             <textarea id="e-opis" rows="8" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;">${o.opis}</textarea>
+            
             <button type="submit" id="btn-e-save" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">
                 Zapisz zmiany
             </button>
@@ -753,33 +771,42 @@ window.zapiszEdycje = async (e, id) => {
     e.preventDefault();
     const btn = document.getElementById('btn-e-save');
     btn.disabled = true; 
-    btn.innerText = "Zapisywanie...";
-    
-    // 1. Zbieramy dane techniczne (jeśli istnieją)
-    let dodatkoweDane = "";
-    const marka = document.getElementById('extra-marka')?.value;
-    const model = document.getElementById('extra-model')?.value;
-    const rok = document.getElementById('extra-rok')?.value;
-    const przebieg = document.getElementById('extra-przebieg')?.value;
-    const poj = document.getElementById('extra-pojemnosc')?.value;
-    const moc = document.getElementById('extra-moc')?.value;
-    const paliwo = document.getElementById('extra-paliwo')?.value;
+    btn.innerText = "Kompresja i wysyłanie...";
 
-    if (marka) {
-        dodatkoweDane = "\n\n--- DANE ---" + 
-                        `\nMarka: ${marka}` + 
-                        `\nModel: ${model}` + 
-                        `\nRok produkcji: ${rok}` + 
-                        `\nPrzebieg: ${przebieg} km` + 
-                        `\nPojemność: ${poj}` + 
-                        `\nMoc: ${moc} KM` + 
-                        `\nPaliwo: ${paliwo}`;
+    // 1. Obsługa nowych zdjęć
+    const inputPlik = document.getElementById('e-plik');
+    const nowePliki = Array.from(inputPlik.files);
+    const noweUrls = [];
+    const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
+
+    for (const file of nowePliki) {
+        try {
+            const compressedFile = await imageCompression(file, compressionOptions);
+            const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+            await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
+            const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+            noweUrls.push(publicUrl);
+        } catch (err) { console.error("Błąd przesyłania:", err); }
     }
 
-    // 2. Czyścimy stary opis z poprzednich danych technicznych i łączymy z nowymi
+    const finalneZdjecia = [...edytowaneZdjecia, ...noweUrls];
+
+    // 2. Zbieranie danych technicznych (jak wcześniej)
+    let dodatkoweDane = "";
+    const markaInput = document.getElementById('extra-marka');
+    if (markaInput) {
+        dodatkoweDane = "\n\n--- DANE ---" + 
+            `\nMarka: ${markaInput.value}` + 
+            `\nModel: ${document.getElementById('extra-model').value}` + 
+            `\nRok: ${document.getElementById('extra-rok').value}` +
+            `\nPrzebieg: ${document.getElementById('extra-przebieg').value} km` +
+            `\nPojemność: ${document.getElementById('extra-pojemnosc').value}` +
+            `\nMoc: ${document.getElementById('extra-moc').value} KM` +
+            `\nPaliwo: ${document.getElementById('extra-paliwo').value}`;
+    }
+
     const obecnyOpis = document.getElementById('e-opis').value;
     const czystyOpis = obecnyOpis.split('--- DANE ---')[0].trim();
-    const opisFinalny = czystyOpis + dodatkoweDane;
 
     try {
         const { error } = await baza.from('ogloszenia').update({
@@ -788,10 +815,12 @@ window.zapiszEdycje = async (e, id) => {
             podkategoria: document.getElementById('e-podkat').value,
             cena: parseFloat(document.getElementById('e-cena').value),
             lokalizacja: document.getElementById('e-lok').value,
-            opis: opisFinalny
+            opis: czystyOpis + dodatkoweDane,
+            zdjecia: finalneZdjecia // ZAKTUALIZOWANA LISTA ZDJĘĆ
         }).eq('id', id);
 
         if (error) throw error;
+        alert("Zmiany zapisane!");
         location.reload();
     } catch (err) {
         alert("Błąd: " + err.message);
@@ -834,6 +863,20 @@ window.zastosujFiltryMoto = (kat, podkat) => {
 
         return true;
     });
+window.usunZdjecieZEdycji = (index, ogloszenieId) => {
+    edytowaneZdjecia.splice(index, 1);
+    const o = daneOgloszen.find(x => x.id === ogloszenieId);
+    renderujFormularzEdycji(o);
+    updateFormSubcats('e-');
+};
 
+window.sprawdzLimitZdjec = (input) => {
+    const nowe = input.files.length;
+    const aktualne = edytowaneZdjecia.length;
+    if (nowe + aktualne > 5) {
+        alert("Możesz mieć maksymalnie 5 zdjęć łącznie.");
+        input.value = "";
+    }
+};
     pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
 };
