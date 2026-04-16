@@ -708,17 +708,24 @@ function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
     const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28; // Ogłoszenia z ostatnich 28 dni
+    const limit = 1000 * 60 * 60 * 24 * 28;
     const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
     
-    // Zmieniamy limit z 12 na 18
-    const top18 = aktywne.slice(0, 18); 
+    // Zmieniamy na 15 ogłoszeń
+    const top15 = aktywne.slice(0, 15); 
     
     k.style.display = 'grid';
-    // Zmniejszamy minmax z 200px na 160px, aby w rzędzie weszło 6 kart
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))'; 
-    k.style.gap = '20px';
-    k.innerHTML = top18.map(o => renderCardHTML(o)).join('');
+    // 5 kolumn na komputerze, 2 na telefonie
+    if (window.innerWidth > 768) {
+        k.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    } else {
+        k.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    }
+    
+    k.style.gap = '15px';
+    k.innerHTML = top15.map(o => renderCardHTML(o)).join('');
+}
+derCardHTML(o)).join('');
 }
 
 window.toggleUlubione = async (e, id) => {
