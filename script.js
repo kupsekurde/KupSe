@@ -425,27 +425,17 @@ window.otworzFormularzDodawania = () => {
 };
 
 window.updateFormSubcats = (p = 'f-') => {
-    const katEl = document.getElementById(`${p}kat`);
+    const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
-    if (!katEl || !podkatSelect) return;
-
-    const kat = katEl.value;
-    // Zawsze budujemy listę opcji, jeśli jest wybrana kategoria
-    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-        (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    // Obsługa dodatkowych pól (tylko dla formularza głównego 'f-')
-    const extraFields = document.getElementById('extra-fields');
-    if (p === 'f-' && extraFields) {
-        const wybranaPodkat = podkatSelect.value;
-        const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
-        if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
-            // ... (tutaj zostaw ten kod HTML z polami dla aut, który masz) ...
-        } else {
-            extraFields.innerHTML = '';
-        }
+    if (event && event.target && event.target.id === `${p}kat`) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
-};
+    
+    if (!extraFields) return;
+    extraFields.innerHTML = ''; 
+
     const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
@@ -496,24 +486,18 @@ window.wyslijOgloszenie = async (e) => {
     btn.innerText = "Kompresja zdjęć...";
 
     // Zbieranie danych technicznych
-       // Zbieranie danych technicznych
     let dodatkoweDane = "";
-    const markaEl = document.getElementById('extra-marka');
-    if (markaEl && markaEl.value) {
-        const marka = markaEl.value;
-        const model = document.getElementById('extra-model').value;
-        const rok = document.getElementById('extra-rok').value;
-        const przebieg = document.getElementById('extra-przebieg').value;
-        const poj = document.getElementById('extra-pojemnosc').value;
-        const moc = document.getElementById('extra-moc').value;
-        const paliwo = document.getElementById('extra-paliwo').value;
-        const skrzynia = document.getElementById('extra-skrzynia').value;
-
-        dodatkoweDane = "\n\n--- DANE ---" + 
-                        `\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}` + 
-                        `\nPrzebieg: ${przebieg} km\nPojemność: ${poj}\nMoc: ${moc} KM` + 
-                        `\nPaliwo: ${paliwo}\nSkrzynia: ${skrzynia}`;
-    }
+    const marka = document.getElementById('extra-marka')?.value;
+   if (marka) {
+    dodatkoweDane = "\n\n--- DANE ---" + 
+                    `\nMarka: ${marka}` + 
+                    `\nModel: ${model}` + 
+                    `\nRok: ${rok}` + // Zmieniono z 'Rok produkcji' na 'Rok'
+                    `\nPrzebieg: ${przebieg} km` + 
+                    `\nPojemność: ${poj}` + 
+                    `\nMoc: ${moc} KM` + 
+                    `\nPaliwo: ${paliwo}`;
+}
 
     const zdjeciaUrls = [];
     const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
@@ -765,7 +749,7 @@ window.pokazUlubione = () => {
     pokazWynikiModal("Twoje Ulubione", ulubioneLista);
 };
 
-window.zamknijModal = () => location.reload();
+window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
 async function init() {
     await sprawdzUzytkownika();
@@ -779,14 +763,10 @@ init();
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
-    
-    // TA LINIA JEST KLUCZOWA - zamyka okno "Moje ogłoszenia" przed otwarciem edycji
-    document.getElementById('modal-view').style.display = 'none'; 
-    
     edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     renderujFormularzEdycji(o);
-    updateFormSubcats('f-');
-    };
+    updateFormSubcats('e-'); 
+};
 
 window.usunZdjecieZEdycji = (index, ogloszenieId) => {
     edytowaneZdjecia.splice(index, 1);
@@ -833,7 +813,6 @@ window.renderujFormularzEdycji = (o) => {
     const naglowek = document.querySelector('#modal-form h2');
     if(naglowek) naglowek.innerText = "Edytuj ogłoszenie";
     
-    // Wypełniamy pola tekstowe
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
     window.updateFormSubcats('f-');
@@ -843,86 +822,28 @@ window.renderujFormularzEdycji = (o) => {
     document.getElementById('f-tel').value = o.telefon;
     document.getElementById('f-opis').value = o.opis.split('--- DANE ---')[0].trim();
 
-    // --- LOGIKA ZDJĘĆ W EDYCJI ---
-    const inputPlik = document.getElementById('f-plik');
-    inputPlik.required = false; // Przy edycji nie musimy dodawać nowych plików
-    inputPlik.onchange = () => window.sprawdzLimitZdjec(inputPlik);
-
-    // Szukamy kontenera na podgląd (jeśli nie ma, tworzymy go nad przyciskiem wyboru plików)
-    let previewBox = document.getElementById('edit-photo-preview');
-    if(!previewBox) {
-        previewBox = document.createElement('div');
-        previewBox.id = 'edit-photo-preview';
-        previewBox.style = "display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; background:#eee; padding:10px; border-radius:10px;";
-        inputPlik.parentNode.insertBefore(previewBox, inputPlik);
-    }
-
-    // Funkcja odświeżająca widok małych zdjęć w edycji
-    const odswiezMiniatury = () => {
-        previewBox.innerHTML = edytowaneZdjecia.map((url, i) => `
-            <div style="position:relative; width:70px; height:70px; border-radius:8px; overflow:hidden; border:2px solid #ddd;">
-                <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-                <div onclick="window.usunZdjecieZEdycji(${i}, ${o.id})" 
-                     style="position:absolute; top:0; right:0; background:red; color:white; width:20px; height:20px; cursor:pointer; text-align:center; font-weight:bold; line-height:18px;">&times;</div>
-            </div>
-        `).join('') + (edytowaneZdjecia.length === 0 ? '<span style="font-size:12px; color:gray;">Brak zdjęć. Dodaj nowe poniżej.</span>' : '');
-    };
-
-    // Nadpisujemy funkcję usuwania, żeby od razu odświeżała widok
-    window.usunZdjecieZEdycji = (index) => {
-        edytowaneZdjecia.splice(index, 1);
-        odswiezMiniatury();
-    };
-
-    odswiezMiniatury();
-
-    // --- ZAPISYWANIE ZMIAN ---
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
     
     document.getElementById('form-dodaj').onsubmit = async (e) => {
         e.preventDefault();
-        if(btn.disabled) return;
-
-        const nowePliki = Array.from(inputPlik.files);
-        if(edytowaneZdjecia.length + nowePliki.length > 5) return alert("Maksymalnie 5 zdjęć łącznie!");
-
         btn.disabled = true;
-        btn.innerText = "Przetwarzanie...";
-
-        let finalneZdjecia = [...edytowaneZdjecia];
-
-        // Jeśli użytkownik dodał nowe pliki - kompresujemy i wysyłamy
-        if(nowePliki.length > 0) {
-            btn.innerText = "Wysyłanie zdjęć...";
-            const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
-            for (const file of nowePliki) {
-                try {
-                    const compressedFile = await imageCompression(file, compressionOptions);
-                    const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-                    await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
-                    const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
-                    finalneZdjecia.push(publicUrl);
-                } catch (err) { console.error("Błąd zdjęcia:", err); }
-            }
-        }
-
+        btn.innerText = "Zapisywanie zmian...";
+        
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: finalneZdjecia // Zapisujemy połączoną listę (stare + nowe)
+            telefon: document.getElementById('f-tel').value
         }).eq('id', o.id);
 
         if (error) {
             alert("Błąd: " + error.message);
             btn.disabled = false;
         } else {
-            alert("Ogłoszenie zaktualizowane!");
+            alert("Zaktualizowano!");
             location.reload();
         }
     };
 };
-  
