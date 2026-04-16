@@ -109,38 +109,12 @@ window.wyloguj = async () => {
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    const authBox = document.getElementById('auth-box');
     
-    // ZAWSZE pokazujemy pasek nawigacji po sprawdzeniu, niezależnie od wyniku
-    if (nav) nav.style.display = 'flex';
-
-    if (user) {
-        // Jeśli ZALOGOWANY:
-        if (authBox) authBox.style.display = 'none'; // Upewnij się, że okno logowania znika
-        
-        const nazwaZMaila = user.email.split('@')[0];
-        const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
-
-        // Pobieranie danych (wiadomości, ulubione)
-        const { count: msgCount } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('odbiorca', user.email).eq('przeczytane', false);
-        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
-
-        // Wstawienie menu użytkownika
-        nav.innerHTML = `
-            <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
-                <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
-                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">Konto ▼</button>
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <!-- ... reszta menu ... -->
-                </div>
-            </div>`;
-    } else {
-        // Jeśli NIEZALOGOWANY:
-        if (authBox) authBox.style.display = 'block'; // Pokazujemy okno logowania
-    }
-}
+    if (user && nav) {
+        // 1. Ukrywamy formularz logowania/rejestracji
+        if (document.getElementById('auth-box')) {
+            document.getElementById('auth-box').style.display = 'none';
+        }
 
         // 2. Przygotowujemy nazwę użytkownika
         const nazwaZMaila = user.email.split('@')[0];
