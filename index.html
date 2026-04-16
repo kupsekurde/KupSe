@@ -284,12 +284,10 @@
 
     <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
     
-    <input type="tel" id="f-tel" placeholder="Numer telefonu (np. 123456789)" pattern="[0-9]{9}" maxlength="9" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+    <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" pattern="[0-9]{9}" maxlength="9" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
 <small style="display:block; font-size: 11px; color: #666; margin-top: 5px; margin-bottom: 10px;">
     * Twój numer telefonu (9 cyfr) będzie widoczny dla osób zainteresowanych zakupem.
 </small>
-           pattern="[0-9]{9}" maxlength="9" 
-           oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
     
     <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
