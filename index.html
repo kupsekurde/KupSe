@@ -141,11 +141,21 @@
         .sub-pill:hover { background: var(--primary); color: white; }
 
         /* Grid ogłoszeń */
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
-        .ads-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
-@media (max-width: 768px) { .ads-grid { grid-template-columns: repeat(2, 1fr); } }
+       .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 100%; }
+.ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
         .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .ad-card img {
+    width: 100%;
+    height: 180px;      /* Ustawia taką samą wysokość dla wszystkich zdjęć */
+    object-fit: cover;  /* Przycina zdjęcie tak, by wypełniło ramkę bez rozciągania go */
+    display: block;
+}
+
+/* Styl dla treści pod zdjęciem (tytuł, cena) */
+.ad-card-content {
+    padding: 15px;
+}
         
         /* Modale */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
