@@ -425,17 +425,27 @@ window.otworzFormularzDodawania = () => {
 };
 
 window.updateFormSubcats = (p = 'f-') => {
-    const kat = document.getElementById(`${p}kat`).value;
+    const katEl = document.getElementById(`${p}kat`);
     const podkatSelect = document.getElementById(`${p}podkat`);
-    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
-    
-    if (event && event.target && event.target.id === `${p}kat`) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-    }
-    
-    if (!extraFields) return;
-    extraFields.innerHTML = ''; 
+    if (!katEl || !podkatSelect) return;
 
+    const kat = katEl.value;
+    // Zawsze budujemy listę opcji, jeśli jest wybrana kategoria
+    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
+        (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    
+    // Obsługa dodatkowych pól (tylko dla formularza głównego 'f-')
+    const extraFields = document.getElementById('extra-fields');
+    if (p === 'f-' && extraFields) {
+        const wybranaPodkat = podkatSelect.value;
+        const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
+        if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+            // ... (tutaj zostaw ten kod HTML z polami dla aut, który masz) ...
+        } else {
+            extraFields.innerHTML = '';
+        }
+    }
+};
     const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
@@ -486,18 +496,24 @@ window.wyslijOgloszenie = async (e) => {
     btn.innerText = "Kompresja zdjęć...";
 
     // Zbieranie danych technicznych
+       // Zbieranie danych technicznych
     let dodatkoweDane = "";
-    const marka = document.getElementById('extra-marka')?.value;
-   if (marka) {
-    dodatkoweDane = "\n\n--- DANE ---" + 
-                    `\nMarka: ${marka}` + 
-                    `\nModel: ${model}` + 
-                    `\nRok: ${rok}` + // Zmieniono z 'Rok produkcji' na 'Rok'
-                    `\nPrzebieg: ${przebieg} km` + 
-                    `\nPojemność: ${poj}` + 
-                    `\nMoc: ${moc} KM` + 
-                    `\nPaliwo: ${paliwo}`;
-}
+    const markaEl = document.getElementById('extra-marka');
+    if (markaEl && markaEl.value) {
+        const marka = markaEl.value;
+        const model = document.getElementById('extra-model').value;
+        const rok = document.getElementById('extra-rok').value;
+        const przebieg = document.getElementById('extra-przebieg').value;
+        const poj = document.getElementById('extra-pojemnosc').value;
+        const moc = document.getElementById('extra-moc').value;
+        const paliwo = document.getElementById('extra-paliwo').value;
+        const skrzynia = document.getElementById('extra-skrzynia').value;
+
+        dodatkoweDane = "\n\n--- DANE ---" + 
+                        `\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}` + 
+                        `\nPrzebieg: ${przebieg} km\nPojemność: ${poj}\nMoc: ${moc} KM` + 
+                        `\nPaliwo: ${paliwo}\nSkrzynia: ${skrzynia}`;
+    }
 
     const zdjeciaUrls = [];
     const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
