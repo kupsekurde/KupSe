@@ -109,54 +109,45 @@ window.wyloguj = async () => {
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
+    const authBox = document.getElementById('auth-box');
     
-    if (user && nav) {
-        // 1. Ukrywamy formularz logowania/rejestracji
-        if (document.getElementById('auth-box')) {
-            document.getElementById('auth-box').style.display = 'none';
-        }
+    if (nav) nav.style.display = 'flex';
 
-        // 2. Przygotowujemy nazwę użytkownika
+    if (user) {
+        if (authBox) authBox.style.display = 'none';
+        
         const nazwaZMaila = user.email.split('@')[0];
         const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
 
-        // 3. Pobieramy liczbę nieprzeczytanych wiadomości i ulubione
-        const { count: msgCount } = await baza
-            .from('wiadomosci')
-            .select('*', { count: 'exact', head: true })
-            .eq('odbiorca', user.email)
-            .eq('przeczytane', false);
-
+        const { count: msgCount } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('odbiorca', user.email).eq('przeczytane', false);
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
-        // 4. Wstawiamy przyciski do paska nawigacji
         nav.innerHTML = `
-            <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
-                <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
-                
-                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
-                
-                <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+            <div id="menu-container" style="position:relative; display:flex; gap:10px; align-items:center;">
+                <span style="font-weight:800; color:var(--text); font-size:11px;">Witaj ${witajImie}</span>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:11px;">+ Dodaj</button>
+                <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:800; font-size:11px; position:relative;">
+                    Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
-
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                <div id="drop-menu" style="display:none; position:absolute; top:45px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:200px;">
                     <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
                         <small style="color:gray;">Zalogowany jako:</small><br>
-                        <b style="font-size:13px; word-break:break-all;">${user.email}</b>
+                        <b style="font-size:12px; word-break:break-all;">${user.email}</b>
                     </div>
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer; font-size:13px;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; font-size:13px;">✉️ Wiadomości</div>
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer; font-size:13px;">❤️ Ulubione</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold; font-size:13px;">🚪 Wyloguj</div>
                 </div>
             </div>`;
+    } else {
+        if (authBox) authBox.style.display = 'block';
+        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" style="background:#f3f4f6; border:none; padding:8px 15px; border-radius:50px; font-weight:800; cursor:pointer; font-size:12px;">Zaloguj się</button>`;
     }
 }
-
 window.toggleUserMenu = (e) => { 
     e.stopPropagation(); 
     const m = document.getElementById('drop-menu'); 
