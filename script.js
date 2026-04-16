@@ -808,10 +808,19 @@ window.zastosujFiltryMoto = (kat, podkat) => {
     pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
 };
 window.renderujFormularzEdycji = (o) => {
+    // DODAJ TĘ LINIJKĘ PONIŻEJ:
+    window.zamknijModal(); 
+
     const modal = document.getElementById('modal-form');
     modal.style.display = 'flex';
+    
     const naglowek = document.querySelector('#modal-form h2');
     if(naglowek) naglowek.innerText = "Edytuj ogłoszenie";
+    
+    // ... reszta kodu bez zmian ...
+    document.getElementById('f-tytul').value = o.tytul;
+    // ...
+};
     
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
