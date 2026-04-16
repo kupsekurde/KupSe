@@ -763,10 +763,14 @@ init();
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
+    
+    // TA LINIA JEST KLUCZOWA - zamyka okno "Moje ogłoszenia" przed otwarciem edycji
+    document.getElementById('modal-view').style.display = 'none'; 
+    
     edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     renderujFormularzEdycji(o);
-    updateFormSubcats('e-'); 
-};
+    updateFormSubcats('f-');
+    };
 
 window.usunZdjecieZEdycji = (index, ogloszenieId) => {
     edytowaneZdjecia.splice(index, 1);
