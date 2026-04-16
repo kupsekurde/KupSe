@@ -723,9 +723,24 @@ function renderTop12(lista) {
     }
     
     k.style.gap = '15px';
+function renderTop12(lista) {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    const teraz = new Date();
+    const limit = 1000 * 60 * 60 * 24 * 28;
+    const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
+    
+    const top15 = aktywne.slice(0, 15); 
+    
+    k.style.display = 'grid';
+    if (window.innerWidth > 768) {
+        k.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    } else {
+        k.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    }
+    
+    k.style.gap = '15px';
     k.innerHTML = top15.map(o => renderCardHTML(o)).join('');
-}
-derCardHTML(o)).join('');
 }
 
 window.toggleUlubione = async (e, id) => {
