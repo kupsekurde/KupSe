@@ -142,7 +142,8 @@
 
         /* Grid ogłoszeń */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
-        .ads-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
+        .ads-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+@media (max-width: 768px) { .ads-grid { grid-template-columns: repeat(2, 1fr); } }
         .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
         .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
