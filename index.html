@@ -175,9 +175,9 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-    <input type="search" id="find-text" name="szukaj_fraza" autocomplete="off" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
+    <input type="search" id="find-text" name="q_search" autocomplete="none" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
-    <input type="search" id="find-loc" name="szukaj_miasto" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+    <input type="search" id="find-loc" name="l_search" autocomplete="none" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
 </div>
 
@@ -302,7 +302,7 @@
 
     <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
     
-    <div style="display: flex; flex-direction: column; gap: 5px;">
+     <div style="display: flex; flex-direction: column; gap: 5px;">
         <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
                pattern="[0-9]{9}" maxlength="9" 
                oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
@@ -365,8 +365,6 @@ window.pokazModalPrawny = function(typ) {
 
 // Funkcja zamykająca okno (na wypadek, gdyby jej brakowało)
 window.zamknijModal = function() {
-    location.reload();
-}
     document.getElementById('modal-view').style.display = 'none';
     document.getElementById('modal-form').style.display = 'none';
 }
