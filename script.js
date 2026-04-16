@@ -652,9 +652,9 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 
             <div style="flex:1;">
                 <h2 style="margin-top:0;">${tytul}</h2>
-                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:70vh; overflow-y:auto; padding-right:10px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń o tych parametrach.</p>'}
-                </div>
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
+    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń o tych parametrach.</p>'}
+</div>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
