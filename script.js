@@ -749,7 +749,7 @@ window.pokazUlubione = () => {
     pokazWynikiModal("Twoje Ulubione", ulubioneLista);
 };
 
-window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+window.zamknijModal = () => location.reload();
 
 async function init() {
     await sprawdzUzytkownika();
