@@ -220,7 +220,16 @@
         • liczbę<br>
         • znak specjalny
     </div>
-
+<div style="text-align: left; font-size: 12px; margin-bottom: 15px; color: #444; padding: 0 10px;">
+    <label style="display: flex; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+        <input type="checkbox" id="reg-zgoda-regulamin" required style="width: auto;">
+        <span>Akceptuję <b>Regulamin</b> oraz <b>Politykę Prywatności</b> serwisu KupSe. *</span>
+    </label>
+    <label style="display: flex; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="reg-zgoda-marketing" style="width: auto;">
+        <span>Chcę otrzymywać informacje o promocjach i nowych ogłoszeniach.</span>
+    </label>
+</div>
     <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
     
     <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
@@ -233,8 +242,17 @@
 </div>
 
 <footer>
+    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; font-weight: 600;">
+        <a href="#" style="color: var(--gray); text-decoration: none;">Regulamin</a>
+        <a href="#" style="color: var(--gray); text-decoration: none;">Polityka Prywatności</a>
+        <a href="#" style="color: var(--gray); text-decoration: none;">Pomoc i Kontakt</a>
+    </div>
     <p>&copy; 2026 KupSe - Wszystkie prawa zastrzeżone.</p>
+    <p style="font-size: 11px; color: #999; max-width: 600px; margin: 10px auto 0; line-height: 1.4;">
+        Administratorem danych jest KupSe. Korzystając z serwisu, akceptujesz zasady przetwarzania danych osobowych zgodnie z RODO. Ogłoszenia pochodzą od osób prywatnych i firm.
+    </p>
 </footer>
+
 
 <div id="modal-form" class="modal">
     <div class="modal-box">
@@ -275,6 +293,9 @@
     <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
     
     <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+        <small style="font-size: 11px; color: #666; margin-top: -10px;">
+    * Twój numer telefonu będzie widoczny dla osób zainteresowanych zakupem.
+</small>
            pattern="[0-9]{9}" maxlength="9" 
            oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
     
@@ -295,5 +316,9 @@
 </div>
 
 <script src="script.js"></script>
+    <div id="cookie-bar" style="position: fixed; bottom: 0; left: 0; right: 0; background: #111; color: white; padding: 15px; text-align: center; font-size: 13px; z-index: 9999; display: flex; justify-content: center; align-items: center; gap: 20px;">
+    <span>Ta strona używa ciasteczek (cookies), aby działać poprawnie.</span>
+    <button onclick="document.getElementById('cookie-bar').remove()" style="background: var(--primary); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Rozumiem</button>
+</div>
 </body>
 </html>
