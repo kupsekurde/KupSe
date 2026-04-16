@@ -722,7 +722,6 @@ function renderTop12(lista) {
         k.style.gridTemplateColumns = 'repeat(2, 1fr)';
     }
     
-    k.style.gap = '15px';
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
