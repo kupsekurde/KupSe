@@ -114,6 +114,7 @@ async function sprawdzUzytkownika() {
     if (nav) nav.style.display = 'flex';
 
     if (user) {
+        // Jeśli zalogowany - ukrywamy CAŁY boks logowania
         if (authBox) authBox.style.display = 'none';
         
         const nazwaZMaila = user.email.split('@')[0];
@@ -144,6 +145,7 @@ async function sprawdzUzytkownika() {
                 </div>
             </div>`;
     } else {
+        // Jeśli niezalogowany - pokazujemy CAŁY boks logowania
         if (authBox) authBox.style.display = 'block';
         nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" style="background:#f3f4f6; border:none; padding:8px 15px; border-radius:50px; font-weight:800; cursor:pointer; font-size:12px;">Zaloguj się</button>`;
     }
