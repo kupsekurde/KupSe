@@ -148,7 +148,16 @@
         
         /* Modale */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-box { background: white; width: 90%; max-width: 850px; max-height: 90vh; border-radius: 25px; padding: 30px; overflow-y: auto; position: relative; }
+        .modal-box { 
+    background: white; 
+    width: 95%; 
+    max-width: 1250px; /* Zwiększone z 850px */
+    max-height: 90vh; 
+    border-radius: 25px; 
+    padding: 30px; 
+    overflow-y: auto; 
+    position: relative; 
+}
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #666; font-weight: bold; border: none; background: none; }
 
         /* Formularz */
@@ -166,9 +175,9 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
-            <div class="search-divider"></div>
-            <input type="text" id="find-loc" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+         <input type="text" id="find-text" placeholder="Czego szukasz?" autocomplete="off" onkeyup="if(event.key==='Enter') window.szukaj()">
+<div class="search-divider"></div>
+<input type="text" id="find-loc" placeholder="Cała Polska" autocomplete="off" onkeyup="if(event.key==='Enter') window.szukaj()">
             <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
         </div>
     </div>
