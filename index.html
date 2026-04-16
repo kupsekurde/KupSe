@@ -172,9 +172,9 @@
             <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
         </div>
     </div>
-    <div class="nav-right" id="user-nav">
-        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
-    </div>
+   <div class="nav-right" id="user-nav" style="display: none;"> <!-- Dodaj display: none -->
+    <button ...>Zaloguj się</button>
+</div>
 </nav>
 
 <div class="cat-wrapper">
@@ -196,7 +196,9 @@
 </div>
 
 <div class="container">
-    <div id="auth-box">
+    <div id="auth-box" style="display: none;"> <!-- Dodaj display: none -->
+    ...
+</div>
         <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
             <h3>Logowanie</h3>
             <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
