@@ -196,9 +196,7 @@
 </div>
 
 <div class="container">
-    <div id="auth-box" style="display: none;"> <!-- Dodaj display: none -->
-    ...
-</div>
+ <div id="auth-box" style="display: none;"> 
         <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
             <h3>Logowanie</h3>
             <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
@@ -207,35 +205,27 @@
             <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
         
-       <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
-    <h3>Rejestracja</h3>
-    <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
-    
-    <!-- Tutaj usunęliśmy napis o 6 znakach i zmniejszyliśmy margines dolny -->
-    <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
-    
-    <!-- Nowa informacja o wymaganiach -->
-    <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
-        <strong>Hasło musi zawierać:</strong><br>
-        • min. 8 znaków<br>
-        • dużą literę<br>
-        • liczbę<br>
-        • znak specjalny
+        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3>Rejestracja</h3>
+            <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
+            <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
+            <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+                <strong>Hasło musi zawierać:</strong><br>
+                • min. 8 znaków<br>
+                • dużą literę<br>
+                • liczbę<br>
+                • znak specjalny
+            </div>
+            <div style="text-align: left; font-size: 12px; margin-bottom: 15px; color: #444; padding: 0 10px;">
+                <label style="display: flex; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                    <input type="checkbox" id="reg-zgoda-regulamin" required style="width: auto;">
+                    <span>Akceptuję <b>Regulamin</b> oraz <b>Politykę Prywatności</b>. *</span>
+                </label>
+            </div>
+            <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
+            <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+        </div>
     </div>
-<div style="text-align: left; font-size: 12px; margin-bottom: 15px; color: #444; padding: 0 10px;">
-    <label style="display: flex; gap: 8px; cursor: pointer; margin-bottom: 8px;">
-        <input type="checkbox" id="reg-zgoda-regulamin" required style="width: auto;">
-        <span>Akceptuję <b>Regulamin</b> oraz <b>Politykę Prywatności</b> serwisu KupSe. *</span>
-    </label>
-    <label style="display: flex; gap: 8px; cursor: pointer;">
-        <input type="checkbox" id="reg-zgoda-marketing" style="width: auto;">
-        <span>Chcę otrzymywać informacje o promocjach i nowych ogłoszeniach.</span>
-    </label>
-</div>
-    <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
-    
-    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
-</div>
 
         </div> 
 
