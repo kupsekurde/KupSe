@@ -480,36 +480,33 @@ window.wyslijOgloszenie = async (e) => {
 
     const inputPlik = document.getElementById('f-plik');
     const files = Array.from(inputPlik.files);
-    if (files.length > 5) return alert("Maksymalnie 5 zdjęć!");
+    if (files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
 
     btn.disabled = true;
     btn.innerText = "Kompresja zdjęć...";
 
-    // Zbieranie danych technicznych
+    // Zbieranie danych technicznych - poprawione zmienne
     let dodatkoweDane = "";
     const marka = document.getElementById('extra-marka')?.value;
-   if (marka) {
-    dodatkoweDane = "\n\n--- DANE ---" + 
-                    `\nMarka: ${marka}` + 
-                    `\nModel: ${model}` + 
-                    `\nRok: ${rok}` + // Zmieniono z 'Rok produkcji' na 'Rok'
-                    `\nPrzebieg: ${przebieg} km` + 
-                    `\nPojemność: ${poj}` + 
-                    `\nMoc: ${moc} KM` + 
-                    `\nPaliwo: ${paliwo}`;
-}
+    const model = document.getElementById('extra-model')?.value;
+    const rok = document.getElementById('extra-rok')?.value;
+    const paliwo = document.getElementById('extra-paliwo')?.value;
+
+    if (marka) {
+        dodatkoweDane = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
+    }
 
     const zdjeciaUrls = [];
-    const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
+    const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
 
     for (const file of files) {
         try {
-            const compressedFile = await imageCompression(file, compressionOptions);
+            const compressed = await imageCompression(file, options);
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
+            await baza.storage.from('zdjecia').upload(nazwa, compressed);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error("Błąd kompresji:", err); }
     }
 
     btn.innerText = "Zapisywanie...";
@@ -528,7 +525,6 @@ window.wyslijOgloszenie = async (e) => {
     if (error) {
         alert("Błąd: " + error.message);
         btn.disabled = false;
-        btn.innerText = "Opublikuj ogłoszenie";
     } else {
         alert("Ogłoszenie dodane!");
         location.reload();
@@ -725,7 +721,7 @@ function renderTop12(lista) {
 }
 
 window.toggleUlubione = async (e, id) => {
-    e.stopPropagation();
+    if(e) e.stopPropagation();
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Zaloguj się!");
 
@@ -738,10 +734,13 @@ window.toggleUlubione = async (e, id) => {
         mojeUlubione.push(id);
     }
 
-    const wszystkieSerca = document.querySelectorAll(`.fav-btn-${id}`);
-    wszystkieSerca.forEach(serce => {
+    // Odświeżamy serca na stronie
+    document.querySelectorAll(`.fav-btn-${id}`).forEach(serce => {
         serce.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
     });
+    
+    // Kluczowe: Odświeżamy menu "Moje konto", żeby liczba ulubionych się zgadzała
+    sprawdzUzytkownika(); 
 };
 
 window.pokazUlubione = () => {
@@ -763,88 +762,52 @@ init();
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
-    edytowaneZdjecia = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
-    renderujFormularzEdycji(o);
-    updateFormSubcats('e-'); 
-};
-
-window.usunZdjecieZEdycji = (index, ogloszenieId) => {
-    edytowaneZdjecia.splice(index, 1);
-    const o = daneOgloszen.find(x => x.id === ogloszenieId);
-    renderujFormularzEdycji(o);
-};
-
-window.sprawdzLimitZdjec = (input) => {
-    if (input.files.length + edytowaneZdjecia.length > 5) {
-        alert("Max 5 zdjęć!");
-        input.value = "";
-    }
-};
-
-window.zastosujFiltryMoto = (kat, podkat) => {
-    const marka = document.getElementById('sf-marka').value.toLowerCase().trim();
-    const model = document.getElementById('sf-model').value.toLowerCase().trim();
-    const rMin = parseInt(document.getElementById('sf-rok-min').value) || 0;
-    const rMax = parseInt(document.getElementById('sf-rok-max').value) || 9999;
-    const cMin = parseFloat(document.getElementById('sf-cena-min').value) || 0;
-    const cMax = parseFloat(document.getElementById('sf-cena-max').value) || 99999999;
-    const paliwo = document.getElementById('sf-paliwo').value;
-    const skrzynia = document.getElementById('sf-skrzynia').value;
-
-    const wyniki = daneOgloszen.filter(o => {
-        if (o.kategoria !== kat || o.podkategoria !== podkat) return false;
-        if (o.cena < cMin || o.cena > cMax) return false;
-        const d = o.opis.toLowerCase();
-        if (marka && !d.includes(`marka: ${marka}`)) return false;
-        if (model && !d.includes(`model: ${model}`)) return false;
-        const rokMatch = o.opis.match(/Rok: (\d{4})/);
-        const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
-        if (autoRok < rMin || autoRok > rMax) return false;
-        if (paliwo && !d.includes(`paliwo: ${paliwo.toLowerCase()}`)) return false;
-        if (skrzynia && !d.includes(`skrzynia: ${skrzynia.toLowerCase()}`)) return false;
-        return true;
-    });
-
-    pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
-};
-window.renderujFormularzEdycji = (o) => {
-    // Najpierw zamykamy listę ogłoszeń, żeby nie zasłaniała formularza
-    window.zamknijModal = () => {
-    // Chowa oba rodzaje okienek (formularz i listę)
-    document.getElementById('modal-form').style.display = 'none';
-    document.getElementById('modal-view').style.display = 'none';
     
-    // Czyści pola formularza
-    document.getElementById('f-tytul').value = '';
-    document.getElementById('f-opis').value = '';
-    document.getElementById('f-cena').value = '';
-    document.getElementById('f-lokalizacja').value = '';
-    document.getElementById('f-kategoria').value = 'Motoryzacja';
-    document.getElementById('f-id').value = '';
-};
-
+    // Zamykamy modal z listą moich ogłoszeń, otwieramy formularz
+    document.getElementById('modal-view').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'flex';
+    
+    // Wypełniamy pola danymi
+    document.getElementById('f-tytul').value = o.tytul;
+    document.getElementById('f-kat').value = o.kategoria;
+    updateFormSubcats(); // Odśwież podkategorie
+    document.getElementById('f-podkat').value = o.podkategoria;
+    document.getElementById('f-cena').value = o.cena;
+    document.getElementById('f-lok').value = o.lokalizacja;
+    document.getElementById('f-tel').value = o.telefon || "";
+    document.getElementById('f-opis').value = o.opis;
+    
+    // Podmieniamy działanie przycisku zapisu na UPDATE
+    const form = document.getElementById('form-dodaj');
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
     
-    document.getElementById('form-dodaj').onsubmit = async (e) => {
+    form.onsubmit = async (e) => {
         e.preventDefault();
         btn.disabled = true;
-        btn.innerText = "Zapisywanie zmian...";
-        
+        btn.innerText = "Aktualizacja...";
+
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value
+            telefon: document.getElementById('f-tel').value,
+            kategoria: document.getElementById('f-kat').value,
+            podkategoria: document.getElementById('f-podkat').value
         }).eq('id', o.id);
 
         if (error) {
-            alert("Błąd: " + error.message);
+            alert("Błąd zapisu: " + error.message);
             btn.disabled = false;
         } else {
-            alert("Zaktualizowano!");
+            alert("Zaktualizowano ogłoszenie!");
             location.reload();
         }
     };
+};
+
+// Funkcja zamykania wszystkich okienek
+window.zamknijModal = () => {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 };
