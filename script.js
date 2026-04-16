@@ -808,28 +808,20 @@ window.zastosujFiltryMoto = (kat, podkat) => {
     pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
 };
 window.renderujFormularzEdycji = (o) => {
-    // DODAJ TĘ LINIJKĘ PONIŻEJ:
-    window.zamknijModal(); 
-
-    const modal = document.getElementById('modal-form');
-    modal.style.display = 'flex';
+    // Najpierw zamykamy listę ogłoszeń, żeby nie zasłaniała formularza
+    window.zamknijModal = () => {
+    // Chowa oba rodzaje okienek (formularz i listę)
+    document.getElementById('modal-form').style.display = 'none';
+    document.getElementById('modal-view').style.display = 'none';
     
-    const naglowek = document.querySelector('#modal-form h2');
-    if(naglowek) naglowek.innerText = "Edytuj ogłoszenie";
-    
-    // ... reszta kodu bez zmian ...
-    document.getElementById('f-tytul').value = o.tytul;
-    // ...
+    // Czyści pola formularza
+    document.getElementById('f-tytul').value = '';
+    document.getElementById('f-opis').value = '';
+    document.getElementById('f-cena').value = '';
+    document.getElementById('f-lokalizacja').value = '';
+    document.getElementById('f-kategoria').value = 'Motoryzacja';
+    document.getElementById('f-id').value = '';
 };
-    
-    document.getElementById('f-tytul').value = o.tytul;
-    document.getElementById('f-kat').value = o.kategoria;
-    window.updateFormSubcats('f-');
-    document.getElementById('f-podkat').value = o.podkategoria;
-    document.getElementById('f-cena').value = o.cena;
-    document.getElementById('f-lok').value = o.lokalizacja;
-    document.getElementById('f-tel').value = o.telefon;
-    document.getElementById('f-opis').value = o.opis.split('--- DANE ---')[0].trim();
 
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
