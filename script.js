@@ -807,3 +807,43 @@ window.zastosujFiltryMoto = (kat, podkat) => {
 
     pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
 };
+window.renderujFormularzEdycji = (o) => {
+    const modal = document.getElementById('modal-form');
+    modal.style.display = 'flex';
+    const naglowek = document.querySelector('#modal-form h2');
+    if(naglowek) naglowek.innerText = "Edytuj ogłoszenie";
+    
+    document.getElementById('f-tytul').value = o.tytul;
+    document.getElementById('f-kat').value = o.kategoria;
+    window.updateFormSubcats('f-');
+    document.getElementById('f-podkat').value = o.podkategoria;
+    document.getElementById('f-cena').value = o.cena;
+    document.getElementById('f-lok').value = o.lokalizacja;
+    document.getElementById('f-tel').value = o.telefon;
+    document.getElementById('f-opis').value = o.opis.split('--- DANE ---')[0].trim();
+
+    const btn = document.getElementById('btn-save');
+    btn.innerText = "Zapisz zmiany";
+    
+    document.getElementById('form-dodaj').onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.innerText = "Zapisywanie zmian...";
+        
+        const { error } = await baza.from('ogloszenia').update({
+            tytul: document.getElementById('f-tytul').value,
+            cena: parseFloat(document.getElementById('f-cena').value),
+            lokalizacja: document.getElementById('f-lok').value,
+            opis: document.getElementById('f-opis').value,
+            telefon: document.getElementById('f-tel').value
+        }).eq('id', o.id);
+
+        if (error) {
+            alert("Błąd: " + error.message);
+            btn.disabled = false;
+        } else {
+            alert("Zaktualizowano!");
+            location.reload();
+        }
+    };
+};
