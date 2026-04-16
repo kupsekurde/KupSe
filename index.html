@@ -243,13 +243,13 @@
 
 <footer>
     <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; font-weight: 600;">
-        <a href="#" style="color: var(--gray); text-decoration: none;">Regulamin</a>
-        <a href="#" style="color: var(--gray); text-decoration: none;">Polityka Prywatności</a>
-        <a href="#" style="color: var(--gray); text-decoration: none;">Pomoc i Kontakt</a>
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('regulamin')" style="color: var(--gray); text-decoration: none;">Regulamin</a>
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('polityka')" style="color: var(--gray); text-decoration: none;">Polityka Prywatności</a>
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('kontakt')" style="color: var(--gray); text-decoration: none;">Pomoc i Kontakt</a>
     </div>
     <p>&copy; 2026 KupSe - Wszystkie prawa zastrzeżone.</p>
     <p style="font-size: 11px; color: #999; max-width: 600px; margin: 10px auto 0; line-height: 1.4;">
-        Administratorem danych jest KupSe. Korzystając z serwisu, akceptujesz zasady przetwarzania danych osobowych zgodnie z RODO. Ogłoszenia pochodzą od osób prywatnych i firm.
+        Administratorem danych jest KupSe. Korzystając z serwisu, akceptujesz zasady przetwarzania danych osobowych zgodnie z RODO.
     </p>
 </footer>
 
@@ -320,5 +320,42 @@
     <span>Ta strona używa ciasteczek (cookies), aby działać poprawnie.</span>
     <button onclick="document.getElementById('cookie-bar').remove()" style="background: var(--primary); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Rozumiem</button>
 </div>
+    <script>
+window.pokazModalPrawny = function(typ) {
+    // 1. Znajdujemy okno modalne, które już masz w kodzie (modal-view)
+    const modal = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    
+    let tytul = "";
+    let tresc = "";
+
+    // 2. Ustalamy co wyświetlić w zależności od tego, co kliknięto
+    if(typ === 'regulamin') {
+        tytul = "Regulamin Serwisu KupSe";
+        tresc = "1. Serwis KupSe pozwala na darmowe wystawianie ogłoszeń.<br>2. Zakazane jest wystawianie przedmiotów nielegalnych.<br>3. Użytkownik odpowiada za treść swojego ogłoszenia.";
+    } else if(typ === 'polityka') {
+        tytul = "Polityka Prywatności (RODO)";
+        tresc = "Twoje dane (email, telefon) są przetwarzane wyłącznie w celu wyświetlania ogłoszeń. Masz prawo do ich usunięcia w każdej chwili, kontaktując się z nami.";
+    } else if(typ === 'kontakt') {
+        tytul = "Pomoc i Kontakt";
+        tresc = "Masz problem z ogłoszeniem? Napisz do nas na adres: kontakt@kupse.pl<br>Pracujemy od poniedziałku do piątku w godzinach 9:00 - 17:00.";
+    }
+
+    // 3. Wkładamy treść do okienka i pokazujemy je
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="color: var(--primary)">${tytul}</h2>
+        <div style="line-height: 1.6; text-align: left; margin-top: 20px;">${tresc}</div>
+    `;
+    
+    modal.style.display = 'flex';
+}
+
+// Funkcja zamykająca okno (na wypadek, gdyby jej brakowało)
+window.zamknijModal = function() {
+    document.getElementById('modal-view').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'none';
+}
+</script>
 </body>
 </html>
