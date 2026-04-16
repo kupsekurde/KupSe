@@ -175,15 +175,11 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-            <input type="text" id="find-text" placeholder="Czego szukasz?" autocomplete="off" onkeyup="if(event.key==='Enter') window.szukaj()">
-            <div class="search-divider"></div>
-            <!-- Zmieniona nazwa i dodana lista miast, żeby zablokować e-maile -->
-            <input type="text" id="find-loc" name="location-search" list="cities-list" placeholder="Cała Polska" autocomplete="off" onkeyup="if(event.key==='Enter') window.szukaj()">
-            <datalist id="cities-list">
-                <option value="Warszawa"><option value="Kraków"><option value="Wrocław"><option value="Poznań"><option value="Gdańsk">
-            </datalist>
-            <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
-        </div>
+    <input type="search" id="find-text" name="q_search" autocomplete="none" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
+    <div class="search-divider"></div>
+    <input type="search" id="find-loc" name="l_search" autocomplete="none" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+    <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
+</div>
 
     </div>
     <div class="nav-right" id="user-nav">
@@ -306,12 +302,14 @@
 
     <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
     
-    <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
-           pattern="[0-9]{9}" maxlength="9" 
-           oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
-    <small style="font-size: 11px; color: #666; margin-top: -10px; display: block;">
-        * Twój numer telefonu będzie widoczny dla osób zainteresowanych zakupem.
-    </small>
+     <div style="display: flex; flex-direction: column; gap: 5px;">
+        <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+               pattern="[0-9]{9}" maxlength="9" 
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+        <small style="font-size: 11px; color: #666;">
+            * Twój numer telefonu będzie widoczny dla osób zainteresowanych zakupem.
+        </small>
+    </div>
     
     <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
