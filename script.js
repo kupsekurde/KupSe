@@ -817,6 +817,7 @@ window.renderujFormularzEdycji = (o) => {
     const naglowek = document.querySelector('#modal-form h2');
     if(naglowek) naglowek.innerText = "Edytuj ogłoszenie";
     
+    // Wypełniamy pola tekstowe
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
     window.updateFormSubcats('f-');
@@ -826,27 +827,84 @@ window.renderujFormularzEdycji = (o) => {
     document.getElementById('f-tel').value = o.telefon;
     document.getElementById('f-opis').value = o.opis.split('--- DANE ---')[0].trim();
 
+    // --- LOGIKA ZDJĘĆ W EDYCJI ---
+    const inputPlik = document.getElementById('f-plik');
+    inputPlik.required = false; // Przy edycji nie musimy dodawać nowych plików
+    inputPlik.onchange = () => window.sprawdzLimitZdjec(inputPlik);
+
+    // Szukamy kontenera na podgląd (jeśli nie ma, tworzymy go nad przyciskiem wyboru plików)
+    let previewBox = document.getElementById('edit-photo-preview');
+    if(!previewBox) {
+        previewBox = document.createElement('div');
+        previewBox.id = 'edit-photo-preview';
+        previewBox.style = "display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; background:#eee; padding:10px; border-radius:10px;";
+        inputPlik.parentNode.insertBefore(previewBox, inputPlik);
+    }
+
+    // Funkcja odświeżająca widok małych zdjęć w edycji
+    const odswiezMiniatury = () => {
+        previewBox.innerHTML = edytowaneZdjecia.map((url, i) => `
+            <div style="position:relative; width:70px; height:70px; border-radius:8px; overflow:hidden; border:2px solid #ddd;">
+                <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                <div onclick="window.usunZdjecieZEdycji(${i}, ${o.id})" 
+                     style="position:absolute; top:0; right:0; background:red; color:white; width:20px; height:20px; cursor:pointer; text-align:center; font-weight:bold; line-height:18px;">&times;</div>
+            </div>
+        `).join('') + (edytowaneZdjecia.length === 0 ? '<span style="font-size:12px; color:gray;">Brak zdjęć. Dodaj nowe poniżej.</span>' : '');
+    };
+
+    // Nadpisujemy funkcję usuwania, żeby od razu odświeżała widok
+    window.usunZdjecieZEdycji = (index) => {
+        edytowaneZdjecia.splice(index, 1);
+        odswiezMiniatury();
+    };
+
+    odswiezMiniatury();
+
+    // --- ZAPISYWANIE ZMIAN ---
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
     
     document.getElementById('form-dodaj').onsubmit = async (e) => {
         e.preventDefault();
+        if(btn.disabled) return;
+
+        const nowePliki = Array.from(inputPlik.files);
+        if(edytowaneZdjecia.length + nowePliki.length > 5) return alert("Maksymalnie 5 zdjęć łącznie!");
+
         btn.disabled = true;
-        btn.innerText = "Zapisywanie zmian...";
-        
+        btn.innerText = "Przetwarzanie...";
+
+        let finalneZdjecia = [...edytowaneZdjecia];
+
+        // Jeśli użytkownik dodał nowe pliki - kompresujemy i wysyłamy
+        if(nowePliki.length > 0) {
+            btn.innerText = "Wysyłanie zdjęć...";
+            const compressionOptions = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
+            for (const file of nowePliki) {
+                try {
+                    const compressedFile = await imageCompression(file, compressionOptions);
+                    const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+                    await baza.storage.from('zdjecia').upload(nazwa, compressedFile);
+                    const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+                    finalneZdjecia.push(publicUrl);
+                } catch (err) { console.error("Błąd zdjęcia:", err); }
+            }
+        }
+
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value
+            telefon: document.getElementById('f-tel').value,
+            zdjecia: finalneZdjecia // Zapisujemy połączoną listę (stare + nowe)
         }).eq('id', o.id);
 
         if (error) {
             alert("Błąd: " + error.message);
             btn.disabled = false;
         } else {
-            alert("Zaktualizowano!");
+            alert("Ogłoszenie zaktualizowane!");
             location.reload();
         }
     };
