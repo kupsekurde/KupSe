@@ -612,26 +612,20 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    // Jeśli wchodzimy do kategorii pierwszy raz (tytuł nie zawiera "(wyniki)")
-    // zapisujemy wyniki jako bazę, której nie będziemy uczyć przy filtrowaniu
     if (!tytul.includes("(wyniki)")) {
         wynikiBazowe = [...wyniki]; 
         ostatniTytul = tytul;
     }
-    
-    ostatnieWyniki = wyniki; // To co aktualnie pokazujemy
-    
+    ostatnieWyniki = wyniki;
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
 
     content.innerHTML = `
-            content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <div style="display:flex; gap:20px; margin-top:20px;">
             <div style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Filtruj i sortuj</h4>
-                
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="newest">Najnowsze</option>
@@ -639,22 +633,17 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                     <option value="price-asc">Cena: najtańsze</option>
                     <option value="price-desc">Cena: najdroższe</option>
                 </select>
-
                 <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
                 <input type="text" id="side-szukaj" placeholder="Np. Opel, iPhone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-
                 <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
-
                 <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
                 <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-
-                <button onclick="zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
-
             <div style="flex:1;">
                 <h2 style="margin-top:0;">${tytul}</h2>
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
@@ -753,16 +742,10 @@ window.toggleUlubione = async (e, id) => {
         mojeUlubione.push(id);
     }
 
-    // Odświeżamy serca na stronie
     document.querySelectorAll(`.fav-btn-${id}`).forEach(serce => {
         serce.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
     });
     
-    // Kluczowe: Odświeżamy menu "Moje konto", żeby liczba ulubionych się zgadzała
-    sprawdzUzytkownika(); 
-};
-    
-    // Kluczowe: Odświeżamy menu "Moje konto", żeby liczba ulubionych się zgadzała
     sprawdzUzytkownika(); 
 };
 
