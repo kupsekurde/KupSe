@@ -175,7 +175,7 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
         <div class="nav-search">
-    <input type="search" id="find-text" name="q_search" autocomplete="none" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
+    <input type="text" id="find-loc" name="location_field" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
     <input type="text" id="find-loc" name="location_field" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
@@ -333,6 +333,18 @@
     <span>Ta strona używa ciasteczek (cookies), aby działać poprawnie.</span>
     <button onclick="zaakceptujCookies()" style="background: var(--primary); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Rozumiem</button>
 </div>
+
+<script>
+    // Sprawdzamy czy już kliknięto "Rozumiem"
+    if (!localStorage.getItem('cookiesZaakceptowane')) {
+        document.getElementById('cookie-bar').style.display = 'flex';
+    }
+
+    function zaakceptujCookies() {
+        localStorage.setItem('cookiesZaakceptowane', 'true');
+        document.getElementById('cookie-bar').remove();
+    }
+</script>
 
 <script>
     // Sprawdzamy czy już kliknięto "Rozumiem"
