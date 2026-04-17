@@ -835,10 +835,3 @@ window.edytujOgloszenie = (id) => {
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
-= (oryginalnaFunkcja => {
-    return async (...args) => {
-        const modalBox = document.querySelector('.modal-box');
-        if(modalBox) modalBox.style.maxWidth = "600px"; 
-        await oryginalnaFunkcja(...args);
-    };
-})(window.otworzChat);
