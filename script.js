@@ -764,12 +764,18 @@ window.pokazUlubione = () => {
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
 async function init() {
-    await sprawdzUzytkownika();
+    // 1. Najpierw pobierz ogłoszenia (to zadziała dla każdego)
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
     renderTop12(daneOgloszen);
-}
 
+    // 2. Potem sprawdź czy użytkownik jest zalogowany
+    try {
+        await sprawdzUzytkownika();
+    } catch(e) {
+        console.log("Użytkownik nie jest zalogowany");
+    }
+}
 init();
 
 window.edytujOgloszenie = (id) => {
