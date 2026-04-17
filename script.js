@@ -131,7 +131,8 @@ async function sprawdzUzytkownika() {
                     <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                         Moje Konto ▼
                         ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
-                    </button>\n                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    </button>
+                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                         <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
                             <small style="color:gray;">Zalogowany jako:</small><br>
                             <b style="font-size:13px; word-break:break-all;">${user.email}</b>
@@ -305,7 +306,9 @@ window.pokazSzczegoly = async (id) => {
 };
 
 window.zmienGlowneZdjecie = (idx) => {
-    aktualneZdjecieIndex = idx;\n    const img = document.getElementById('mainFoto');
+    aktualneZdjecieIndex = idx;
+    const img = document.getElementById('mainFoto');
+
     if(img) img.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
         el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
@@ -615,7 +618,8 @@ window.toggleSubcats = (kat) => {
         p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
     p.style.display = 'flex';
-    p.dataset.activeKat = kat;\n    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
         <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
     `).join('');
 };
@@ -819,8 +823,8 @@ window.edytujOgloszenie = (id) => {
         h += `</div>`;
         h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${5 - window.tempZdjeciaEdycja.length} zdjęć.</small>`;
-        fotoBox.innerHTML = h;\n    };
-
+        fotoBox.innerHTML = h;
+    };
     window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
     window.limitZdjec = (inp) => { if(inp.files.length + window.tempZdjeciaEdycja.length > 5) { alert("Łącznie max 5 zdjęć!"); inp.value = ""; } };
 
