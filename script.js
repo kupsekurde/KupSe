@@ -178,67 +178,35 @@ window.szukaj = () => {
 // --- WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
-    // Pobieramy wszystko gdzie brałeś udział
-    const { data: msgs } = await baza.from('wiadomosci')
-        .select('*')
-        .or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`)
-        .order('created_at', { ascending: false });
-
-    // Tworzymy unikalną listę rozmówców
+    const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
-
     const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2 style="margin-bottom:20px;">Twoje wiadomości</h2>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            ${rozmowcy.length ? rozmowcy.map(r => `
-                <div onclick="window.otworzChat('${r}')" style="padding:15px; background:#f9f9f9; border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
-                    <b>${r}</b>
-                    <span style="color:var(--primary); font-weight:bold;">Otwórz czat →</span>
-                </div>
-            `).join('') : '<p>Brak wiadomości.</p>'}
-        </div>
-    `;
+    content.innerHTML = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button><h2 style="margin-bottom:20px;">Twoje wiadomości</h2><div style="display:flex; flex-direction:column; gap:10px;">${rozmowcy.length ? rozmowcy.map(r => `<div onclick="window.otworzChat('${r}')" style="padding:15px; background:#f9f9f9; border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;"><b>${r}</b><span style="color:var(--primary); font-weight:bold;">Otwórz czat →</span></div>`).join('') : '<p>Brak wiadomości.</p>'}</div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
-= async (zKim) => {
+
+window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
-    const { data: msg } = await baza.from('wiadomosci')
-        .select('*')
-        .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
-        .order('created_at', { ascending: true });
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
+    const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
+    
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "550px"; 
 
     const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.pokazSkrzynke()">&larr; Powrót</button>
-        <h3 style="margin-bottom:20px;">Rozmowa z: ${zKim}</h3>
-        <div id="chat-window" style="height:400px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">
-            ${msg.map(m => {
-                const moja = m.nadawca === user.email;
-                return `
-                <div style="max-width:80%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
-                    <div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                        ${m.tresc}
-                    </div>
-                    <div style="font-size:9px; color:gray; margin-top:3px; text-align: ${moja ? 'right' : 'left'}">${formatujDate(m.created_at)}</div>
-                </div>`;
-            }).join('')}
-        </div>
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <input type="text" id="chat-input" placeholder="Napisz wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
-            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button>
-        </div>`;
-    
+    content.innerHTML = `<button class="close-btn" onclick="window.zamknijIResetujModal()">&larr; Powrót</button><h3 style="margin-bottom:20px;">Rozmowa z: ${zKim.split('@')[0]}</h3><div id="chat-window" style="height:350px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">${msg.map(m => {
+        const moja = m.nadawca === user.email;
+        return `<div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};"><div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${m.tresc}</div></div>`;
+    }).join('')}</div><div style="display:flex; gap:10px; margin-top:15px;"><input type="text" id="chat-input" placeholder="Wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;"><button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button></div>`;
     const win = document.getElementById('chat-window');
     win.scrollTop = win.scrollHeight;
+    sprawdzPowiadomieniaBezReloadu();
 };
 
 window.wyslijZChatu = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc) return;
-
+    if (!tresc || !user) return;
     await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
     window.otworzChat(odbiorca);
 };
@@ -295,14 +263,9 @@ window.pokazSzczegoly = async (id) => {
 };
 
 window.zmienGlowneZdjecie = (idx) => {
-    aktualneZdjecieIndex = idx;
+    window.aktualneZdjecieIndex = idx;
     const img = document.getElementById('mainFoto');
-    if(img && window.aktualneFotki) {
-        img.src = window.aktualneFotki[idx];
-    }
-};
-
-    if(img) img.src = aktualneFotki[idx];
+    if(img && window.aktualneFotki) img.src = window.aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
         el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
     });
@@ -734,15 +697,48 @@ function renderTop12(lista) {
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
-window.toggleUlubione
+window.toggleUlubione = async (e, id) => {
+    if(e) e.stopPropagation();
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się!");
+    const index = mojeUlubione.indexOf(id);
+    if (index > -1) {
+        await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
+        mojeUlubione.splice(index, 1);
+    } else {
+        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
+        mojeUlubione.push(id);
+    }
+    document.querySelectorAll(`.fav-btn-${id}`).forEach(btn => btn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍');
+    const favCountEl = document.getElementById('fav-count-nav');
+    if (favCountEl) favCountEl.innerText = mojeUlubione.length;
+};
 
 window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
     window.pokazWynikiModal("Twoje Ulubione", ulubioneLista);
 };
 
-window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+window.zamknijModal = () => {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+};
 
+window.zamknijIResetujModal = () => {
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "1250px"; 
+    window.zamknijModal();
+};
+
+async function sprawdzPowiadomieniaBezReloadu() {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+    const { count } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('odbiorca', user.email).eq('przeczytane', false);
+    const badge = document.getElementById('msg-badge');
+    if (badge) {
+        badge.style.display = count > 0 ? 'flex' : 'none';
+        badge.innerText = count;
+    }
+}
 async function init() {
     // 1. NAJPIERW ładujemy ogłoszenia (to musi działać dla każdego)
     try {
