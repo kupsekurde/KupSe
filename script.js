@@ -764,18 +764,25 @@ window.pokazUlubione = () => {
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 
 async function init() {
-    // 1. Najpierw pobierz ogłoszenia (to zadziała dla każdego)
-    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
-    daneOgloszen = data || [];
-    renderTop12(daneOgloszen);
+    // 1. NAJPIERW ładujemy ogłoszenia (to musi działać dla każdego)
+    try {
+        const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        daneOgloszen = data || [];
+        renderTop12(daneOgloszen);
+    } catch (e) {
+        console.error("Błąd pobierania ogłoszeń:", e);
+    }
 
-    // 2. Potem sprawdź czy użytkownik jest zalogowany
+    // 2. POTEM sprawdzamy logowanie (jeśli nie wyjdzie, to trudno, ogłoszenia już są)
     try {
         await sprawdzUzytkownika();
-    } catch(e) {
+    } catch (e) {
         console.log("Użytkownik nie jest zalogowany");
     }
 }
+
+// Uruchomienie wszystkiego
 init();
 
 window.edytujOgloszenie = (id) => {
