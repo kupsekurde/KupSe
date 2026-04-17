@@ -311,7 +311,7 @@
         </small>
     </div>
     
-    <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
+    <div id="foto-container" style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
         <input type="file" id="f-plik" accept="image/*" multiple required 
                onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
@@ -335,46 +335,123 @@
 </div>
 
 <script>
-    // 1. Obsługa ciasteczek
     if (!localStorage.getItem('cookiesZaakceptowane')) {
         document.getElementById('cookie-bar').style.display = 'flex';
     }
-
     function zaakceptujCookies() {
         localStorage.setItem('cookiesZaakceptowane', 'true');
         document.getElementById('cookie-bar').remove();
     }
-
-    // 2. Obsługa okienek prawnych
-    window.pokazModalPrawny = function(typ) {
-        const modal = document.getElementById('modal-view');
-        const content = document.getElementById('view-content');
-        let tytul = "";
-        let tresc = "";
-
-        if(typ === 'regulamin') {
-            tytul = "Regulamin Serwisu KupSe";
-            tresc = "1. Serwis KupSe pozwala na darmowe wystawianie ogłoszeń.<br>2. Zakazane jest wystawianie przedmiotów nielegalnych.<br>3. Użytkownik odpowiada za treść swojego ogłoszenia.";
-        } else if(typ === 'polityka') {
-            tytul = "Polityka Prywatności (RODO)";
-            tresc = "Twoje dane (email, telefon) są przetwarzane wyłącznie w celu wyświetlania ogłoszeń. Masz prawo do ich usunięcia w każdej chwili, kontaktując się z nami.";
-        } else if(typ === 'kontakt') {
-            tytul = "Pomoc i Kontakt";
-            tresc = "Masz problem z ogłoszeniem? Napisz do nas na adres: kontakt@kupse.pl<br>Pracujemy od poniedziałku do piątku w godzinach 9:00 - 17:00.";
-        }
-
-        content.innerHTML = `
-            <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-            <h2 style="color: var(--primary)">${tytul}</h2>
-            <div style="line-height: 1.6; text-align: left; margin-top: 20px;">${tresc}</div>
-        `;
-        modal.style.display = 'flex';
-    }
-
     window.zamknijModal = function() {
-        document.getElementById('modal-view').style.display = 'none';
-        document.getElementById('modal-form').style.display = 'none';
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 </script>
 </body>
 </html>
+ copy
+Krok 2: Naprawa pliku script.js (Edycja zdjęć i kompresja)
+W pliku script.js znajdź funkcję window.edytujOgloszenie. Skasuj ją całą (razem z kodem wewnątrz) i wklej tę nową wersję, która obsługuje zdjęcia:
+
+ copy
+javascript
+
+window.edytujOgloszenie = (id) => {
+    const o = daneOgloszen.find(x => x.id === id);
+    if (!o) return;
+    
+    document.getElementById('modal-view').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'flex';
+    document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
+    
+    // Lista zdjęć do edycji
+    window.aktualneZdjeciaDoEdycji = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    
+    // Wypełnianie pól tekstowych
+    document.getElementById('f-tytul').value = o.tytul;
+    document.getElementById('f-kat').value = o.kategoria;
+    window.updateFormSubcats(); 
+    document.getElementById('f-podkat').value = o.podkategoria;
+    document.getElementById('f-cena').value = o.cena;
+    document.getElementById('f-lok').value = o.lokalizacja;
+    document.getElementById('f-tel').value = o.telefon || "";
+    document.getElementById('f-opis').value = o.opis;
+    
+    // --- OBSŁUGA ZDJĘĆ W OKNIE EDYCJI ---
+    const fotoContainer = document.getElementById('foto-container');
+    const odswiezWidokZdjec = () => {
+        let html = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zdjęcia (kliknij X aby usunąć):</label>`;
+        html += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">`;
+        window.aktualneZdjeciaDoEdycji.forEach((url, i) => {
+            html += `<div style="position:relative; width:70px; height:70px; border-radius:8px; overflow:hidden; border:1px solid #ddd;">
+                        <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                        <button type="button" onclick="window.usunZdjecieZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; font-weight:bold; padding:0 5px;">X</button>
+                     </div>`;
+        });
+        html += `</div>`;
+        html += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.sprawdzLimitZdjec(this)">`;
+        html += `<small style="color:gray; display:block; margin-top:5px;">Możesz dodać nowe zdjęcia (łącznie max 5).</small>`;
+        fotoContainer.innerHTML = html;
+    };
+
+    window.usunZdjecieZEdycji = (idx) => {
+        window.aktualneZdjeciaDoEdycji.splice(idx, 1);
+        odswiezWidokZdjec();
+    };
+
+    window.sprawdzLimitZdjec = (input) => {
+        if (input.files.length + window.aktualneZdjeciaDoEdycji.length > 5) {
+            alert("Maksymalnie 5 zdjęć łącznie!");
+            input.value = "";
+        }
+    };
+
+    odswiezWidokZdjec();
+
+    // --- ZAPISYWANIE ---
+    const form = document.getElementById('form-dodaj');
+    const btn = document.getElementById('btn-save');
+    btn.innerText = "Zapisz zmiany";
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.innerText = "Przetwarzanie zdjęć...";
+
+        try {
+            const nowePliki = document.getElementById('f-plik-nowe').files;
+            const noweUrls = [];
+            const opcje = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+
+            // Kompresja nowych zdjęć (jeśli są)
+            for (const plik of nowePliki) {
+                const skompresowany = await imageCompression(plik, opcje);
+                const nazwa = `${Date.now()}-${Math.random().toString(36).substr(2,9)}.jpg`;
+                await baza.storage.from('zdjecia').upload(nazwa, skompresowany);
+                const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
+                noweUrls.push(publicUrl);
+            }
+
+            const finalneZdjecia = [...window.aktualneZdjeciaDoEdycji, ...noweUrls];
+            if (finalneZdjecia.length === 0) throw new Error("Musisz dodać chociaż jedno zdjęcie!");
+
+            const { error } = await baza.from('ogloszenia').update({
+                tytul: document.getElementById('f-tytul').value,
+                cena: parseFloat(document.getElementById('f-cena').value),
+                lokalizacja: document.getElementById('f-lok').value,
+                opis: document.getElementById('f-opis').value,
+                telefon: document.getElementById('f-tel').value,
+                kategoria: document.getElementById('f-kat').value,
+                podkategoria: document.getElementById('f-podkat').value,
+                zdjecia: finalneZdjecia
+            }).eq('id', o.id);
+
+            if (error) throw error;
+            alert("Zapisano zmiany!");
+            location.reload();
+        } catch (err) {
+            alert("Błąd: " + err.message);
+            btn.disabled = false;
+            btn.innerText = "Zapisz zmiany";
+        }
+    };
+};
