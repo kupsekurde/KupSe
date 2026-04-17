@@ -246,7 +246,9 @@ window.otworzChat = async (zKim) => {
 window.wyslijZChatu = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc) return;\n\n    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+    if (!tresc) return;
+
+    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
     window.otworzChat(odbiorca);
 };
 
