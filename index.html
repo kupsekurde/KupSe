@@ -174,8 +174,8 @@
 <nav class="navbar">
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
-        <div class="nav-search">
-    <input type="text" id="find-loc" name="location_field" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+       <div class="nav-search">
+    <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
     <input type="text" id="find-loc" name="location_field" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
@@ -327,24 +327,24 @@
     <div class="modal-box" id="view-content"></div>
 </div>
 
-<script src="script.js"></script>t-size: 13px; z-index: 9999; display: flex; justify-content: center; align-items: center; gap: 20px;">
-    <span>Ta strona używa ciasteczek (cookies), aby 
-    <div id="cookie-bar" style="position: fixed; bottom: 0; left: 0; right: 0; background: #111; color: white; padding: 15px; text-align: center; font-size: 13px; z-index: 9999; display: none; justify-content: center; align-items: center; gap: 20px;">
+<script src="script.js"></script>
+
+<div id="cookie-bar" style="position: fixed; bottom: 0; left: 0; right: 0; background: #111; color: white; padding: 15px; text-align: center; font-size: 13px; z-index: 9999; display: none; justify-content: center; align-items: center; gap: 20px;">
     <span>Ta strona używa ciasteczek (cookies), aby działać poprawnie.</span>
     <button onclick="zaakceptujCookies()" style="background: var(--primary); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Rozumiem</button>
 </div>
 
 <script>
-    // Sprawdzamy czy już kliknięto "Rozumiem"
     if (!localStorage.getItem('cookiesZaakceptowane')) {
         document.getElementById('cookie-bar').style.display = 'flex';
     }
-
     function zaakceptujCookies() {
         localStorage.setItem('cookiesZaakceptowane', 'true');
         document.getElementById('cookie-bar').remove();
     }
 </script>
+</body>
+</html>
 
 <script>
     // Sprawdzamy czy już kliknięto "Rozumiem"
