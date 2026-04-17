@@ -178,41 +178,31 @@ window.szukaj = () => {
 // --- WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return;
-
-    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email);
-    sprawdzUzytkownika(); 
-
-    const { data: msg } = await baza.from('wiadomosci')
+    // Pobieramy wszystko gdzie brałeś udział
+    const { data: msgs } = await baza.from('wiadomosci')
         .select('*')
         .or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
+    // Tworzymy unikalną listę rozmówców
+    const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
+
     const content = document.getElementById('view-content');
-    const rozmowy = {};
-    msg.forEach(m => {
-        const rozmowca = m.nadawca === user.email ? m.odbiorca : m.nadawca;
-        if (!rozmowy[rozmowca]) rozmowy[rozmowca] = m;
-    });
-
-    let htmlRozmowy = Object.keys(rozmowy).length > 0 ? Object.keys(rozmowy).map(email => `
-        <div onclick="window.otworzChat('${email}')" style="background:white; padding:15px; border-radius:12px; margin-bottom:10px; cursor:pointer; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <b style="color:var(--primary);">${email}</b>
-                <div style="font-size:12px; color:gray; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${rozmowy[email].tresc}</div>
-            </div>
-            <span style="font-size:10px; color:#aaa;">${formatujDate(rozmowy[email].created_at)}</span>
-        </div>`).join('') : '<p>Brak rozmów.</p>';
-
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2>Twoje rozmowy</h2>
-        <div style="max-height:65vh; overflow-y:auto; padding:5px;">${htmlRozmowy}</div>`;
-    
+        <h2 style="margin-bottom:20px;">Twoje wiadomości</h2>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            ${rozmowcy.length ? rozmowcy.map(r => `
+                <div onclick="window.otworzChat('${r}')" style="padding:15px; background:#f9f9f9; border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
+                    <b>${r}</b>
+                    <span style="color:var(--primary); font-weight:bold;">Otwórz czat →</span>
+                </div>
+            `).join('') : '<p>Brak wiadomości.</p>'}
+        </div>
+    `;
     document.getElementById('modal-view').style.display = 'flex';
 };
-
-window.otworzChat = async (zKim) => {
+= async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
     const { data: msg } = await baza.from('wiadomosci')
         .select('*')
@@ -307,6 +297,10 @@ window.pokazSzczegoly = async (id) => {
 window.zmienGlowneZdjecie = (idx) => {
     aktualneZdjecieIndex = idx;
     const img = document.getElementById('mainFoto');
+    if(img && window.aktualneFotki) {
+        img.src = window.aktualneFotki[idx];
+    }
+};
 
     if(img) img.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
@@ -845,7 +839,7 @@ window.edytujOgloszenie = (id) => {
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
-window.otworzChat = (oryginalnaFunkcja => {
+= (oryginalnaFunkcja => {
     return async (...args) => {
         const modalBox = document.querySelector('.modal-box');
         if(modalBox) modalBox.style.maxWidth = "600px"; 
