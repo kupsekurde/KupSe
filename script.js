@@ -1,15 +1,17 @@
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
+
 window.resetujStrone = () => {
     document.getElementById('find-text').value = '';
     document.getElementById('find-loc').value = '';
     location.reload();
 };
+
 let wynikiDlaPaginacji = [];
 let daneOgloszen = [];
 let mojeUlubione = [];
-let aktualneZdjecieIndex = 0;f
+let aktualneZdjecieIndex = 0;
 let aktualneFotki = [];
 let edytowaneZdjecia = [];
 let ostatnieWyniki = [];
@@ -69,24 +71,16 @@ window.zarejestruj = async () => {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-pass').value;
 
-    // Sprawdzamy warunki:
-    const hasUpperCase = /[A-Z]/.test(password); // Czy jest duża litera
-    const hasNumber = /\d/.test(password);        // Czy jest cyfra (liczba)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Czy jest znak specjalny
-    const hasMinLength = password.length >= 8;    // Czy ma min. 8 znaków
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasMinLength = password.length >= 8;
 
-    // Jeśli którykolwiek warunek NIE jest spełniony:
     if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
-        let msg = "Hasło nie spełnia wymagań:\n";
-        msg += "- minimum 8 znaków\n";
-        msg += "- duża litera\n";
-        msg += "- liczba\n";
-        msg += "- znak specjalny";
-        
+        let msg = "Hasło nie spełnia wymagań:\n- minimum 8 znaków\n- duża litera\n- liczba\n- znak specjalny";
         return alert(msg);
     }
 
-    // Jeśli wszystko ok, wysyłamy do bazy:
     const { data, error } = await baza.auth.signUp({ 
         email, 
         password,
@@ -137,8 +131,7 @@ async function sprawdzUzytkownika() {
                     <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                         Moje Konto ▼
                         ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
-                    </button>
-                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    </button>\n                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                         <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
                             <small style="color:gray;">Zalogowany jako:</small><br>
                             <b style="font-size:13px; word-break:break-all;">${user.email}</b>
@@ -152,7 +145,6 @@ async function sprawdzUzytkownika() {
                 </div>`;
         };
         await pobierzWiadomosci();
-        // Sprawdzaj nowe wiadomości co 30 sekund:
         if(!window.msgInterval) window.msgInterval = setInterval(pobierzWiadomosci, 30000);
     }
 }
@@ -179,7 +171,7 @@ window.szukaj = () => {
         return tytulOk && lokOk;
     });
 
-    pokazWynikiModal(`Wyniki wyszukiwania (${wyniki.length})`, wyniki);
+    window.pokazWynikiModal(`Wyniki wyszukiwania (${wyniki.length})`, wyniki);
 };
 
 // --- WIADOMOŚCI ---
@@ -187,7 +179,6 @@ window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
 
-    // Oznaczamy jako przeczytane i odświeżamy licznik
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email);
     sprawdzUzytkownika(); 
 
@@ -197,8 +188,6 @@ window.pokazSkrzynke = async () => {
         .order('created_at', { ascending: false });
 
     const content = document.getElementById('view-content');
-    
-    // Grupowanie wiadomości według rozmówcy
     const rozmowy = {};
     msg.forEach(m => {
         const rozmowca = m.nadawca === user.email ? m.odbiorca : m.nadawca;
@@ -215,7 +204,7 @@ window.pokazSkrzynke = async () => {
         </div>`).join('') : '<p>Brak rozmów.</p>';
 
     content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2>Twoje rozmowy</h2>
         <div style="max-height:65vh; overflow-y:auto; padding:5px;">${htmlRozmowy}</div>`;
     
@@ -257,10 +246,8 @@ window.otworzChat = async (zKim) => {
 window.wyslijZChatu = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc) return;
-
-    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
-    window.otworzChat(odbiorca); // Odśwież czat
+    if (!tresc) return;\n\n    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+    window.otworzChat(odbiorca);
 };
 
 window.wyslijWiadomosc = async (odbiorca) => {
@@ -281,21 +268,20 @@ window.pokazSzczegoly = async (id) => {
     
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
     
-    // Przycisk wstecz pojawia się tylko, jeśli mamy do czego wrócić
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
         : "";
 
     document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         ${btnWstecz}
         <div style="display:flex; flex-wrap:wrap; gap:20px;">
             <div style="flex:1.5; min-width:300px;">
                 <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
-                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="otworzFullFoto()">
+                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="window.otworzFullFoto()">
                 </div>
                 <div style="display:flex; gap:8px; margin-top:10px; overflow-x:auto;">
-                    ${aktualneFotki.map((img, i) => `<img src="${img}" onclick="zmienGlowneZdjecie(${i})" class="mini-foto" style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
+                    ${aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
                 </div>
             </div>
             <div style="flex:1;">
@@ -304,8 +290,8 @@ window.pokazSzczegoly = async (id) => {
                 <h1 style="color:var(--primary);">${o.cena} zł</h1>
                 <p>📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                    <button onclick="toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
@@ -317,8 +303,7 @@ window.pokazSzczegoly = async (id) => {
 };
 
 window.zmienGlowneZdjecie = (idx) => {
-    aktualneZdjecieIndex = idx;
-    const img = document.getElementById('mainFoto');
+    aktualneZdjecieIndex = idx;\n    const img = document.getElementById('mainFoto');
     if(img) img.src = aktualneFotki[idx];
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
         el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
@@ -338,12 +323,12 @@ window.otworzFullFoto = () => {
                 style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">
             &times;
         </button>
-        <button onclick="navFullFoto(-1)" 
+        <button onclick="window.navFullFoto(-1)" 
                 style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
             ❮
         </button>
         <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain;">
-        <button onclick="navFullFoto(1)" 
+        <button onclick="window.navFullFoto(1)" 
                 style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
             ❯
         </button>
@@ -360,12 +345,12 @@ window.navFullFoto = (dir) => {
 // --- FILTROWANIE SPECJALISTYCZNE ---
 window.otworzFiltry = (kat, podkat) => {
     if (kat !== 'Motoryzacja') {
-        filtrujPoPodkat(kat, podkat);
+        window.filtrujPoPodkat(kat, podkat);
         return;
     }
     const content = document.getElementById('view-content');
     content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h3>Szukaj w: ${podkat}</h3>
         <div style="display:flex; flex-direction:column; gap:12px; margin-top:15px;">
             <input type="text" id="sf-marka" placeholder="Marka (np. Opel)" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
@@ -396,7 +381,7 @@ window.otworzFiltry = (kat, podkat) => {
                 <option value="Automatyczna">Automatyczna</option>
             </select>
 
-            <button onclick="zastosujFiltryMoto('${kat}', '${podkat}')" 
+            <button onclick="window.zastosujFiltryMoto('${kat}', '${podkat}')" 
                     style="background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">
                 POKAŻ OGŁOSZENIA
             </button>
@@ -432,18 +417,18 @@ window.zastosujFiltryMoto = (kat, podkat) => {
     window.zamknijModal();
     window.pokazWynikiModal(`${podkat} (Filtry)`, wyniki);
 };
+
 // --- DODAWANIE OGŁOSZEŃ ---
 window.otworzFormularzDodawania = () => {
     const form = document.getElementById('form-dodaj');
-    form.reset(); // Czyści pola tekstowe
-    form.onsubmit = window.wyslijOgloszenie; // Przywraca funkcję dodawania
+    form.reset(); 
+    form.onsubmit = window.wyslijOgloszenie; 
     
     document.getElementById('form-title').innerText = "Dodaj ogłoszenie";
     document.getElementById('btn-save').innerText = "Opublikuj ogłoszenie";
     document.getElementById('btn-save').disabled = false;
     document.getElementById('extra-fields').innerHTML = '';
     
-    // Resetuje pole zdjęć do domyślnego wyglądu
     document.getElementById('foto-container').innerHTML = `
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
         <input type="file" id="f-plik" accept="image/*" multiple required onchange="if(this.files.length > 5) { alert('Max 5 zdjęć!'); this.value = ''; }">
@@ -452,6 +437,7 @@ window.otworzFormularzDodawania = () => {
 
     document.getElementById('modal-form').style.display = 'flex';
 };
+
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
@@ -467,37 +453,38 @@ window.updateFormSubcats = (p = 'f-') => {
     const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
-  if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
-    extraFields.innerHTML = `
-        <div style="display:grid; gap:10px; margin-bottom:10px;">
-            <input type="text" id="extra-marka" placeholder="Marka" required>
-            <input type="text" id="extra-model" placeholder="Model" required>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <input type="number" id="extra-rok" placeholder="Rok produkcji" required>
-                <input type="number" id="extra-przebieg" placeholder="Przebieg (km)" required>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <input type="text" id="extra-pojemnosc" placeholder="Pojemność (np. 1.9)" required>
-                <input type="number" id="extra-moc" placeholder="Moc (KM)" required>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <select id="extra-paliwo" required>
-                    <option value="">Paliwo</option>
-                    <option value="Benzyna">Benzyna</option>
-                    <option value="LPG">LPG</option>
-                    <option value="Diesel">Diesel</option>
-                    <option value="Hybryda">Hybryda</option>
-                    <option value="Elektryczny">Elektryczny</option>
-                </select>
-                <select id="extra-skrzynia" required>
-                    <option value="">Skrzynia biegów</option>
-                    <option value="Automatyczna">Automatyczna</option>
-                    <option value="Manualna">Manualna</option>
-                </select>
-            </div>
-        </div>`;
-}
+    if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+        extraFields.innerHTML = `
+            <div style="display:grid; gap:10px; margin-bottom:10px;">
+                <input type="text" id="extra-marka" placeholder="Marka" required>
+                <input type="text" id="extra-model" placeholder="Model" required>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <input type="number" id="extra-rok" placeholder="Rok produkcji" required>
+                    <input type="number" id="extra-przebieg" placeholder="Przebieg (km)" required>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <input type="text" id="extra-pojemnosc" placeholder="Pojemność (np. 1.9)" required>
+                    <input type="number" id="extra-moc" placeholder="Moc (KM)" required>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <select id="extra-paliwo" required>
+                        <option value="">Paliwo</option>
+                        <option value="Benzyna">Benzyna</option>
+                        <option value="LPG">LPG</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Hybryda">Hybryda</option>
+                        <option value="Elektryczny">Elektryczny</option>
+                    </select>
+                    <select id="extra-skrzynia" required>
+                        <option value="">Skrzynia biegów</option>
+                        <option value="Automatyczna">Automatyczna</option>
+                        <option value="Manualna">Manualna</option>
+                    </select>
+                </div>
+            </div>`;
+    }
 };
+
 window.wyslijOgloszenie = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -513,7 +500,6 @@ window.wyslijOgloszenie = async (e) => {
     btn.disabled = true;
     btn.innerText = "Kompresja zdjęć...";
 
-    // Zbieranie danych technicznych - poprawione zmienne
     let dodatkoweDane = "";
     const marka = document.getElementById('extra-marka')?.value;
     const model = document.getElementById('extra-model')?.value;
@@ -558,6 +544,7 @@ window.wyslijOgloszenie = async (e) => {
         location.reload();
     }
 };
+
 // --- MOJE OGŁOSZENIA ---
 window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
@@ -571,14 +558,14 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
 
     const content = document.getElementById('view-content');
     content.innerHTML = `
-        <button class="close-btn" onclick="zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2>Moje ogłoszenia</h2>
         <div style="display:flex; gap:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
-            <div onclick="pokazMojeOgloszenia('aktywne')" 
+            <div onclick="window.pokazMojeOgloszenia('aktywne')" 
                  style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'aktywne' ? 'var(--primary)' : 'transparent'}">
                  Aktywne (${aktywne.length})
             </div>
-            <div onclick="pokazMojeOgloszenia('zakonczone')" 
+            <div onclick="window.pokazMojeOgloszenia('zakonczone')" 
                  style="padding:10px; cursor:pointer; font-weight:bold; border-bottom:3px solid ${tab === 'zakonczone' ? 'var(--primary)' : 'transparent'}">
                  Zakończone (${zakonczone.length})
             </div>
@@ -588,10 +575,9 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                 <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden;">
                     <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
                     <div style="padding:8px;">
-                        <b style="font-size:13px;">${o.cena} zł</b>
-                        <div style="display:flex; gap:5px; margin-top:8px;">
-                            <button onclick="edytujOgloszenie(${o.id})" style="flex:1; padding:5px; font-size:11px;">Edytuj</button>
-                            <button onclick="usunOgloszenie(${o.id})" style="padding:5px; color:red; border:none; background:none; cursor:pointer;">🗑️</button>
+                        <b style="font-size:13px;">${o.cena} zł</b>\n                        <div style="display:flex; gap:5px; margin-top:8px;">
+                            <button onclick="window.edytujOgloszenie(${o.id})" style="flex:1; padding:5px; font-size:11px;">Edytuj</button>
+                            <button onclick="window.usunOgloszenie(${o.id})" style="padding:5px; color:red; border:none; background:none; cursor:pointer;">🗑️</button>
                         </div>
                     </div>
                 </div>`).join('')}
@@ -627,15 +613,14 @@ window.toggleSubcats = (kat) => {
         p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
     p.style.display = 'flex';
-    p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="otworzFiltry('${kat}', '${s}')">${s}</div>
+    p.dataset.activeKat = kat;\n    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
     `).join('');
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
     const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
-    pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
+    window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 
 // --- PAGINACJA WYNIKÓW ---
@@ -689,7 +674,6 @@ window.zastosujFiltryBoczne = () => {
     const lok = document.getElementById('side-lok').value.toLowerCase().trim();
     const sort = document.getElementById('side-sort').value;
 
-    // 1. Filtrujemy
     let przefiltrowane = wynikiBazowe.filter(o => {
         const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
         const tekstOk = fraza === "" || tekstDoPrzeszukania.includes(fraza);
@@ -698,7 +682,6 @@ window.zastosujFiltryBoczne = () => {
         return tekstOk && cenaOk && lokOk;
     });
 
-    // 2. Sortujemy
     if (sort === 'price-asc') {
         przefiltrowane.sort((a, b) => a.cena - b.cena);
     } else if (sort === 'price-desc') {
@@ -709,10 +692,8 @@ window.zastosujFiltryBoczne = () => {
         przefiltrowane.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     }
 
-    // 3. Odświeżamy widok
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
     
-    // 4. Przywracamy wybrane opcje do pól (żeby nie zniknęły po kliknięciu)
     document.getElementById('side-szukaj').value = fraza;
     document.getElementById('side-sort').value = sort;
     if(min > 0) document.getElementById('side-cena-min').value = min;
@@ -720,15 +701,13 @@ window.zastosujFiltryBoczne = () => {
     document.getElementById('side-lok').value = lok;
 };
 
-
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
-    // Pobieramy sformatowaną datę i godzinę
-    const pelnaData = formatujDate(o.created_at); // Przykład: "24.05.2024, 14:30"
+    const pelnaData = formatujDate(o.created_at);
     
     return `
-        <div class="ad-card" onclick="pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
-            <div onclick="toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
+            <div onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                 ${isFav ? '❤️' : '🤍'}
             </div>
             <img src="${o.zdjecia[0]}" style="width:100%; height:150px; object-fit:cover;">
@@ -779,7 +758,7 @@ window.toggleUlubione = async (e, id) => {
 
 window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
-    pokazWynikiModal("Twoje Ulubione", ulubioneLista);
+    window.pokazWynikiModal("Twoje Ulubione", ulubioneLista);
 };
 
 window.zamknijModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
@@ -825,8 +804,7 @@ window.edytujOgloszenie = (id) => {
         h += `</div>`;
         h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${5 - window.tempZdjeciaEdycja.length} zdjęć.</small>`;
-        fotoBox.innerHTML = h;
-    };
+        fotoBox.innerHTML = h;\n    };
 
     window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
     window.limitZdjec = (inp) => { if(inp.files.length + window.tempZdjeciaEdycja.length > 5) { alert("Łącznie max 5 zdjęć!"); inp.value = ""; } };
@@ -867,9 +845,4 @@ window.edytujOgloszenie = (id) => {
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
-};
-
-// Funkcja zamykania wszystkich okienek
-window.zamknijModal = () => {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 };
