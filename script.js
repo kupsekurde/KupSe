@@ -9,7 +9,7 @@ window.resetujStrone = () => {
 let wynikiDlaPaginacji = [];
 let daneOgloszen = [];
 let mojeUlubione = [];
-let aktualneZdjecieIndex = 0;
+let aktualneZdjecieIndex = 0;f
 let aktualneFotki = [];
 let edytowaneZdjecia = [];
 let ostatnieWyniki = [];
@@ -186,43 +186,88 @@ window.szukaj = () => {
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
+
+    // Oznaczamy jako przeczytane i odświeżamy licznik
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email);
-    const { data: msg } = await baza.from('wiadomosci').select('*').eq('odbiorca', user.email).order('created_at', { ascending: false });
+    sprawdzUzytkownika(); 
+
+    const { data: msg } = await baza.from('wiadomosci')
+        .select('*')
+        .or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`)
+        .order('created_at', { ascending: false });
+
     const content = document.getElementById('view-content');
     
-    let htmlMsg = msg && msg.length > 0 ? msg.map(m => `
-        <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--primary);">
-            <div style="font-size:11px; color:gray;">Od: ${m.nadawca}</div>
-            <div style="font-size:14px; margin-top:5px;">${m.tresc}</div>
-            <button onclick="wyslijWiadomosc('${m.nadawca}', 'Re: wiadomość')" 
-                    style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:bold; padding:0; margin-top:5px;">
-                Odpowiedz
-            </button>
-        </div>`).join('') : '<p>Brak wiadomości.</p>';
+    // Grupowanie wiadomości według rozmówcy
+    const rozmowy = {};
+    msg.forEach(m => {
+        const rozmowca = m.nadawca === user.email ? m.odbiorca : m.nadawca;
+        if (!rozmowy[rozmowca]) rozmowy[rozmowca] = m;
+    });
+
+    let htmlRozmowy = Object.keys(rozmowy).length > 0 ? Object.keys(rozmowy).map(email => `
+        <div onclick="window.otworzChat('${email}')" style="background:white; padding:15px; border-radius:12px; margin-bottom:10px; cursor:pointer; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <b style="color:var(--primary);">${email}</b>
+                <div style="font-size:12px; color:gray; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${rozmowy[email].tresc}</div>
+            </div>
+            <span style="font-size:10px; color:#aaa;">${formatujDate(rozmowy[email].created_at)}</span>
+        </div>`).join('') : '<p>Brak rozmów.</p>';
 
     content.innerHTML = `
         <button class="close-btn" onclick="zamknijModal()">&times;</button>
-        <h2>Wiadomości</h2>
-        <div style="max-height:60vh; overflow-y:auto;">
-            ${htmlMsg}
-        </div>`;
+        <h2>Twoje rozmowy</h2>
+        <div style="max-height:65vh; overflow-y:auto; padding:5px;">${htmlRozmowy}</div>`;
     
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.wyslijWiadomosc = async (odbiorca, tytul) => {
+window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-    const tresc = prompt(`Wiadomość do: ${odbiorca}`);
-    if (tresc) {
-        await baza.from('wiadomosci').insert([{ 
-            nadawca: user.email, 
-            odbiorca, 
-            tresc, 
-            przeczytane: false 
-        }]);
-        alert("Wysłano!");
-    }
+    const { data: msg } = await baza.from('wiadomosci')
+        .select('*')
+        .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
+        .order('created_at', { ascending: true });
+
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.pokazSkrzynke()">&larr; Powrót</button>
+        <h3 style="margin-bottom:20px;">Rozmowa z: ${zKim}</h3>
+        <div id="chat-window" style="height:400px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">
+            ${msg.map(m => {
+                const moja = m.nadawca === user.email;
+                return `
+                <div style="max-width:80%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
+                    <div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                        ${m.tresc}
+                    </div>
+                    <div style="font-size:9px; color:gray; margin-top:3px; text-align: ${moja ? 'right' : 'left'}">${formatujDate(m.created_at)}</div>
+                </div>`;
+            }).join('')}
+        </div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <input type="text" id="chat-input" placeholder="Napisz wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
+            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button>
+        </div>`;
+    
+    const win = document.getElementById('chat-window');
+    win.scrollTop = win.scrollHeight;
+};
+
+window.wyslijZChatu = async (odbiorca) => {
+    const { data: { user } } = await baza.auth.getUser();
+    const tresc = document.getElementById('chat-input').value.trim();
+    if (!tresc) return;
+
+    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+    window.otworzChat(odbiorca); // Odśwież czat
+};
+
+window.wyslijWiadomosc = async (odbiorca) => {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return alert("Zaloguj się, aby wysłać wiadomość!");
+    if (user.email === odbiorca) return alert("Nie możesz pisać do samego siebie!");
+    window.otworzChat(odbiorca);
 };
 
 // --- SZCZEGÓŁY OGŁOSZENIA ---
@@ -359,18 +404,14 @@ window.otworzFiltry = (kat, podkat) => {
     document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.zastosujFiltrySpec = (kat, podkat) => {
-    const marka = document.getElementById('f-marka').value.toLowerCase().trim();
-    const model = document.getElementById('f-model').value.toLowerCase().trim();
-    const cMin = parseFloat(document.getElementById('f-cena-min').value) || 0;
-    const cMax = parseFloat(document.getElementById('f-cena-max').value) || 99999999;
-    
-    let rMin = 0, rMax = 9999, paliwo = "";
-    if(kat === 'Motoryzacja') {
-        rMin = parseInt(document.getElementById('f-rok-min').value) || 0;
-        rMax = parseInt(document.getElementById('f-rok-max').value) || 9999;
-        paliwo = document.getElementById('f-paliwo').value.toLowerCase();
-    }
+window.zastosujFiltryMoto = (kat, podkat) => {
+    const marka = document.getElementById('sf-marka').value.toLowerCase().trim();
+    const model = document.getElementById('sf-model').value.toLowerCase().trim();
+    const cMin = parseFloat(document.getElementById('sf-cena-min').value) || 0;
+    const cMax = parseFloat(document.getElementById('sf-cena-max').value) || 99999999;
+    const rMin = parseInt(document.getElementById('sf-rok-min').value) || 0;
+    const rMax = parseInt(document.getElementById('sf-rok-max').value) || 9999;
+    const paliwo = document.getElementById('sf-paliwo').value.toLowerCase();
 
     const wyniki = daneOgloszen.filter(o => {
         if (o.kategoria !== kat || o.podkategoria !== podkat) return false;
@@ -380,50 +421,37 @@ window.zastosujFiltrySpec = (kat, podkat) => {
         const modOk = model === "" || tresc.includes(model);
         const cOk = o.cena >= cMin && o.cena <= cMax;
         
-        if(kat === 'Motoryzacja') {
-            const rokMatch = o.opis.match(/Rok: (\d{4})/);
-            const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
-            const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
-            const pOk = paliwo === "" || tresc.includes(paliwo);
-            return mOk && modOk && cOk && rOk && pOk;
-        }
-        return mOk && modOk && cOk;
+        const rokMatch = o.opis.match(/Rok: (\d{4})/);
+        const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+        const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+        const pOk = paliwo === "" || tresc.includes(paliwo);
+        
+        return mOk && modOk && cOk && rOk && pOk;
     });
 
-    pokazWynikiModal(`${podkat} (Filtrowane)`, wyniki);
+    window.zamknijModal();
+    window.pokazWynikiModal(`${podkat} (Filtry)`, wyniki);
 };
-
 // --- DODAWANIE OGŁOSZEŃ ---
 window.otworzFormularzDodawania = () => {
-    document.getElementById('modal-form').style.display = 'flex';
-    const formContent = document.getElementById('form-dynamic-content');
-    formContent.innerHTML = `
-        <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-        <div style="display:flex; gap:10px;">
-            <select id="f-kat" onchange="updateFormSubcats('f-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <option value="">Kategoria</option>
-                ${Object.keys(SUB_DATA).map(k => `<option value="${k}">${k}</option>`).join('')}
-            </select>
-            <select id="f-podkat" onchange="updateFormSubcats('f-')" required style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <option value="">Podkategoria</option>
-            </select>
-        </div>
-        <div id="extra-fields"></div>
-        <input type="number" id="f-cena" placeholder="Cena (zł)" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-        <input type="text" id="f-lok" placeholder="Lokalizacja" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-        <input type="tel" id="f-tel" placeholder="Numer telefonu" required style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-        <textarea id="f-opis" placeholder="Opis ogłoszenia..." rows="5" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;"></textarea>
-        <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ccc;">
-            <label style="display:block; margin-bottom:10px; font-weight:bold;">Dodaj zdjęcia (max 10):</label>
-            <input type="file" id="f-plik" multiple accept="image/*" style="width:100%;">
-        </div>
-        <button type="submit" id="btn-save" style="background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; font-size:16px; font-weight:bold; cursor:pointer; transition:0.3s;">
-            Opublikuj ogłoszenie
-        </button>
+    const form = document.getElementById('form-dodaj');
+    form.reset(); // Czyści pola tekstowe
+    form.onsubmit = window.wyslijOgloszenie; // Przywraca funkcję dodawania
+    
+    document.getElementById('form-title').innerText = "Dodaj ogłoszenie";
+    document.getElementById('btn-save').innerText = "Opublikuj ogłoszenie";
+    document.getElementById('btn-save').disabled = false;
+    document.getElementById('extra-fields').innerHTML = '';
+    
+    // Resetuje pole zdjęć do domyślnego wyglądu
+    document.getElementById('foto-container').innerHTML = `
+        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
+        <input type="file" id="f-plik" accept="image/*" multiple required onchange="if(this.files.length > 5) { alert('Max 5 zdjęć!'); this.value = ''; }">
+        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
     `;
-    updateFormSubcats('f-');
-};
 
+    document.getElementById('modal-form').style.display = 'flex';
+};
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
