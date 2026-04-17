@@ -1,7 +1,11 @@
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
-
+window.resetujStrone = () => {
+    document.getElementById('find-text').value = '';
+    document.getElementById('find-loc').value = '';
+    location.reload();
+};
 let wynikiDlaPaginacji = [];
 let daneOgloszen = [];
 let mojeUlubione = [];
@@ -769,21 +773,44 @@ window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
     
-    // Zamykamy modal z listą moich ogłoszeń, otwieramy formularz
     document.getElementById('modal-view').style.display = 'none';
     document.getElementById('modal-form').style.display = 'flex';
+    document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
     
-    // Wypełniamy pola danymi
+    // Zapamiętujemy stare zdjęcia
+    window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    
+    // Wypełniamy pola
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
-    updateFormSubcats(); // Odśwież podkategorie
+    window.updateFormSubcats(); 
     document.getElementById('f-podkat').value = o.podkategoria;
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
     document.getElementById('f-tel').value = o.telefon || "";
     document.getElementById('f-opis').value = o.opis;
     
-    // Podmieniamy działanie przycisku zapisu na UPDATE
+    // Panel zarządzania zdjęciami
+    const fotoBox = document.getElementById('foto-container');
+    const odswiezZdjecia = () => {
+        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
+        h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
+        window.tempZdjeciaEdycja.forEach((url, i) => {
+            h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px;">X</button>
+                  </div>`;
+        });
+        h += `</div>`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)">`;
+        fotoBox.innerHTML = h;
+    };
+
+    window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+    window.limitZdjec = (inp) => { if(inp.files.length + window.tempZdjeciaEdycja.length > 5) { alert("Max 5 zdjęć!"); inp.value = ""; } };
+
+    odswiezZdjecia();
+
     const form = document.getElementById('form-dodaj');
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
@@ -791,7 +818,18 @@ window.edytujOgloszenie = (id) => {
     form.onsubmit = async (e) => {
         e.preventDefault();
         btn.disabled = true;
-        btn.innerText = "Aktualizacja...";
+        btn.innerText = "Kompresja i zapis...";
+
+        const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
+        const noweUrls = [];
+        const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+
+        for (const f of nowePliki) {
+            const comp = await imageCompression(f, opt);
+            const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
+            await baza.storage.from('zdjecia').upload(name, comp);
+            noweUrls.push(baza.storage.from('zdjecia').getPublicUrl(name).data.publicUrl);
+        }
 
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
@@ -799,17 +837,11 @@ window.edytujOgloszenie = (id) => {
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
             telefon: document.getElementById('f-tel').value,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value
+            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
 
-        if (error) {
-            alert("Błąd zapisu: " + error.message);
-            btn.disabled = false;
-        } else {
-            alert("Zaktualizowano ogłoszenie!");
-            location.reload();
-        }
+        if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
+        else { alert("Zaktualizowano!"); location.reload(); }
     };
 };
 
