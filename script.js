@@ -124,13 +124,13 @@ async function sprawdzUzytkownika() {
             const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
             mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
-            nav.innerHTML = `
+              nav.innerHTML = `
                 <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
                     <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
                     <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
                     <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                         Moje Konto ▼
-                        ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+                        <span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; ${msgCount > 0 ? 'display:flex;' : 'display:none;'} align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>
                     </button>
                     <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                         <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
@@ -138,8 +138,8 @@ async function sprawdzUzytkownika() {
                             <b style="font-size:13px; word-break:break-all;">${user.email}</b>
                         </div>
                         <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                        <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
-                        <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                        <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości</div>
+                        <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (<span id="fav-count-nav">${mojeUlubione.length}</span>)</div>
                         <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
                         <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                     </div>
@@ -270,7 +270,6 @@ window.pokazSzczegoly = async (id) => {
     aktualneZdjecieIndex = 0;
     
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
-    
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
         : "";
@@ -741,26 +740,7 @@ function renderTop12(lista) {
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
-window.toggleUlubione = async (e, id) => {
-    if(e) e.stopPropagation();
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
-
-    const index = mojeUlubione.indexOf(id);
-    if (index > -1) {
-        await baza.from('ulubione').delete().eq('user_email', user.email).eq('ogloszenie_id', id);
-        mojeUlubione.splice(index, 1);
-    } else {
-        await baza.from('ulubione').insert([{ user_email: user.email, ogloszenie_id: id }]);
-        mojeUlubione.push(id);
-    }
-
-    document.querySelectorAll(`.fav-btn-${id}`).forEach(serce => {
-        serce.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍';
-    });
-    
-    sprawdzUzytkownika(); 
-};
+window.toggleUlubione
 
 window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
@@ -865,3 +845,10 @@ window.edytujOgloszenie = (id) => {
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
+window.otworzChat = (oryginalnaFunkcja => {
+    return async (...args) => {
+        const modalBox = document.querySelector('.modal-box');
+        if(modalBox) modalBox.style.maxWidth = "600px"; 
+        await oryginalnaFunkcja(...args);
+    };
+})(window.otworzChat);
