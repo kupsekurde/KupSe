@@ -742,6 +742,10 @@ window.toggleUlubione = async (e, id) => {
     // Kluczowe: Odświeżamy menu "Moje konto", żeby liczba ulubionych się zgadzała
     sprawdzUzytkownika(); 
 };
+    
+    // Kluczowe: Odświeżamy menu "Moje konto", żeby liczba ulubionych się zgadzała
+    sprawdzUzytkownika(); 
+};
 
 window.pokazUlubione = () => {
     const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
