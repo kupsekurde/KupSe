@@ -115,49 +115,45 @@ async function sprawdzUzytkownika() {
     const nav = document.getElementById('user-nav');
     
     if (user && nav) {
-        // 1. Ukrywamy formularz logowania/rejestracji
-        if (document.getElementById('auth-box')) {
-            document.getElementById('auth-box').style.display = 'none';
-        }
+        if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
 
-        // 2. Przygotowujemy nazwę użytkownika
         const nazwaZMaila = user.email.split('@')[0];
         const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
 
-        // 3. Pobieramy liczbę nieprzeczytanych wiadomości i ulubione
-        const { count: msgCount } = await baza
-            .from('wiadomosci')
-            .select('*', { count: 'exact', head: true })
-            .eq('odbiorca', user.email)
-            .eq('przeczytane', false);
+        const pobierzWiadomosci = async () => {
+            const { count: msgCount } = await baza
+                .from('wiadomosci')
+                .select('*', { count: 'exact', head: true })
+                .eq('odbiorca', user.email)
+                .eq('przeczytane', false);
 
-        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
+            const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+            mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
 
-        // 4. Wstawiamy przyciski do paska nawigacji
-        nav.innerHTML = `
-            <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
-                <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
-                
-                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
-                
-                <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
-                </button>
-
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                        <small style="color:gray;">Zalogowany jako:</small><br>
-                        <b style="font-size:13px; word-break:break-all;">${user.email}</b>
+            nav.innerHTML = `
+                <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
+                    <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
+                    <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
+                    <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                        Moje Konto ▼
+                        ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>` : ''}
+                    </button>
+                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                        <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
+                            <small style="color:gray;">Zalogowany jako:</small><br>
+                            <b style="font-size:13px; word-break:break-all;">${user.email}</b>
+                        </div>
+                        <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                        <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
+                        <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                        <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                     </div>
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}</div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
-                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
-                </div>
-            </div>`;
+                </div>`;
+        };
+        await pobierzWiadomosci();
+        // Sprawdzaj nowe wiadomości co 30 sekund:
+        if(!window.msgInterval) window.msgInterval = setInterval(pobierzWiadomosci, 30000);
     }
 }
 
@@ -777,10 +773,8 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('modal-form').style.display = 'flex';
     document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
     
-    // Zapamiętujemy stare zdjęcia
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
-    // Wypełniamy pola
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
     window.updateFormSubcats(); 
@@ -790,7 +784,6 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('f-tel').value = o.telefon || "";
     document.getElementById('f-opis').value = o.opis;
     
-    // Panel zarządzania zdjęciami
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
         let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
@@ -798,16 +791,17 @@ window.edytujOgloszenie = (id) => {
         window.tempZdjeciaEdycja.forEach((url, i) => {
             h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
                     <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px;">X</button>
+                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold;">X</button>
                   </div>`;
         });
         h += `</div>`;
-        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)">`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
+        h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${5 - window.tempZdjeciaEdycja.length} zdjęć.</small>`;
         fotoBox.innerHTML = h;
     };
 
     window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
-    window.limitZdjec = (inp) => { if(inp.files.length + window.tempZdjeciaEdycja.length > 5) { alert("Max 5 zdjęć!"); inp.value = ""; } };
+    window.limitZdjec = (inp) => { if(inp.files.length + window.tempZdjeciaEdycja.length > 5) { alert("Łącznie max 5 zdjęć!"); inp.value = ""; } };
 
     odswiezZdjecia();
 
@@ -825,10 +819,12 @@ window.edytujOgloszenie = (id) => {
         const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
 
         for (const f of nowePliki) {
-            const comp = await imageCompression(f, opt);
-            const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-            await baza.storage.from('zdjecia').upload(name, comp);
-            noweUrls.push(baza.storage.from('zdjecia').getPublicUrl(name).data.publicUrl);
+            try {
+                const comp = await imageCompression(f, opt);
+                const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
+                await baza.storage.from('zdjecia').upload(name, comp);
+                noweUrls.push(baza.storage.from('zdjecia').getPublicUrl(name).data.publicUrl);
+            } catch(err) { console.error(err); }
         }
 
         const { error } = await baza.from('ogloszenia').update({
@@ -841,7 +837,7 @@ window.edytujOgloszenie = (id) => {
         }).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
-        else { alert("Zaktualizowano!"); location.reload(); }
+        else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
 
