@@ -376,27 +376,35 @@ window.zastosujFiltryMoto = (kat, podkat) => {
     });
 
     window.zamknijModal();
-    window.pokazWynikiModal(`${podkat} (Filtry)`, wyniki);
-};
-
-// --- DODAWANIE OGŁOSZEŃ ---
-window.otworzFormularzDodawania = () => {
-    const form = document.getElementById('form-dodaj');
-    form.reset(); 
-    form.onsubmit = window.wyslijOgloszenie; 
-    
-    document.getElementById('form-title').innerText = "Dodaj ogłoszenie";
-    document.getElementById('btn-save').innerText = "Opublikuj ogłoszenie";
-    document.getElementById('btn-save').disabled = false;
-    document.getElementById('extra-fields').innerHTML = '';
-    
-    document.getElementById('foto-container').innerHTML = `
-        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
-        <input type="file" id="f-plik" accept="image/*" multiple required onchange="if(this.files.length > 5) { alert('Max 5 zdjęć!'); this.value = ''; }">
-        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
+window.pokazWynikiModal = (tytul, lista) => {
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="margin-bottom:20px;">${tytul} (${lista.length})</h2>
+        <div style="display:flex; gap:20px;">
+            <div style="width:200px; flex-shrink:0;">
+                <h4>Sortowanie</h4>
+                <select onchange="window.sortujWyniki(this.value)" style="width:100%; padding:8px; border-radius:8px;">
+                    <option value="new">Najnowsze</option>
+                    <option value="cheap">Najtańsze</option>
+                    <option value="expensive">Najdroższe</option>
+                </select>
+            </div>
+            <div class="ads-grid" style="flex:1; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+                ${lista.map(o => `
+                    <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})">
+                        <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" style="width:100%; height:150px; object-fit:cover;">
+                        <div style="padding:10px;">
+                            <div style="font-weight:800; font-size:14px; margin-bottom:5px; height:34px; overflow:hidden;">${o.tytul}</div>
+                            <div style="color:var(--primary); font-weight:800;">${o.cena} zł</div>
+                            <div style="font-size:11px; color:gray; margin-top:5px;">📍 ${o.lokalizacja}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
     `;
-
-    document.getElementById('modal-form').style.display = 'flex';
+    document.getElementById('modal-view').style.display = 'flex';
 };
 
 window.updateFormSubcats = (p = 'f-') => {
