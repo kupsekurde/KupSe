@@ -346,52 +346,43 @@
 </html>
 
 <script>
-    // Sprawdzamy czy już kliknięto "Rozumiem"
     if (!localStorage.getItem('cookiesZaakceptowane')) {
         document.getElementById('cookie-bar').style.display = 'flex';
     }
-
     function zaakceptujCookies() {
         localStorage.setItem('cookiesZaakceptowane', 'true');
         document.getElementById('cookie-bar').remove();
     }
-</script>
-    <script>
-window.pokazModalPrawny = function(typ) {
-    // 1. Znajdujemy okno modalne, które już masz w kodzie (modal-view)
-    const modal = document.getElementById('modal-view');
-    const content = document.getElementById('view-content');
-    
-    let tytul = "";
-    let tresc = "";
 
-    // 2. Ustalamy co wyświetlić w zależności od tego, co kliknięto
-    if(typ === 'regulamin') {
-        tytul = "Regulamin Serwisu KupSe";
-        tresc = "1. Serwis KupSe pozwala na darmowe wystawianie ogłoszeń.<br>2. Zakazane jest wystawianie przedmiotów nielegalnych.<br>3. Użytkownik odpowiada za treść swojego ogłoszenia.";
-    } else if(typ === 'polityka') {
-        tytul = "Polityka Prywatności (RODO)";
-        tresc = "Twoje dane (email, telefon) są przetwarzane wyłącznie w celu wyświetlania ogłoszeń. Masz prawo do ich usunięcia w każdej chwili, kontaktując się z nami.";
-    } else if(typ === 'kontakt') {
-        tytul = "Pomoc i Kontakt";
-        tresc = "Masz problem z ogłoszeniem? Napisz do nas na adres: kontakt@kupse.pl<br>Pracujemy od poniedziałku do piątku w godzinach 9:00 - 17:00.";
+    window.pokazModalPrawny = function(typ) {
+        const modal = document.getElementById('modal-view');
+        const content = document.getElementById('view-content');
+        let tytul = "";
+        let tresc = "";
+
+        if(typ === 'regulamin') {
+            tytul = "Regulamin Serwisu KupSe";
+            tresc = "1. Serwis pozwala na darmowe ogłoszenia. 2. Zakazane są przedmioty nielegalne.";
+        } else if(typ === 'polityka') {
+            tytul = "Polityka Prywatności";
+            tresc = "Twoje dane są przetwarzane zgodnie z RODO.";
+        } else if(typ === 'kontakt') {
+            tytul = "Pomoc i Kontakt";
+            tresc = "Napisz do nas: kontakt@kupse.pl";
+        }
+
+        content.innerHTML = `
+            <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+            <h2 style="color: var(--primary)">${tytul}</h2>
+            <div style="line-height: 1.6; text-align: left; margin-top: 20px;">${tresc}</div>
+        `;
+        modal.style.display = 'flex';
     }
 
-    // 3. Wkładamy treść do okienka i pokazujemy je
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2 style="color: var(--primary)">${tytul}</h2>
-        <div style="line-height: 1.6; text-align: left; margin-top: 20px;">${tresc}</div>
-    `;
-    
-    modal.style.display = 'flex';
-}
-
-// Funkcja zamykająca okno (na wypadek, gdyby jej brakowało)
-window.zamknijModal = function() {
-    document.getElementById('modal-view').style.display = 'none';
-    document.getElementById('modal-form').style.display = 'none';
-}
+    window.zamknijModal = function() {
+        document.getElementById('modal-view').style.display = 'none';
+        document.getElementById('modal-form').style.display = 'none';
+    }
 </script>
 </body>
 </html>
