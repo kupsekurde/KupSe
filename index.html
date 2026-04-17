@@ -177,7 +177,7 @@
        <div class="nav-search">
     <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
-    <input type="text" id="find-loc" name="location_field" autocomplete="off" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+        <input type="text" id="find-loc" name="loc_search_field" autocomplete="new-password" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
 </div>
 
@@ -267,7 +267,7 @@
 <div id="modal-form" class="modal">
     <div class="modal-box">
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2>Dodaj ogłoszenie</h2>
+          <h2 id="form-title">Dodaj ogłoszenie</h2>
         <form id="form-dodaj" onsubmit="window.wyslijOgloszenie(event)" style="display:grid; gap:15px">
     <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
     
@@ -292,7 +292,6 @@
         </select>
     </div>
 
-    <!-- Tu pojawią się dodatkowe pola dla aut -->
     <div id="extra-fields"></div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -311,7 +310,7 @@
         </small>
     </div>
     
-    <div style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
+    <div id="foto-container" style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
         <input type="file" id="f-plik" accept="image/*" multiple required 
                onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
