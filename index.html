@@ -161,7 +161,25 @@
 
         /* Grid ogłoszeń */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+        .ads-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        padding: 10px !important;
+    }
+
+    /* Naprawa okna wyników wyszukiwania na telefonie */
+    #view-content > div[style*="display: flex"] {
+        flex-direction: column !important; /* Filtry lecą na górę */
+    }
+
+    #view-content #modal-grid {
+        grid-template-columns: repeat(2, 1fr) !important; /* 2 ogłoszenia w wynikach */
+        gap: 10px !important;
+    }
+
+    .ad-card img {
+        height: 120px !important; /* Mniejsze zdjęcia na telefonie, żeby było widać tekst */
+    }
         .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
         .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
