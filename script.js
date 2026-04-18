@@ -130,7 +130,7 @@ async function sprawdzUzytkownika() {
                     <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
                     <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                         Moje Konto ▼
-                        <span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; ${msgCount > 0 ? 'display:flex;' : 'display:none;'} align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>
+                        ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
                     </button>
                     <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                         <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
