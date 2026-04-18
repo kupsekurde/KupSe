@@ -1,4 +1,4 @@
-onst dajNazwe = (e) => { 
+const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
     let n = e.split('@')[0]; 
     return n.charAt(0).toUpperCase() + n.slice(1); 
