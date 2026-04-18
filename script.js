@@ -115,20 +115,20 @@ async function sprawdzUzytkownika() {
         const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
 
         const pobierzWiadomosci = async () => {
-                        let { count: msgCount } = await baza
+                        const { data: nData } = await baza
                 .from('wiadomosci')
-                .select('*', { count: 'exact', head: true })
+                .select('nadawca')
                 .eq('odbiorca', user.email)
                 .eq('przeczytane', false);
             
-            // Jeśli chcesz, żeby te denerwujące "3" zniknęło natychmiast, 
-            // mimo że w bazie są stare nieprzeczytane śmieci:
-            if (msgCount > 0) msgCount = 0; 
+            // Liczymy ilu jest różnych ludzi, którzy do Ciebie napisali
+            const unikalniNadawcy = nData ? [...new Set(nData.map(m => m.nadawca))] : [];
+            const msgCount = unikalniNadawcy.length;
 
-                       const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-            const pobraneIds = uData ? uData.map(x => x.ogloszenie_id) : [];
-            // To poniżej sprawdzi, czy ogłoszenie istnieje w bazie, zanim je policzy:
-            mojeUlubione = pobraneIds.filter(id => daneOgloszen.some(o => o.id === id));
+                    const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+            // Dodajemy Number(), żeby mieć pewność, że komputer widzi liczby, a nie tekst
+            const pobraneIds = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
+            mojeUlubione = pobraneIds.filter(id => daneOgloszen.some(o => Number(o.id) === id));
               nav.innerHTML = `
                 <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
                     <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
@@ -733,7 +733,10 @@ window.zamknijIResetujModal = () => {
 async function sprawdzPowiadomieniaBezReloadu() {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
-    const { count } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('odbiorca', user.email).eq('przeczytane', false);
+    const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+    const unikalniNadawcy = nData ? [...new Set(nData.map(m => m.nadawca))] : [];
+    const count = unikalniNadawcy.length;
+    
     const badge = document.getElementById('msg-badge');
     if (badge) {
         badge.style.display = count > 0 ? 'flex' : 'none';
