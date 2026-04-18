@@ -83,9 +83,12 @@
 
     /* 3. Grid ogłoszeń - na telefonie 2 kolumny zamiast wielu */
     .ads-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 20px !important;
+        padding: 10px !important;
     }
+
 
     /* 4. Modale - na telefonie muszą zajmować prawie cały ekran */
     .modal-box {
@@ -162,7 +165,7 @@
         /* Grid ogłoszeń */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
         .ads-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+        
         gap: 10px !important;
         padding: 10px !important;
     }
