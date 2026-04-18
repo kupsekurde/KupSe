@@ -189,10 +189,12 @@ window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
 
-    // Odznacz jako przeczytane
+    // 1. Oznaczamy jako przeczytane w bazie
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
     
-    // Pobierz rozmowę w obie strony
+    // 2. NATYCHMIAST odświeżamy licznik na stronie
+    await sprawdzPowiadomieniaBezReloadu();
+
     const { data: msg } = await baza.from('wiadomosci').select('*')
         .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
         .order('created_at', { ascending: true });
@@ -221,7 +223,6 @@ window.otworzChat = async (zKim) => {
     
     const win = document.getElementById('chat-window');
     if(win) win.scrollTop = win.scrollHeight;
-    if(typeof sprawdzPowiadomieniaBezReloadu === "function") sprawdzPowiadomieniaBezReloadu();
 };
 
 window.wyslijZChatu = async (odbiorca) => {
@@ -691,8 +692,10 @@ function renderTop12(lista) {
     const limit = 1000 * 60 * 60 * 24 * 28;
     const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
     const top12 = aktywne.slice(0, 12);
+    
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))'; 
+    // Wymuszamy dokładnie 4 kolumny
+    k.style.gridTemplateColumns = 'repeat(4, 1fr)'; 
     k.style.gap = '20px';
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
@@ -834,4 +837,15 @@ window.edytujOgloszenie = (id) => {
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
+};
+window.otworzFormularzDodawania = () => {
+    document.getElementById('modal-form').style.display = 'flex';
+    document.getElementById('form-title').innerText = "Dodaj nowe ogłoszenie";
+    document.getElementById('form-dodaj').reset();
+    document.getElementById('foto-container').innerHTML = '';
+    const btn = document.getElementById('btn-save');
+    btn.disabled = false;
+    btn.innerText = "Dodaj ogłoszenie";
+    // Podpinamy funkcję wysyłania pod formularz
+    document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
 };
