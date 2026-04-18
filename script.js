@@ -1,3 +1,8 @@
+onst dajNazwe = (e) => { 
+    if(!e) return "Użytkownik";
+    let n = e.split('@')[0]; 
+    return n.charAt(0).toUpperCase() + n.slice(1); 
+};
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
@@ -140,9 +145,9 @@ async function sprawdzUzytkownika() {
                     <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                         <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
                             <small style="color:gray;">Zalogowany jako:</small><br>
-                            <b style="font-size:13px; word-break:break-all;">${user.email}</b>
-                        </div>
-                        <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                            <b style="font-size:15px; color:var(--primary);">${dajNazwe(user.email)}</b>
+...
+<div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości</div>
                         <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości</div>
                         <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (<span id="fav-count-nav">${mojeUlubione.length}</span>)</div>
                         <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
@@ -181,26 +186,58 @@ window.szukaj = () => {
 };
 
 // --- WIADOMOŚCI ---
+// --- SKRZYNKA ODBIORCZA ---
 window.pokazSkrzynke = async () => {
-    const badge = document.getElementById('msg-badge');
-    if (badge) badge.style.display = 'none'; // Ukrywamy "5" od razu po wejściu w skrzynkę
-
-    const { data: { user } } = await baza.auth.getUser();
-    const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
-    const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
-    const content = document.getElementById('view-content');
-    content.innerHTML = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button><h2 style="margin-bottom:20px;">Twoje wiadomości</h2><div style="display:flex; flex-direction:column; gap:10px;">${rozmowcy.length ? rozmowcy.map(r => `<div onclick="window.otworzChat('${r}')" style="padding:15px; background:#f9f9f9; border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;"><b>${r}</b><span style="color:var(--primary); font-weight:bold;">Otwórz czat →</span></div>`).join('') : '<p>Brak wiadomości.</p>'}</div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
 
-    // 1. Oznaczamy jako przeczytane w bazie
-    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
+    const { data: msgs } = await baza.from('wiadomosci').select('*')
+        .or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`)
+        .order('created_at', { ascending: false });
+
+    const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
+    const content = document.getElementById('view-content');
     
-    // 2. NATYCHMIAST odświeżamy licznik na stronie
+    // Mniejsze okno dla listy
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "500px";
+
+    let html = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+                <h2 style="margin-bottom:20px; text-align:center;">Wiadomości</h2>
+                <div style="display:flex; flex-direction:column; gap:10px;">`;
+
+    rozmowcy.forEach(r => {
+        const nieprzeczytane = msgs.some(m => m.nadawca === r && m.odbiorca === user.email && !m.przeczytane);
+        // POGRUBIENIE jeśli nieprzeczytane
+        const styl = nieprzeczytane ? 'font-weight:900; background:#fff4e6; border-left:4px solid var(--primary);' : 'background:#f9f9f9;';
+        
+        html += `
+            <div style="padding:15px; ${styl} border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;" onclick="window.otworzChat('${r}')">
+                <div>
+                    <span style="font-size:15px;">${dajNazwe(r)}</span>
+                    ${nieprzeczytane ? '<span style="margin-left:8px; color:red; font-size:10px;">●</span>' : ''}
+                </div>
+                <button onclick="event.stopPropagation(); window.usunRozmowe('${r}')" style="background:none; border:none; cursor:pointer; font-size:16px;">🗑️</button>
+            </div>`;
+    });
+
+    if(!rozmowcy.length) html += '<p style="text-align:center; color:gray;">Brak wiadomości</p>';
+    content.innerHTML = html + `</div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+// --- FUNKCJA USUWANIA ---
+window.usunRozmowe = async (zKim) => {
+    if(!confirm("Usunąć całą historię rozmowy?")) return;
+    const { data: { user } } = await baza.auth.getUser();
+    await baza.from('wiadomosci').delete().or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`);
+    window.pokazSkrzynke();
+};
+
+// --- OKNO CZATU (Z DATAMI I MNIEJSZYM OKNEM) ---
+window.otworzChat = async (zKim) => {
+    const { data: { user } } = await baza.auth.getUser();
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
     await sprawdzPowiadomieniaBezReloadu();
 
     const { data: msg } = await baza.from('wiadomosci').select('*')
@@ -208,35 +245,42 @@ window.otworzChat = async (zKim) => {
         .order('created_at', { ascending: true });
     
     const modalBox = document.querySelector('.modal-box');
-    if(modalBox) modalBox.style.maxWidth = "550px"; 
+    if(modalBox) modalBox.style.maxWidth = "400px"; // MAŁE ZGRABNE OKNO
 
     const content = document.getElementById('view-content');
     content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijIResetujModal()">&larr; Powrót</button>
-        <h3 style="margin-bottom:20px;">Rozmowa z: ${zKim.split('@')[0]}</h3>
-        <div id="chat-window" style="height:350px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
+            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
+        </div>
+        <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:6px;">
             ${msg.map(m => {
                 const moja = m.nadawca === user.email;
-                return `<div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
-                            <div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                                ${m.tresc}
-                            </div>
-                        </div>`;
+                const czas = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const data = new Date(m.created_at).toLocaleDateString([], {day:'2-digit', month:'2-digit'});
+                return `
+                <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
+                    <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px;">
+                        ${m.tresc}
+                    </div>
+                    <div style="font-size:8px; color:gray; text-align:${moja?'right':'left'}; margin-top:2px;">${data} ${czas}</div>
+                </div>`;
             }).join('')}
         </div>
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <input type="text" id="chat-input" placeholder="Wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
-            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:38px; height:38px; border-radius:50%; cursor:pointer;">➤</button>
         </div>`;
     
     const win = document.getElementById('chat-window');
-    if(win) win.scrollTop = win.scrollHeight;
+    win.scrollTop = win.scrollHeight;
+    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.wyslijZChatu(zKim); };
 };
 
 window.wyslijZChatu = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc || !user) return;
+    if (!tresc) return;
     await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
     window.otworzChat(odbiorca);
 };
