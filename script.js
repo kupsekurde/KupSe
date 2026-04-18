@@ -177,6 +177,9 @@ window.szukaj = () => {
 
 // --- WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
+    const badge = document.getElementById('msg-badge');
+    if (badge) badge.style.display = 'none'; // Ukrywamy "5" od razu po wejściu w skrzynkę
+
     const { data: { user } } = await baza.auth.getUser();
     const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
@@ -456,36 +459,24 @@ window.wyslijOgloszenie = async (e) => {
     if (!user) return alert("Musisz być zalogowany!");
 
     const inputPlik = document.getElementById('f-plik');
-    const files = Array.from(inputPlik.files);
-    if (files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
+    if (!inputPlik || inputPlik.files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
 
     btn.disabled = true;
-    btn.innerText = "Kompresja zdjęć...";
-
-    let dodatkoweDane = "";
-    const marka = document.getElementById('extra-marka')?.value;
-    const model = document.getElementById('extra-model')?.value;
-    const rok = document.getElementById('extra-rok')?.value;
-    const paliwo = document.getElementById('extra-paliwo')?.value;
-
-    if (marka) {
-        dodatkoweDane = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
-    }
+    btn.innerText = "Wysyłanie...";
 
     const zdjeciaUrls = [];
     const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
 
-    for (const file of files) {
+    for (const file of inputPlik.files) {
         try {
-            const compressed = await imageCompression(file, options);
+            const compressed = typeof imageCompression !== 'undefined' ? await imageCompression(file, options) : file;
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
             await baza.storage.from('zdjecia').upload(nazwa, compressed);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error("Błąd kompresji:", err); }
+        } catch (err) { console.error("Błąd zdjęcia:", err); }
     }
 
-    btn.innerText = "Zapisywanie...";
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -493,7 +484,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value + dodatkoweDane,
+        opis: document.getElementById('f-opis').value,
         zdjecia: zdjeciaUrls,
         telefon: document.getElementById('f-tel').value
     }]);
@@ -501,6 +492,7 @@ window.wyslijOgloszenie = async (e) => {
     if (error) {
         alert("Błąd: " + error.message);
         btn.disabled = false;
+        btn.innerText = "Spróbuj ponownie";
     } else {
         alert("Ogłoszenie dodane!");
         location.reload();
@@ -693,10 +685,11 @@ function renderTop12(lista) {
     const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
     const top12 = aktywne.slice(0, 12);
     
+    // Wymuszamy 4 kolumny bezpośrednio w kodzie
     k.style.display = 'grid';
-    // Wymuszamy dokładnie 4 kolumny
-    k.style.gridTemplateColumns = 'repeat(4, 1fr)'; 
+    k.style.gridTemplateColumns = 'repeat(4, 1fr)';
     k.style.gap = '20px';
+    
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
