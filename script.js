@@ -187,20 +187,41 @@ window.pokazSkrzynke = async () => {
 
 window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+
+    // Odznacz jako przeczytane
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
-    const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
+    
+    // Pobierz rozmowę w obie strony
+    const { data: msg } = await baza.from('wiadomosci').select('*')
+        .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
+        .order('created_at', { ascending: true });
     
     const modalBox = document.querySelector('.modal-box');
     if(modalBox) modalBox.style.maxWidth = "550px"; 
 
     const content = document.getElementById('view-content');
-    content.innerHTML = `<button class="close-btn" onclick="window.zamknijIResetujModal()">&larr; Powrót</button><h3 style="margin-bottom:20px;">Rozmowa z: ${zKim.split('@')[0]}</h3><div id="chat-window" style="height:350px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">${msg.map(m => {
-        const moja = m.nadawca === user.email;
-        return `<div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};"><div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${m.tresc}</div></div>`;
-    }).join('')}</div><div style="display:flex; gap:10px; margin-top:15px;"><input type="text" id="chat-input" placeholder="Wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;"><button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button></div>`;
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijIResetujModal()">&larr; Powrót</button>
+        <h3 style="margin-bottom:20px;">Rozmowa z: ${zKim.split('@')[0]}</h3>
+        <div id="chat-window" style="height:350px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">
+            ${msg.map(m => {
+                const moja = m.nadawca === user.email;
+                return `<div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
+                            <div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                                ${m.tresc}
+                            </div>
+                        </div>`;
+            }).join('')}
+        </div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <input type="text" id="chat-input" placeholder="Wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
+            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button>
+        </div>`;
+    
     const win = document.getElementById('chat-window');
-    win.scrollTop = win.scrollHeight;
-    sprawdzPowiadomieniaBezReloadu();
+    if(win) win.scrollTop = win.scrollHeight;
+    if(typeof sprawdzPowiadomieniaBezReloadu === "function") sprawdzPowiadomieniaBezReloadu();
 };
 
 window.wyslijZChatu = async (odbiorca) => {
