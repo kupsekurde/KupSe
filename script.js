@@ -1,26 +1,14 @@
+const dajNazwe = (e) => { 
+    if(!e) return "Użytkownik";
+    let n = e.split('@')[0]; 
+    return n.charAt(0).toUpperCase() + n.slice(1); 
+};
+
 const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
-window.resetujStrone = () => {
-    document.getElementById('find-text').value = '';
-    document.getElementById('find-loc').value = '';
-    location.reload();
-};
-
-let wynikiDlaPaginacji = [];
-let daneOgloszen = [];
-let mojeUlubione = [];
-let aktualneZdjecieIndex = 0;
-let aktualneFotki = [];
-let edytowaneZdjecia = [];
-let ostatnieWyniki = [];
-let ostatniTytul = "";
-let wynikiBazowe = [];
-
-// Parametry paginacji
-const OGLOSZENIA_NA_STRONE = 40;
-
+// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
     'Dom': ['Meble', 'Oświetlenie', 'Dekoracje', 'AGD', 'RTV', 'Pozostałe'],
@@ -37,152 +25,160 @@ const SUB_DATA = {
     'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
-// --- POMOCNICZE ---
-function formatujDate(isoString) {
-    if (!isoString) return '';
-    const d = new Date(isoString);
-    return d.toLocaleString('pl-PL', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-}
+const formatujDate = (d) => new Date(d).toLocaleDateString('pl-PL');
 
-// --- LOGOWANIE I REJESTRACJA ---
+let daneOgloszen = [];
+let mojeUlubione = [];
+let aktualneZdjecieIndex = 0;
+let aktualneFotki = [];
+let wynikiBazowe = [];
+let ostatnieWyniki = [];
+let ostatniTytul = "";
+const OGLOSZENIA_NA_STRONE = 12;
+
+window.szukaj = () => {
+    const text = document.getElementById('find-text').value.toLowerCase();
+    const loc = document.getElementById('find-loc').value.toLowerCase();
+    const wyniki = daneOgloszen.filter(o => {
+        const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
+        const mLoc = o.lokalizacja.toLowerCase().includes(loc);
+        return mText && mLoc;
+    });
+    window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
+};
+// --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
     const { data, error } = await baza.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-        if (error.message.includes("Email not confirmed")) {
-            alert("Błąd: Twój e-mail nie został jeszcze potwierdzony. Sprawdź skrzynkę odbiorczą.");
-        } else {
-            alert("Błąd logowania: " + error.message);
-        }
-    } else {
-        location.reload();
-    }
+    if (error) alert("Błąd: " + error.message);
+    else location.reload();
 };
 
-window.zarejestruj = async () => {
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-pass').value;
-
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const hasMinLength = password.length >= 8;
-
-    if (!hasMinLength || !hasUpperCase || !hasNumber || !hasSpecialChar) {
-        let msg = "Hasło nie spełnia wymagań:\n- minimum 8 znaków\n- duża litera\n- liczba\n- znak specjalny";
-        return alert(msg);
-    }
-
-    const { data, error } = await baza.auth.signUp({ 
-        email, 
-        password,
-        options: {
-            emailRedirectTo: window.location.origin 
-        }
-    });
-
-    if (error) {
-        alert("Błąd rejestracji: " + error.message); 
-    } else {
-        alert("Rejestracja pomyślna! Sprawdź e-mail, aby aktywować konto.");
-        document.getElementById('reg-email').value = '';
-        document.getElementById('reg-pass').value = '';
-    }
-};
-
-window.wyloguj = async () => { 
-    await baza.auth.signOut(); 
-    location.reload(); 
-};
-
-// --- INTERFEJS UŻYTKOWNIKA ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
-    
-    if (user && nav) {
-        if (document.getElementById('auth-box')) document.getElementById('auth-box').style.display = 'none';
+    const authBox = document.getElementById('auth-box');
 
-        const nazwaZMaila = user.email.split('@')[0];
-        const witajImie = nazwaZMaila.charAt(0).toUpperCase() + nazwaZMaila.slice(1);
+    if (user) {
+        if (authBox) authBox.style.display = 'none';
+        const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+        const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
+        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
 
-        const pobierzWiadomosci = async () => {
-            const { count: msgCount } = await baza
-                .from('wiadomosci')
-                .select('*', { count: 'exact', head: true })
-                .eq('odbiorca', user.email)
-                .eq('przeczytane', false);
-
-            const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-            mojeUlubione = uData ? uData.map(x => x.ogloszenie_id) : [];
-
-              nav.innerHTML = `
-                <div id="menu-container" style="position:relative; display:flex; gap:15px; align-items:center;">
-                    <span style="font-weight:800; color:var(--text); font-size:14px;">Witaj ${witajImie}</span>
-                    <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj ogłoszenie</button>
-                    <button id="menu-btn" onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                        Moje Konto ▼
-                        <span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; ${msgCount > 0 ? 'display:flex;' : 'display:none;'} align-items:center; justify-content:center; border:2px solid white;">${msgCount}</span>
-                    </button>
-                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                        <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                            <small style="color:gray;">Zalogowany jako:</small><br>
-                            <b style="font-size:13px; word-break:break-all;">${user.email}</b>
-                        </div>
-                        <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                        <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">✉️ Wiadomości</div>
-                        <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (<span id="fav-count-nav">${mojeUlubione.length}</span>)</div>
-                        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                        <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+        nav.innerHTML = `
+            <div style="position:relative; display:flex; gap:15px; align-items:center;">
+                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                </button>
+                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
                     </div>
-                </div>`;
-        };
-        await pobierzWiadomosci();
-        if(!window.msgInterval) window.msgInterval = setInterval(pobierzWiadomosci, 30000);
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                </div>
+            </div>`;
+    } else {
+        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
+        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
     }
 }
 
-window.toggleUserMenu = (e) => { 
-    e.stopPropagation(); 
-    const m = document.getElementById('drop-menu'); 
-    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
+// --- MOJE OGŁOSZENIA (ZMNIEJSZONE OKNO) ---
+window.pokazMojeOgloszenia = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "550px"; 
+
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="text-align:center; margin-bottom:20px;">Moje ogłoszenia</h2>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            ${moje.map(o => `
+                <div style="display:flex; gap:15px; border:1px solid #eee; padding:10px; border-radius:12px; align-items:center; background:#fafafa;">
+                    <img src="${o.zdjecia[0]}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:14px;">${o.tytul}</div>
+                        <div style="color:var(--primary); font-weight:bold;">${o.cena} zł</div>
+                    </div>
+                    <button onclick="window.usunOgloszenie(${o.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:20px;">🗑️</button>
+                </div>
+            `).join('')}
+            ${moje.length === 0 ? '<p style="text-align:center; color:gray;">Brak ogłoszeń.</p>' : ''}
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
 };
 
-window.addEventListener('click', (e) => {
-    const menu = document.getElementById('drop-menu');
-    if (menu && menu.style.display === 'block' && !menu.contains(e.target)) menu.style.display = 'none';
-});
+// --- ULUBIONE (NAPRAWIONE I MNIEJSZE) ---
+window.pokazUlubione = () => {
+    const okno = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    const mb = document.querySelector('.modal-box');
+    
+    if(mb) mb.style.maxWidth = "600px";
+    
+    // Filtrujemy dane (upewniamy się, że id to liczba)
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(Number(o.id)));
 
-// --- SZUKANIE GŁÓWNE ---
-window.szukaj = () => {
-    const fraza = document.getElementById('find-text').value.toLowerCase().trim();
-    const lok = document.getElementById('find-loc').value.toLowerCase().trim();
-
-    const wyniki = daneOgloszen.filter(o => {
-        const tytulOk = o.tytul.toLowerCase().includes(fraza) || o.opis.toLowerCase().includes(fraza);
-        const lokOk = o.lokalizacja.toLowerCase().includes(lok);
-        return tytulOk && lokOk;
-    });
-
-    window.pokazWynikiModal(`Wyniki wyszukiwania (${wyniki.length})`, wyniki);
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="text-align:center; margin-bottom:20px;">Twoje Ulubione ❤️</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            ${ulubioneLista.map(o => `
+                <div onclick="window.pokazSzczegoly(${o.id})" style="cursor:pointer; border:1px solid #eee; border-radius:12px; overflow:hidden; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:120px; object-fit:cover;">
+                    <div style="padding:10px;">
+                        <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.cena} zł</div>
+                        <div style="font-size:12px; height:32px; overflow:hidden; margin-top:5px;">${o.tytul}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        ${ulubioneLista.length === 0 ? '<p style="text-align:center; color:gray; margin-top:30px; grid-column: 1/3;">Nie masz jeszcze ulubionych ogłoszeń.</p>' : ''}`;
+    
+    okno.style.display = 'flex';
 };
-
-// --- WIADOMOŚCI ---
+// --- WIADOMOŚCI (POGRUBIENIE, USUWANIE, IMIONA) ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
-    const content = document.getElementById('view-content');
-    content.innerHTML = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button><h2 style="margin-bottom:20px;">Twoje wiadomości</h2><div style="display:flex; flex-direction:column; gap:10px;">${rozmowcy.length ? rozmowcy.map(r => `<div onclick="window.otworzChat('${r}')" style="padding:15px; background:#f9f9f9; border-radius:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;"><b>${r}</b><span style="color:var(--primary); font-weight:bold;">Otwórz czat →</span></div>`).join('') : '<p>Brak wiadomości.</p>'}</div>`;
+    
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "450px"; 
+
+    let html = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+                <h2 style="text-align:center; margin-bottom:20px;">Wiadomości</h2>
+                <div style="display:flex; flex-direction:column; gap:8px;">`;
+
+    rozmowcy.forEach(r => {
+        const nowe = msgs.some(m => m.nadawca === r && m.odbiorca === user.email && !m.przeczytane);
+        const styl = nowe ? 'font-weight:900; background:#fff4e6; border-left:4px solid var(--primary);' : 'background:#f9f9f9;';
+        html += `
+            <div style="padding:15px; ${styl} border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;" onclick="window.otworzChat('${r}')">
+                <span>${dajNazwe(r)}</span>
+                <button onclick="event.stopPropagation(); window.usunRozmowe('${r}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>
+            </div>`;
+    });
+    document.getElementById('view-content').innerHTML = html + (rozmowcy.length ? '' : '<p style="text-align:center; color:gray;">Brak wiadomości</p>') + '</div>';
     document.getElementById('modal-view').style.display = 'flex';
+};
+
+window.usunRozmowe = async (zKim) => {
+    if(!confirm(`Usunąć całą historię z ${dajNazwe(zKim)}?`)) return;
+    const { data: { user } } = await baza.auth.getUser();
+    await baza.from('wiadomosci').delete().or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`);
+    window.pokazSkrzynke();
 };
 
 window.otworzChat = async (zKim) => {
@@ -190,23 +186,143 @@ window.otworzChat = async (zKim) => {
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
     const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
     
-    const modalBox = document.querySelector('.modal-box');
-    if(modalBox) modalBox.style.maxWidth = "550px"; 
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "400px";
 
-    const content = document.getElementById('view-content');
-    content.innerHTML = `<button class="close-btn" onclick="window.zamknijIResetujModal()">&larr; Powrót</button><h3 style="margin-bottom:20px;">Rozmowa z: ${zKim.split('@')[0]}</h3><div id="chat-window" style="height:350px; overflow-y:auto; background:#f0f2f5; padding:15px; border-radius:15px; display:flex; flex-direction:column; gap:10px;">${msg.map(m => {
-        const moja = m.nadawca === user.email;
-        return `<div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};"><div style="background: ${moja ? 'var(--primary)' : 'white'}; color: ${moja ? 'white' : 'black'}; padding:10px 15px; border-radius:15px; font-size:13px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">${m.tresc}</div></div>`;
-    }).join('')}</div><div style="display:flex; gap:10px; margin-top:15px;"><input type="text" id="chat-input" placeholder="Wiadomość..." style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;"><button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij</button></div>`;
-    const win = document.getElementById('chat-window');
-    win.scrollTop = win.scrollHeight;
-    sprawdzPowiadomieniaBezReloadu();
+    document.getElementById('view-content').innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
+            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
+        </div>
+        <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
+            ${msg.map(m => {
+                const moja = m.nadawca === user.email;
+                const d = new Date(m.created_at);
+                const czas = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')} | ${d.getDate()}.${d.getMonth()+1}`;
+                return `
+                <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
+                    <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                        ${m.tresc}
+                    </div>
+                    <div style="font-size:8px; color:gray; text-align:${moja?'right':'left'}; margin-top:2px;">${czas}</div>
+                </div>`;
+            }).join('')}
+        </div>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">➤</button>
+        </div>`;
+    const win = document.getElementById('chat-window'); win.scrollTop = win.scrollHeight;
+    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.wyslijZChatu(zKim); };
 };
 
 window.wyslijZChatu = async (odbiorca) => {
     const { data: { user } } = await baza.auth.getUser();
     const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc || !user) return;
+    if (!tresc) return;
+    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
+    window.otworzChat(odbiorca);
+};
+
+// --- FUNKCJE SYSTEMOWE ---
+window.zamknijModal = () => {
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "1250px"; // Powrót do dużej szerokości dla detali ogłoszeń
+    document.getElementById('modal-view').style.display = 'none';
+};
+
+window.toggleUserMenu = (e) => { 
+    e.stopPropagation(); 
+    const m = document.getElementById('drop-menu'); 
+    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
+};
+
+window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+
+async function init() {
+    const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
+    daneOgloszen = data || [];
+    await sprawdzUzytkownika();
+    // Renderowanie listy głównej...
+}
+init();
+
+// Dodaj funkcję Moje Ogłoszenia z Twojego poprzedniego kodu
+window.pokazMojeOgloszenia = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2>Moje ogłoszenia (${moje.length})</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
+            ${moje.map(o => `
+                <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden;">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
+                    <div style="padding:8px;">
+                        <b>${o.cena} zł</b>
+                        <button onclick="window.usunOgloszenie(${o.id})" style="width:100%; margin-top:5px; color:red;">Usuń</button>
+                    </div>
+                </div>`).join('')}
+        </div>`;
+    document.getElementById('modal-view').style.display = 'flex';
+};
+
+// --- FUNKCJA USUWANIA ---
+window.usunRozmowe = async (zKim) => {
+    if(!confirm("Usunąć całą historię rozmowy?")) return;
+    const { data: { user } } = await baza.auth.getUser();
+    await baza.from('wiadomosci').delete().or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`);
+    window.pokazSkrzynke();
+};
+
+// --- OKNO CZATU (Z DATAMI I MNIEJSZYM OKNEM) ---
+window.otworzChat = async (zKim) => {
+    const { data: { user } } = await baza.auth.getUser();
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
+    await sprawdzPowiadomieniaBezReloadu();
+
+    const { data: msg } = await baza.from('wiadomosci').select('*')
+        .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
+        .order('created_at', { ascending: true });
+    
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "400px"; // MAŁE ZGRABNE OKNO
+
+    const content = document.getElementById('view-content');
+    content.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
+            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
+        </div>
+        <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:6px;">
+            ${msg.map(m => {
+                const moja = m.nadawca === user.email;
+                const czas = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const data = new Date(m.created_at).toLocaleDateString([], {day:'2-digit', month:'2-digit'});
+                return `
+                <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
+                    <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px;">
+                        ${m.tresc}
+                    </div>
+                    <div style="font-size:8px; color:gray; text-align:${moja?'right':'left'}; margin-top:2px;">${data} ${czas}</div>
+                </div>`;
+            }).join('')}
+        </div>
+        <div style="display:flex; gap:5px; margin-top:10px;">
+            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:38px; height:38px; border-radius:50%; cursor:pointer;">➤</button>
+        </div>`;
+    
+    const win = document.getElementById('chat-window');
+    win.scrollTop = win.scrollHeight;
+    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.wyslijZChatu(zKim); };
+};
+
+window.wyslijZChatu = async (odbiorca) => {
+    const { data: { user } } = await baza.auth.getUser();
+    const tresc = document.getElementById('chat-input').value.trim();
+    if (!tresc) return;
     await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
     window.otworzChat(odbiorca);
 };
@@ -376,37 +492,8 @@ window.zastosujFiltryMoto = (kat, podkat) => {
     });
 
     window.zamknijModal();
-window.pokazWynikiModal = (tytul, lista) => {
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2 style="margin-bottom:20px;">${tytul} (${lista.length})</h2>
-        <div style="display:flex; gap:20px;">
-            <div style="width:200px; flex-shrink:0;">
-                <h4>Sortowanie</h4>
-                <select onchange="window.sortujWyniki(this.value)" style="width:100%; padding:8px; border-radius:8px;">
-                    <option value="new">Najnowsze</option>
-                    <option value="cheap">Najtańsze</option>
-                    <option value="expensive">Najdroższe</option>
-                </select>
-            </div>
-            <div class="ads-grid" style="flex:1; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
-                ${lista.map(o => `
-                    <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})">
-                        <img src="${Array.isArray(o.zdjecia) ? o.zdjecia[0] : o.zdjecia}" style="width:100%; height:150px; object-fit:cover;">
-                        <div style="padding:10px;">
-                            <div style="font-weight:800; font-size:14px; margin-bottom:5px; height:34px; overflow:hidden;">${o.tytul}</div>
-                            <div style="color:var(--primary); font-weight:800;">${o.cena} zł</div>
-                            <div style="font-size:11px; color:gray; margin-top:5px;">📍 ${o.lokalizacja}</div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    document.getElementById('modal-view').style.display = 'flex';
+    window.pokazWynikiModal(podkat, wyniki);
 };
-
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
@@ -463,36 +550,24 @@ window.wyslijOgloszenie = async (e) => {
     if (!user) return alert("Musisz być zalogowany!");
 
     const inputPlik = document.getElementById('f-plik');
-    const files = Array.from(inputPlik.files);
-    if (files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
+    if (!inputPlik || inputPlik.files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
 
     btn.disabled = true;
-    btn.innerText = "Kompresja zdjęć...";
-
-    let dodatkoweDane = "";
-    const marka = document.getElementById('extra-marka')?.value;
-    const model = document.getElementById('extra-model')?.value;
-    const rok = document.getElementById('extra-rok')?.value;
-    const paliwo = document.getElementById('extra-paliwo')?.value;
-
-    if (marka) {
-        dodatkoweDane = `\n\n--- DANE ---\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPaliwo: ${paliwo}`;
-    }
+    btn.innerText = "Wysyłanie...";
 
     const zdjeciaUrls = [];
     const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
 
-    for (const file of files) {
+    for (const file of inputPlik.files) {
         try {
-            const compressed = await imageCompression(file, options);
+            const compressed = typeof imageCompression !== 'undefined' ? await imageCompression(file, options) : file;
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
             await baza.storage.from('zdjecia').upload(nazwa, compressed);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error("Błąd kompresji:", err); }
+        } catch (err) { console.error("Błąd zdjęcia:", err); }
     }
 
-    btn.innerText = "Zapisywanie...";
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
@@ -500,7 +575,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: document.getElementById('f-opis').value + dodatkoweDane,
+        opis: document.getElementById('f-opis').value,
         zdjecia: zdjeciaUrls,
         telefon: document.getElementById('f-tel').value
     }]);
@@ -508,6 +583,7 @@ window.wyslijOgloszenie = async (e) => {
     if (error) {
         alert("Błąd: " + error.message);
         btn.disabled = false;
+        btn.innerText = "Spróbuj ponownie";
     } else {
         alert("Ogłoszenie dodane!");
         location.reload();
@@ -695,13 +771,14 @@ function renderCardHTML(o) {
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
-    const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28;
-    const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
-    const top12 = aktywne.slice(0, 12);
+    
+    // Bierzemy po prostu 12 najnowszych bez względu na datę
+    const top12 = lista.slice(0, 12);
+    
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))'; 
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
     k.style.gap = '20px';
+    
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
@@ -740,7 +817,10 @@ window.zamknijIResetujModal = () => {
 async function sprawdzPowiadomieniaBezReloadu() {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
-    const { count } = await baza.from('wiadomosci').select('*', { count: 'exact', head: true }).eq('odbiorca', user.email).eq('przeczytane', false);
+    const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+    const unikalniNadawcy = nData ? [...new Set(nData.map(m => m.nadawca))] : [];
+    const count = unikalniNadawcy.length;
+    
     const badge = document.getElementById('msg-badge');
     if (badge) {
         badge.style.display = count > 0 ? 'flex' : 'none';
@@ -842,4 +922,15 @@ window.edytujOgloszenie = (id) => {
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
+};
+window.otworzFormularzDodawania = () => {
+    document.getElementById('modal-form').style.display = 'flex';
+    document.getElementById('form-title').innerText = "Dodaj nowe ogłoszenie";
+    document.getElementById('form-dodaj').reset();
+    document.getElementById('foto-container').innerHTML = '';
+    const btn = document.getElementById('btn-save');
+    btn.disabled = false;
+    btn.innerText = "Dodaj ogłoszenie";
+    // Podpinamy funkcję wysyłania pod formularz
+    document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
 };
