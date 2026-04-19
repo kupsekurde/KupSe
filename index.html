@@ -25,32 +25,48 @@
         #find-loc { width: 150px; }
         .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
         /* --- RESPONSYWNOŚĆ (MOBILE) --- */
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
 @media (max-width: 768px) {
-    /* 1. Nawigacja - układ pionowy, żeby logo i szukajka się zmieściły */
-    .navbar {
-        flex-direction: column;
-        padding: 10px;
-        gap: 10px;
-        /* To sprawi, że wyniki wyszukiwania będą w 2 kolumnach na telefonie */
-#view-content > div[style*="display: flex"] {
-    flex-direction: column !important; /* Panel filtrów wskoczy na górę */
-}
+    .navbar { flex-direction: column; padding: 10px; gap: 10px; }
+    .nav-search { width: 100%; justify-content: space-between; }
+    #find-text { width: 50%; }
+    #find-loc { width: 35%; }
 
-#view-content div[style*="grid-template-columns"] {
-    grid-template-columns: repeat(2, 1fr) !important; /* 2 ogłoszenia obok siebie */
-    gap: 10px !important;
-    width: 100% !important;
-}
+    .cat-container { overflow-x: auto; justify-content: flex-start; padding: 15px 20px; gap: 20px; -webkit-overflow-scrolling: touch; }
+    .cat-container::-webkit-scrollbar { display: none; }
+    .cat-item { min-width: 70px; }
+    .cat-icon { width: 60px; height: 60px; }
 
-/* Naprawa szerokości panelu filtrów na mobile */
-#view-content div[style*="width: 250px"], 
-#view-content div[style*="width: 200px"] {
-    width: 100% !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-}
+    /* Ogłoszenia na stronie głównej - 2 kolumny (żeby nie było za długo) */
+    .ads-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+
+    /* --- NOWE USTAWIENIA DLA WYNIKÓW WYSZUKIWANIA (FILTRY) --- */
+    .results-container { flex-direction: column !important; }
+    
+    /* Panel filtrów na mobile - domyślnie ukryty */
+    .side-filters { 
+        width: 100% !important; 
+        display: none; /* Ukryty na start */
+        position: relative !important; 
+        margin-bottom: 20px;
+        box-sizing: border-box;
     }
+    
+    /* Klasa pokazująca filtry po kliknięciu przycisku */
+    .side-filters.active-mobile { 
+        display: block !important; 
+    }
+
+    /* Ogłoszenia w wynikach - JEDEN SŁUPEK */
+    #modal-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 15px !important;
+    }
+
+    .ad-card img { height: 180px !important; }
+
+    .modal-box { width: 98%; padding: 15px; }
+}
     
     .nav-search {
         width: 100%;
