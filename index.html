@@ -42,6 +42,9 @@
 
     /* --- NOWE USTAWIENIA DLA WYNIKÓW WYSZUKIWANIA (FILTRY) --- */
     .results-container { flex-direction: column !important; }
+  </style>
+</head>
+<body>
     
     /* Panel filtrów na mobile - domyślnie ukryty */
     .side-filters { 
@@ -257,7 +260,7 @@
 
     </div>
     <div class="nav-right" id="user-nav">
-        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
+        <button onclick="'auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
     </div>
 </nav>
 
@@ -286,7 +289,7 @@
             <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
             <input type="password" id="pass" placeholder="Hasło" style="margin-bottom:15px;">
             <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
-            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="'login-view').classList.add('hidden'); 'register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
         
        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
@@ -316,7 +319,7 @@
 </div>
     <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
     
-    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="'register-view').classList.add('hidden'); 'login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
 </div>
 
         </div> 
@@ -410,7 +413,7 @@
 <script>
     // Obsługa cookies
     if (!localStorage.getItem('cookiesZaakceptowane')) {
-        document.getElementById('cookie-bar').style.display = 'flex';
+        'cookie-bar').style.display = 'flex';
     }
     function zaakceptujCookies() {
         localStorage.setItem('cookiesZaakceptowane', 'true');
