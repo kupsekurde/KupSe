@@ -245,94 +245,6 @@ async function init() {
     await sprawdzUzytkownika();
     // Renderowanie listy głównej...
 }
-init();
-
-// Dodaj funkcję Moje Ogłoszenia z Twojego poprzedniego kodu
-window.pokazMojeOgloszenia = async () => {
-    const { data: { user } } = await baza.auth.getUser();
-    const moje = daneOgloszen.filter(o => o.user_email === user.email);
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2>Moje ogłoszenia (${moje.length})</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
-            ${moje.map(o => `
-                <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden;">
-                    <img src="${o.zdjecia[0]}" style="width:100%; height:100px; object-fit:cover;">
-                    <div style="padding:8px;">
-                        <b>${o.cena} zł</b>
-                        <button onclick="window.usunOgloszenie(${o.id})" style="width:100%; margin-top:5px; color:red;">Usuń</button>
-                    </div>
-                </div>`).join('')}
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-// --- FUNKCJA USUWANIA ---
-window.usunRozmowe = async (zKim) => {
-    if(!confirm("Usunąć całą historię rozmowy?")) return;
-    const { data: { user } } = await baza.auth.getUser();
-    await baza.from('wiadomosci').delete().or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`);
-    window.pokazSkrzynke();
-};
-
-// --- OKNO CZATU (Z DATAMI I MNIEJSZYM OKNEM) ---
-window.otworzChat = async (zKim) => {
-    const { data: { user } } = await baza.auth.getUser();
-    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
-    await sprawdzPowiadomieniaBezReloadu();
-
-    const { data: msg } = await baza.from('wiadomosci').select('*')
-        .or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`)
-        .order('created_at', { ascending: true });
-    
-    const modalBox = document.querySelector('.modal-box');
-    if(modalBox) modalBox.style.maxWidth = "400px"; // MAŁE ZGRABNE OKNO
-
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
-            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
-        </div>
-        <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:6px;">
-            ${msg.map(m => {
-                const moja = m.nadawca === user.email;
-                const czas = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                const data = new Date(m.created_at).toLocaleDateString([], {day:'2-digit', month:'2-digit'});
-                return `
-                <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
-                    <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px;">
-                        ${m.tresc}
-                    </div>
-                    <div style="font-size:8px; color:gray; text-align:${moja?'right':'left'}; margin-top:2px;">${data} ${czas}</div>
-                </div>`;
-            }).join('')}
-        </div>
-        <div style="display:flex; gap:5px; margin-top:10px;">
-            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
-            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:38px; height:38px; border-radius:50%; cursor:pointer;">➤</button>
-        </div>`;
-    
-    const win = document.getElementById('chat-window');
-    win.scrollTop = win.scrollHeight;
-    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.wyslijZChatu(zKim); };
-};
-
-window.wyslijZChatu = async (odbiorca) => {
-    const { data: { user } } = await baza.auth.getUser();
-    const tresc = document.getElementById('chat-input').value.trim();
-    if (!tresc) return;
-    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
-    window.otworzChat(odbiorca);
-};
-
-window.wyslijWiadomosc = async (odbiorca) => {
-    const { data: { user } } = await baza.auth.getUser();
-    if (!user) return alert("Zaloguj się, aby wysłać wiadomość!");
-    if (user.email === odbiorca) return alert("Nie możesz pisać do samego siebie!");
-    window.otworzChat(odbiorca);
-};
 
 // --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = async (id) => {
@@ -950,10 +862,17 @@ window.otworzFormularzDodawania = () => {
     document.getElementById('modal-form').style.display = 'flex';
     document.getElementById('form-title').innerText = "Dodaj nowe ogłoszenie";
     document.getElementById('form-dodaj').reset();
-    document.getElementById('foto-container').innerHTML = '';
+    
+    // Przywracamy standardowy wygląd pola zdjęć
+    document.getElementById('foto-container').innerHTML = `
+        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
+        <input type="file" id="f-plik" accept="image/*" multiple required 
+               onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
+        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
+    `;
+
     const btn = document.getElementById('btn-save');
     btn.disabled = false;
     btn.innerText = "Dodaj ogłoszenie";
-    // Podpinamy funkcję wysyłania pod formularz
     document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
 };
