@@ -6,6 +6,20 @@
     <title>KupSe - Twój Portal Ogłoszeniowy</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<div id="auth-box">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="pass" placeholder="Hasło">
+    <button onclick="loguj()">Zaloguj się</button>
+</div>
+
+<div id="user-nav"></div>
+
+<div id="modal-view" class="modal">
+    <div class="modal-box">
+        <div id="view-content"></div>
+    </div>
+</div>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
