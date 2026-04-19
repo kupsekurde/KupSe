@@ -45,6 +45,64 @@ window.szukaj = () => {
         return mText && mLoc;
     });
     window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
+    // Czyścimy pola po wyszukaniu, żeby nie zaśmiecały widoku
+    document.getElementById('find-text').value = '';
+    document.getElementById('find-loc').value = '';
+};
+
+// --- NOWA FUNKCJA LOGOWANIA I MENU ---
+async function sprawdzUzytkownika() {
+    const { data: { user } } = await baza.auth.getUser();
+    const nav = document.getElementById('user-nav');
+    const authBox = document.getElementById('auth-box');
+
+    if (user) {
+        if (authBox) authBox.style.display = 'none';
+        const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+        const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
+        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
+
+        nav.innerHTML = `
+            <div style="position:relative; display:flex; gap:15px; align-items:center;">
+                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                </button>
+                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                    </div>
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                </div>
+            </div>`;
+    } else {
+        if (authBox) authBox.style.display = 'block';
+        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
+    }
+}
+
+window.loguj = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
+    const { data, error } = await baza.auth.signInWithPassword({ email, password });
+    if (error) alert("Błąd: " + error.message);
+    else location.reload();
+};
+
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    if(!document.getElementById('reg-zgoda-regulamin').checked) return alert("Musisz zaakceptować regulamin!");
+    const { data, error } = await baza.auth.signUp({ email, password });
+    if (error) alert("Błąd: " + error.message);
+    else alert("Sprawdź email, aby potwierdzić konto (jeśli wymagane) lub zaloguj się.");
 };
 
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
@@ -55,7 +113,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     ostatnieWyniki = wyniki;
     const content = document.getElementById('view-content');
     
-    // Obliczanie stron
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
@@ -68,13 +125,11 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="margin-top:20px;">${tytul}</h2>
         
-        <!-- Przycisk teraz widoczny wszędzie -->
         <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()" style="width:100%; padding:15px; background:#111; color:white; border:none; border-radius:12px; font-weight:800; margin-bottom:20px; cursor:pointer; font-size:16px;">
             🔍 Filtruj i Sortuj Wyniki
         </button>
 
         <div id="results-layout" style="display:flex; flex-direction:column; gap:20px;">
-            <!-- Panel filtrów domyślnie ukryty (będzie wysuwany) -->
             <div class="side-filters" id="desktop-filters" style="display:none; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; margin-bottom:20px;">
                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
                     <div>
@@ -142,7 +197,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:40px; text-align:center; color:gray; grid-column: 1/-1;">Nie znaleźliśmy ogłoszeń spełniających te kryteria.</p>'}
             </div>
 
-            <!-- PAGINACJA (STRONY) -->
             ${sumaStron > 1 ? `
                 <div style="display:flex; justify-content:center; gap:10px; margin-top:30px; padding-bottom:20px;">
                     <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona - 1})" ${strona === 1 ? 'disabled style="opacity:0.5"' : 'style="cursor:pointer"'} class="sub-pill">← Poprzednia</button>
@@ -152,6 +206,8 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
             ` : ''}
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Blokada skrolowania tła
+};
 };
 
 // --- ULUBIONE (NAPRAWIONE I MNIEJSZE) ---
@@ -761,6 +817,7 @@ window.pokazUlubione = () => {
 
 window.zamknijModal = () => {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    document.body.style.overflow = 'auto'; // Przywrócenie skrolowania tła
 };
 
 window.zamknijIResetujModal = () => {
