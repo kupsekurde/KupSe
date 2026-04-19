@@ -848,6 +848,33 @@ async function init() {
 
 // Uruchomienie wszystkiego
 init();
+// Funkcja zamykająca okienka po kliknięciu w tło
+window.addEventListener('mousedown', (e) => {
+    const dropMenu = document.getElementById('drop-menu');
+    const modalFull = document.getElementById('modal-full');
+    const formModal = document.getElementById('form-modal');
+
+    // 1. Zamykanie menu "Moje Konto"
+    if (dropMenu && dropMenu.style.display === 'block') {
+        // Jeśli kliknięcie NIE jest wewnątrz menu i NIE jest przyciskiem otwierającym
+        if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
+            dropMenu.style.display = 'none';
+        }
+    }
+
+    // 2. Zamykanie modali pełnoekranowych (Ulubione, Wiadomości, Wyniki)
+    // Jeśli kliknięty element to dokładnie tło (modal-full), a nie jego zawartość
+    if (e.target === modalFull) {
+        modalFull.style.display = 'none';
+        document.body.style.overflow = 'auto'; // przywraca przewijanie strony
+    }
+
+    // 3. Zamykanie formularza "Dodaj ogłoszenie"
+    if (e.target === formModal) {
+        formModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+});
 
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
