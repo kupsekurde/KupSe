@@ -333,78 +333,8 @@ window.navFullFoto = (dir) => {
 
 // --- FILTROWANIE SPECJALISTYCZNE ---
 window.otworzFiltry = (kat, podkat) => {
-    if (kat !== 'Motoryzacja') {
-        window.filtrujPoPodkat(kat, podkat);
-        return;
-    }
-    const content = document.getElementById('view-content');
-    content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h3>Szukaj w: ${podkat}</h3>
-        <div style="display:flex; flex-direction:column; gap:12px; margin-top:15px;">
-            <input type="text" id="sf-marka" placeholder="Marka (np. Opel)" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-            <input type="text" id="sf-model" placeholder="Model" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="number" id="sf-rok-min" placeholder="Rok od" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="sf-rok-max" placeholder="Rok do" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="number" id="sf-cena-min" placeholder="Cena od (zł)" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <input type="number" id="sf-cena-max" placeholder="Cena do (zł)" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-            </div>
-
-            <select id="sf-paliwo" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <option value="">Wszystkie paliwa</option>
-                <option value="Benzyna">Benzyna</option>
-                <option value="LPG">LPG</option>
-                <option value="Diesel">Diesel</option>
-                <option value="Hybryda">Hybryda</option>
-                <option value="Elektryczny">Elektryczny</option>
-            </select>
-
-            <select id="sf-skrzynia" style="padding:10px; border-radius:8px; border:1px solid #ccc;">
-                <option value="">Wszystkie skrzynie</option>
-                <option value="Manualna">Manualna</option>
-                <option value="Automatyczna">Automatyczna</option>
-            </select>
-
-            <button onclick="window.zastosujFiltryMoto('${kat}', '${podkat}')" 
-                    style="background:var(--primary); color:white; padding:15px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:10px;">
-                POKAŻ OGŁOSZENIA
-            </button>
-        </div>`;
-    document.getElementById('modal-view').style.display = 'flex';
-};
-
-window.zastosujFiltryMoto = (kat, podkat) => {
-    const marka = document.getElementById('sf-marka').value.toLowerCase().trim();
-    const model = document.getElementById('sf-model').value.toLowerCase().trim();
-    const cMin = parseFloat(document.getElementById('sf-cena-min').value) || 0;
-    const cMax = parseFloat(document.getElementById('sf-cena-max').value) || 99999999;
-    const rMin = parseInt(document.getElementById('sf-rok-min').value) || 0;
-    const rMax = parseInt(document.getElementById('sf-rok-max').value) || 9999;
-    const paliwo = document.getElementById('sf-paliwo').value.toLowerCase();
-
-    const wyniki = daneOgloszen.filter(o => {
-        if (o.kategoria !== kat || o.podkategoria !== podkat) return false;
-        const tresc = (o.tytul + " " + o.opis).toLowerCase();
-        
-        const mOk = marka === "" || tresc.includes(marka);
-        const modOk = model === "" || tresc.includes(model);
-        const cOk = o.cena >= cMin && o.cena <= cMax;
-        
-        const rokMatch = o.opis.match(/Rok: (\d{4})/);
-        const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
-        const rOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
-        const pOk = paliwo === "" || tresc.includes(paliwo);
-        
-        return mOk && modOk && cOk && rOk && pOk;
-    });
-
-    window.zamknijModal();
-    window.pokazWynikiModal(podkat, wyniki);
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
@@ -611,8 +541,24 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                     <option value="price-asc">Cena: najtańsze</option>
                     <option value="price-desc">Cena: najdroższe</option>
                 </select>
-                <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
+                               <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
                 <input type="text" id="side-szukaj" placeholder="Np. Opel, iPhone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                
+                ${tytul.includes('Motoryzacja') ? `
+                    <label style="font-size:11px; font-weight:bold; color:gray;">ROK PRODUKCJI</label>
+                    <div style="display:flex; gap:5px; margin-bottom:12px;">
+                        <input type="number" id="sf-rok-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="number" id="sf-rok-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <label style="font-size:11px; font-weight:bold; color:gray;">PALIWO</label>
+                    <select id="sf-paliwo" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <option value="">Wszystkie</option>
+                        <option value="Benzyna">Benzyna</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="LPG">LPG</option>
+                    </select>
+                ` : ''}
+
                 <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
@@ -637,13 +583,29 @@ window.zastosujFiltryBoczne = () => {
     const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
     const lok = document.getElementById('side-lok').value.toLowerCase().trim();
     const sort = document.getElementById('side-sort').value;
+    
+    // Pola motoryzacyjne (jeśli istnieją)
+    const rMin = document.getElementById('sf-rok-min') ? parseInt(document.getElementById('sf-rok-min').value) || 0 : 0;
+    const rMax = document.getElementById('sf-rok-max') ? parseInt(document.getElementById('sf-rok-max').value) || 9999 : 9999;
+    const paliwo = document.getElementById('sf-paliwo') ? document.getElementById('sf-paliwo').value.toLowerCase() : "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
         const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
         const tekstOk = fraza === "" || tekstDoPrzeszukania.includes(fraza);
         const cenaOk = o.cena >= min && o.cena <= max;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
-        return tekstOk && cenaOk && lokOk;
+        
+        // Dodatkowe sprawdzenie dla aut
+        let motoOk = true;
+        if (paliwo || rMin > 0 || rMax < 9999) {
+            const rokMatch = o.opis.match(/Rok: (\d{4})/);
+            const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+            const rokOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+            const paliwoOk = paliwo === "" || o.opis.toLowerCase().includes(paliwo);
+            motoOk = rokOk && paliwoOk;
+        }
+
+        return tekstOk && cenaOk && lokOk && motoOk;
     });
 
     if (sort === 'price-asc') {
@@ -675,7 +637,7 @@ function renderCardHTML(o) {
     
     return `
         <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
-            <div onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
             <img src="${o.zdjecia[0]}" style="width:100%; height:150px; object-fit:cover;">
