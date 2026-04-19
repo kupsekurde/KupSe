@@ -71,24 +71,27 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">
-                    Moje Konto ${msgCount > 0 ? `(${msgCount})` : ''} ▼
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
-                        ✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
                     </div>
-                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold; border-radius:8px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='transparent'">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
             </div>`;
     } else {
-        if (authBox) authBox.style.display = 'block';
+        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
         nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
     }
 }
+
 // --- MOJE OGŁOSZENIA (ZMNIEJSZONE OKNO) ---
 window.pokazMojeOgloszenia = async () => {
     const { data: { user } } = await baza.auth.getUser();
@@ -678,16 +681,9 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
 
     content.innerHTML = `
-        <button class="close-btn" onclick="window.zamknijIResetujModal()">&times;</button>
-        
-        <!-- Przycisk do filtrów widoczny tylko na mobile -->
-        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="display:none; width:100%; background:#f3f4f6; border:1px solid #ddd; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold; cursor:pointer; align-items:center; justify-content:center; gap:10px;">
-            🔍 Filtruj i sortuj wyniki
-        </button>
-
-        <div class="results-container" style="display:flex; gap:20px; margin-top:20px;">
-            <!-- PANEL FILTRÓW -->
-            <div id="filter-sidebar" class="side-filters" style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <div style="display:flex; gap:20px; margin-top:20px;">
+            <div style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Filtruj i sortuj</h4>
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
@@ -707,15 +703,13 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
-
-            <!-- LISTA OGŁOSZEŃ -->
             <div style="flex:1;">
-                <h2 style="margin-top:0; font-size:18px;">${tytul}</h2>
-                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Brak ogłoszeń.</p>'}
+                <h2 style="margin-top:0;">${tytul}</h2>
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń o tych parametrach.</p>'}
                 </div>
             </div>
-        </div>
+        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
 };
 
@@ -815,21 +809,9 @@ window.zamknijModal = () => {
 };
 
 window.zamknijIResetujModal = () => {
-    const m = document.getElementById('modal-view');
-    if (!m) return;
-    const mBox = m.querySelector('.modal-box');
-    m.style.display = 'none';
-    
-    // Ważne: przywracamy domyślną szerokość dla ogłoszeń
-    if (mBox) {
-        mBox.style.maxWidth = "1250px"; 
-        mBox.style.width = "95%";
-    }
-    document.body.style.overflow = 'auto';
-    
-    // Czyścimy zawartość, żeby przy następnym otwarciu nie było "starych" śmieci
-    const mContent = document.getElementById('view-content');
-    if (mContent) mContent.innerHTML = "";
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "1250px"; 
+    window.zamknijModal();
 };
 
 async function sprawdzPowiadomieniaBezReloadu() {
@@ -866,37 +848,30 @@ async function init() {
 
 // Uruchomienie wszystkiego
 init();
-// --- LOGIKA ZAMYKANIA OKIEN KLIKNIĘCIEM POZA NIMI ---
+// --- POPRAWIONE ZAMYKANIE OKIEN KLIKNIĘCIEM POZA NIMI ---
 window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
-    const modalView = document.getElementById('modal-view'); // Okno wiadomości / ogłoszeń
-    const modalForm = document.getElementById('modal-form'); // Okno dodawania ogłoszeń
+    const modalView = document.getElementById('modal-view'); // Twoje ID dla podglądu
+    const modalForm = document.getElementById('modal-form'); // Twoje ID dla dodawania
 
-    // 1. Zamykanie menu "Moje Konto" jeśli klikniesz gdzieś indziej
+    // 1. Zamykanie menu "Moje Konto"
     if (dropMenu && dropMenu.style.display === 'block') {
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
             dropMenu.style.display = 'none';
         }
     }
 
-    // 2. Zamykanie okna podglądu (Wiadomości, Ulubione, Detale ogłoszenia)
-    // Jeśli kliknięty element to dokładnie tło (modal-view), a nie biały środek
+    // 2. Zamykanie okna podglądu (ogłoszenia, wiadomości, ulubione)
     if (e.target === modalView) {
-        if (typeof window.zamknijIResetujModal === "function") {
-            window.zamknijIResetujModal();
-        } else {
-            modalView.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
+        window.zamknijIResetujModal(); // Używamy Twojej istniejącej funkcji
     }
 
-    // 3. Zamykanie formularza dodawania ogłoszenia
+    // 3. Zamykanie okna dodawania ogłoszenia
     if (e.target === modalForm) {
         modalForm.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
 });
-
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -981,46 +956,4 @@ window.otworzFormularzDodawania = () => {
     btn.innerText = "Dodaj ogłoszenie";
     // Podpinamy funkcję wysyłania pod formularz
     document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
-};
-// Funkcja rozwijająca filtry na mobile
-window.toggleMobileFilters = () => {
-    const sidebar = document.getElementById('filter-sidebar');
-    sidebar.classList.toggle('active-mobile');
-};
-
-// Zaktualizowana funkcja filtrów - chowa panel po kliknięciu "Zastosuj"
-const staraFiltryBoczne = window.zastosujFiltryBoczne;
-window.zastosujFiltryBoczne = () => {
-    // 1. Wykonaj filtrowanie
-    const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
-    const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
-    const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
-    const lok = document.getElementById('side-lok').value.toLowerCase().trim();
-    const sort = document.getElementById('side-sort').value;
-
-    let przefiltrowane = wynikiBazowe.filter(o => {
-        const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
-        return (fraza === "" || tekstDoPrzeszukania.includes(fraza)) &&
-               (o.cena >= min && o.cena <= max) &&
-               (lok === "" || o.lokalizacja.toLowerCase().includes(lok));
-    });
-
-    if (sort === 'price-asc') przefiltrowane.sort((a, b) => a.cena - b.cena);
-    else if (sort === 'price-desc') przefiltrowane.sort((a, b) => b.cena - a.cena);
-    else if (sort === 'newest') przefiltrowane.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    else if (sort === 'oldest') przefiltrowane.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-    // 2. Odśwież widok
-    window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
-
-    // 3. SCHOWAJ PANEL NA MOBILE po zastosowaniu
-    const sidebar = document.getElementById('filter-sidebar');
-    if (sidebar) sidebar.classList.remove('active-mobile');
-    
-    // Przywróć wartości do pól
-    document.getElementById('side-szukaj').value = fraza;
-    document.getElementById('side-sort').value = sort;
-    document.getElementById('side-cena-min').value = min > 0 ? min : '';
-    document.getElementById('side-cena-max').value = max < 99999999 ? max : '';
-    document.getElementById('side-lok').value = lok;
 };
