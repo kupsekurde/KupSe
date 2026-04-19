@@ -183,26 +183,26 @@
         flex-direction: column !important; 
     }
 
-    /* Przycisk pokazywania filtrów - domyślnie ukryty (pokazujemy w JS na mobile) */
-    #mobile-filter-toggle {
-        display: none;
+    /* Przycisk filtrów widoczny teraz zawsze */
+    #filter-toggle-btn {
+        display: block;
+    }
+
+    /* Panel filtrów */
+    .side-filters {
+        display: none; /* Domyślnie schowany na PC i Mobile */
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Gdy panel jest aktywny - pokazujemy go */
+    .side-filters.active {
+        display: block !important;
     }
 
     @media (max-width: 768px) {
-        #mobile-filter-toggle {
-            display: block !important;
-        }
-        
-        /* Panel filtrów na mobile - domyślnie schowany, wyjeżdża klasą .active */
-        .side-filters {
-            display: none;
-            width: 100% !important;
-            position: relative !important;
-            top: 0 !important;
-            margin-bottom: 20px;
-        }
-        .side-filters.active {
-            display: block !important;
+        .modal-box {
+            padding: 15px;
         }
 
         #view-content #modal-grid {
