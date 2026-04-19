@@ -187,8 +187,24 @@
         .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
         /* Modale */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-box { 
+        /* Główne tło okienek */
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.7); 
+    backdrop-filter: blur(5px); 
+    z-index: 9999; /* Zwiększyłem, żeby nic nie przykrywało */
+    justify-content: center; 
+    align-items: center; 
+    overflow-y: auto; /* Pozwala przewijać gdy ogłoszenie jest długie */
+}
+
+/* Kontener wewnątrz okna */
+.modal-box {  
     background: white; 
     width: 95%; 
     max-width: 1250px; /* Zwiększone z 850px */
