@@ -37,45 +37,41 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 30;
 
 window.szukaj = () => {
-    const text = document.getElementById('find-text').value.toLowerCase();
-    const loc = document.getElementById('find-loc').value.toLowerCase();
+    const textInput = document.getElementById('find-text');
+    const locInput = document.getElementById('find-loc');
+    const text = textInput.value.toLowerCase();
+    const loc = locInput.value.toLowerCase();
     const wyniki = daneOgloszen.filter(o => {
         const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
         const mLoc = o.lokalizacja.toLowerCase().includes(loc);
         return mText && mLoc;
     });
     window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
-    // Czyścimy pola po wyszukaniu, żeby nie zaśmiecały widoku
-    document.getElementById('find-text').value = '';
-    document.getElementById('find-loc').value = '';
+    textInput.value = ''; // Czyści pole tekstowe
+    locInput.value = '';  // Czyści pole lokalizacji
 };
 
-// --- NOWA FUNKCJA LOGOWANIA I MENU ---
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
     const authBox = document.getElementById('auth-box');
-
     if (user) {
         if (authBox) authBox.style.display = 'none';
         const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
         const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
-
         nav.innerHTML = `
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
                 <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                    Moje Konto ▼ ${msgCount > 0 ? `<span style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
                     <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span>
-                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                        <span>✉️ Wiadomości</span> ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
                     </div>
                     <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
@@ -106,13 +102,10 @@ window.zarejestruj = async () => {
 };
 
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    if (!tytul.includes("(wyniki)")) {
-        wynikiBazowe = [...wyniki]; 
-        ostatniTytul = tytul;
-    }
+    const OGLOSZENIA_NA_STRONE = 30; // Zmienione na 30
+    if (!tytul.includes("(wyniki)")) { wynikiBazowe = [...wyniki]; ostatniTytul = tytul; }
     ostatnieWyniki = wyniki;
     const content = document.getElementById('view-content');
-    
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
@@ -124,89 +117,36 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="margin-top:20px;">${tytul}</h2>
-        
-        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()" style="width:100%; padding:15px; background:#111; color:white; border:none; border-radius:12px; font-weight:800; margin-bottom:20px; cursor:pointer; font-size:16px;">
-            🔍 Filtruj i Sortuj Wyniki
-        </button>
+        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()" style="width:100%; padding:15px; background:#111; color:white; border:none; border-radius:12px; font-weight:800; margin-bottom:20px; cursor:pointer;">🔍 Filtruj i Sortuj Wyniki</button>
 
         <div id="results-layout" style="display:flex; flex-direction:column; gap:20px;">
-            <div class="side-filters" id="desktop-filters" style="display:none; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; margin-bottom:20px;">
+            <div class="side-filters" id="desktop-filters" style="display:none; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee;">
                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
-                        <select id="side-sort" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                            <option value="newest">Najnowsze</option>
-                            <option value="oldest">Najstarsze</option>
-                            <option value="price-asc">Cena: najtańsze</option>
-                            <option value="price-desc">Cena: najdroższe</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
-                        <input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                    </div>
-                
+                    <div><label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label><select id="side-sort" style="width:100%; padding:8px;"><option value="newest">Najnowsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option></select></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ</label><input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; padding:8px;"></div>
                     ${czySpecjalneMoto ? `
-                        <div>
-                            <label style="font-size:11px; font-weight:bold; color:gray;">MARKA</label>
-                            <input type="text" id="sf-marka" placeholder="Np. BMW" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:11px; font-weight:bold; color:gray;">MODEL</label>
-                            <input type="text" id="sf-model" placeholder="Np. Seria 3" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:11px; font-weight:bold; color:gray;">PRZEBIEG OD-DO</label>
-                            <div style="display:flex; gap:5px;">
-                                <input type="number" id="sf-przebieg-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                                <input type="number" id="sf-przebieg-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size:11px; font-weight:bold; color:gray;">SKRZYNIA</label>
-                            <select id="sf-skrzynia" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                                <option value="">Wszystkie</option>
-                                <option value="Automatyczna">Automatyczna</option>
-                                <option value="Manualna">Manualna</option>
-                            </select>
-                        </div>
+                        <div><label style="font-size:11px; font-weight:bold; color:gray;">MARKA</label><input type="text" id="sf-marka" style="width:100%; padding:8px;"></div>
+                        <div><label style="font-size:11px; font-weight:bold; color:gray;">MODEL</label><input type="text" id="sf-model" style="width:100%; padding:8px;"></div>
+                        <div><label style="font-size:11px; font-weight:bold; color:gray;">PRZEBIEG</label><div style="display:flex;gap:5px"><input type="number" id="sf-przebieg-min" placeholder="Od" style="width:50%; padding:8px;"><input type="number" id="sf-przebieg-max" placeholder="Do" style="width:50%; padding:8px;"></div></div>
+                        <div><label style="font-size:11px; font-weight:bold; color:gray;">SKRZYNIA</label><select id="sf-skrzynia" style="width:100%; padding:8px;"><option value="">Wszystkie</option><option value="Automatyczna">Automatyczna</option><option value="Manualna">Manualna</option></select></div>
                     ` : `
-                        <div>
-                            <label style="font-size:11px; font-weight:bold; color:gray;">STAN</label>
-                            <select id="side-stan" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                                <option value="">Wszystkie</option>
-                                <option value="Nowe">Nowe</option>
-                                <option value="Używane">Używane</option>
-                            </select>
-                        </div>
+                        <div><label style="font-size:11px; font-weight:bold; color:gray;">STAN</label><select id="side-stan" style="width:100%; padding:8px;"><option value="">Wszystkie</option><option value="Nowe">Nowe</option><option value="Używane">Używane</option></select></div>
                     `}
-
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
-                        <div style="display:flex; gap:5px;">
-                            <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                            <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                        </div>
-                    </div>
+                    <div><label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label><div style="display:flex;gap:5px"><input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px;"><input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px;"></div></div>
                 </div>
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:15px; border-radius:10px; cursor:pointer; font-weight:800; margin-top:15px;">Zastosuj filtry</button>
             </div>
-
-            <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:20px; min-height:400px;">
-                ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:40px; text-align:center; color:gray; grid-column: 1/-1;">Nie znaleźliśmy ogłoszeń spełniających te kryteria.</p>'}
+            <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:20px;">
+                ${porcja.map(o => renderCardHTML(o)).join('')}
             </div>
-
-            ${sumaStron > 1 ? `
-                <div style="display:flex; justify-content:center; gap:10px; margin-top:30px; padding-bottom:20px;">
-                    <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona - 1})" ${strona === 1 ? 'disabled style="opacity:0.5"' : 'style="cursor:pointer"'} class="sub-pill">← Poprzednia</button>
-                    <span style="align-self:center; font-weight:bold;">Strona ${strona} z ${sumaStron}</span>
-                    <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona + 1})" ${strona === sumaStron ? 'disabled style="opacity:0.5"' : 'style="cursor:pointer"'} class="sub-pill">Następna →</button>
-                </div>
-            ` : ''}
+            ${sumaStron > 1 ? `<div style="display:flex; justify-content:center; gap:10px; margin-top:30px; padding-bottom:20px;">
+                <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona - 1})" ${strona === 1 ? 'disabled' : ''} class="sub-pill">←</button>
+                <span>${strona} / ${sumaStron}</span>
+                <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona + 1})" ${strona === sumaStron ? 'disabled' : ''} class="sub-pill">→</button>
+            </div>` : ''}
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Blokada skrolowania tła
+    document.body.style.overflow = 'hidden'; // Blokusje skrolowanie tła
 };
 };
 
