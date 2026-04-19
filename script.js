@@ -71,27 +71,24 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">
+                    Moje Konto ${msgCount > 0 ? `(${msgCount})` : ''} ▼
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span>
-                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+                        ✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}
                     </div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold; border-radius:8px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='transparent'">🚪 Wyloguj</div>
                 </div>
             </div>`;
     } else {
-        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
+        if (authBox) authBox.style.display = 'block';
         nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
     }
 }
-
 // --- MOJE OGŁOSZENIA (ZMNIEJSZONE OKNO) ---
 window.pokazMojeOgloszenia = async () => {
     const { data: { user } } = await baza.auth.getUser();
@@ -151,77 +148,94 @@ window.pokazUlubione = () => {
 // --- WIADOMOŚCI (POGRUBIENIE, USUWANIE, IMIONA) ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
-    const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
-    const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
+    const { data } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     
-    const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "450px"; 
+    const mBox = document.getElementById('modal-content');
+    const mView = document.getElementById('modal-view');
+    const mBoxContainer = mView.querySelector('.modal-box');
+    
+    // Zmniejszamy okienko o połowę
+    mBoxContainer.style.maxWidth = "450px";
+    mView.style.display = 'flex';
 
-    let html = `<button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-                <h2 style="text-align:center; margin-bottom:20px;">Wiadomości</h2>
-                <div style="display:flex; flex-direction:column; gap:8px;">`;
-
-    rozmowcy.forEach(r => {
-        const nowe = msgs.some(m => m.nadawca === r && m.odbiorca === user.email && !m.przeczytane);
-        const styl = nowe ? 'font-weight:900; background:#fff4e6; border-left:4px solid var(--primary);' : 'background:#f9f9f9;';
-        html += `
-            <div style="padding:15px; ${styl} border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;" onclick="window.otworzChat('${r}')">
-                <span>${dajNazwe(r)}</span>
-                <button onclick="event.stopPropagation(); window.usunRozmowe('${r}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>
-            </div>`;
+    // Grupowanie rozmówców
+    const rozmowcy = {};
+    data?.forEach(m => {
+        const inny = m.nadawca === user.email ? m.odbiorca : m.nadawca;
+        if (!rozmowcy[inny]) rozmowcy[inny] = m;
     });
-    document.getElementById('view-content').innerHTML = html + (rozmowcy.length ? '' : '<p style="text-align:center; color:gray;">Brak wiadomości</p>') + '</div>';
-    document.getElementById('modal-view').style.display = 'flex';
-};
 
-window.usunRozmowe = async (zKim) => {
-    if(!confirm(`Usunąć całą historię z ${dajNazwe(zKim)}?`)) return;
-    const { data: { user } } = await baza.auth.getUser();
-    await baza.from('wiadomosci').delete().or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`);
-    window.pokazSkrzynke();
-};
-
-window.otworzChat = async (zKim) => {
-    const { data: { user } } = await baza.auth.getUser();
-    await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
-    const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
-    
-    const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "400px";
-
-    document.getElementById('view-content').innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
-            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
-        </div>
-        <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
-            ${msg.map(m => {
-                const moja = m.nadawca === user.email;
-                const d = new Date(m.created_at);
-                const czas = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')} | ${d.getDate()}.${d.getMonth()+1}`;
-                return `
-                <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
-                    <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
-                        ${m.tresc}
+    let html = `<h2 style="margin-bottom:20px; padding:0 10px;">Twoje rozmowy</h2>`;
+    if (Object.keys(rozmowcy).length === 0) {
+        html += `<p style="text-align:center; color:#666; padding:20px;">Brak wiadomości</p>`;
+    } else {
+        Object.keys(rozmowcy).forEach(email => {
+            const m = rozmowcy[email];
+            const nieprzeczytane = m.odbiorca === user.email && !m.przeczytane;
+            html += `
+                <div onclick="window.otworzKonwersacje('${email}')" style="display:flex; align-items:center; gap:15px; padding:15px; cursor:pointer; border-radius:12px; transition:0.2s; margin-bottom:8px; ${nieprzeczytane ? 'background:#eef6ff; border-left:4px solid var(--primary);' : 'background:#f9f9f9;'}" onmouseover="this.style.transform='translateX(5px)'" onmouseout="this.style.transform='translateX(0)'">
+                    <div style="width:45px; height:45px; background:#ddd; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; background: linear-gradient(45deg, #666, #999); flex-shrink:0;">
+                        ${dajNazwe(email).charAt(0)}
                     </div>
-                    <div style="font-size:8px; color:gray; text-align:${moja?'right':'left'}; margin-top:2px;">${czas}</div>
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="font-weight:bold; font-size:14px; color:#333;">${dajNazwe(email)}</div>
+                        <div style="font-size:12px; color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.tresc}</div>
+                    </div>
+                    ${nieprzeczytane ? '<div style="width:10px; height:10px; background:var(--primary); border-radius:50%;"></div>' : ''}
                 </div>`;
-            }).join('')}
+        });
+    }
+    mBox.innerHTML = html;
+};
+
+window.otworzKonwersacje = async (ktos) => {
+    const { data: { user } } = await baza.auth.getUser();
+    // Oznacz jako przeczytane
+    await baza.from('wiadomosci').update({ przeczytane: true }).eq('nadawca', ktos).eq('odbiorca', user.email);
+    
+    const { data } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${ktos}),and(nadawca.eq.${ktos},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
+
+    const mBox = document.getElementById('modal-content');
+    mBox.innerHTML = `
+        <div style="display:flex; flex-direction:column; height:500px;">
+            <div style="display:flex; align-items:center; gap:10px; padding-bottom:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
+                <button onclick="window.pokazSkrzynke()" style="background:none; border:none; cursor:pointer; font-size:18px;">←</button>
+                <b style="font-size:16px;">${dajNazwe(ktos)}</b>
+            </div>
+            <div id="chat-area" style="flex:1; overflow-y:auto; padding-right:10px; display:flex; flex-direction:column; gap:10px;">
+                ${data.map(m => {
+                    const ja = m.nadawca === user.email;
+                    return `
+                        <div style="max-width:80%; padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.4; ${ja ? 'align-self:flex-end; background:var(--primary); color:white; border-bottom-right-radius:4px;' : 'align-self:flex-start; background:#f0f0f0; color:#333; border-bottom-left-radius:4px;'}">
+                            ${m.tresc}
+                            <div style="font-size:10px; margin-top:4px; opacity:0.7; text-align:right;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div style="padding-top:15px; display:flex; gap:8px;">
+                <input id="chat-input" type="text" placeholder="Napisz wiadomość..." style="flex:1; padding:12px; border:1px solid #ddd; border-radius:25px; outline:none;">
+                <button onclick="window.wyslijZChatu('${ktos}')" style="background:var(--primary); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">></button>
+            </div>
         </div>
-        <div style="display:flex; gap:5px; margin-top:10px;">
-            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
-            <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">➤</button>
-        </div>`;
-    const win = document.getElementById('chat-window'); win.scrollTop = win.scrollHeight;
-    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.wyslijZChatu(zKim); };
+    `;
+    const chat = document.getElementById('chat-area');
+    chat.scrollTop = chat.scrollHeight;
+
+    // Obsługa Entera
+    document.getElementById('chat-input').onkeydown = (e) => { if(e.key === 'Enter') window.wyslijZChatu(ktos); };
 };
 
 window.wyslijZChatu = async (odbiorca) => {
-    const { data: { user } } = await baza.auth.getUser();
-    const tresc = document.getElementById('chat-input').value.trim();
+    const input = document.getElementById('chat-input');
+    const tresc = input.value.trim();
     if (!tresc) return;
-    await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc, przeczytane: false }]);
-    window.otworzChat(odbiorca);
+    const { data: { user } } = await baza.auth.getUser();
+    const { error } = await baza.from('wiadomosci').insert([{ nadawca: user.email, odbiorca, tresc }]);
+    if (!error) {
+        input.value = '';
+        window.otworzKonwersacje(odbiorca);
+    }
 };
 
 // --- FUNKCJE SYSTEMOWE ---
@@ -809,9 +823,11 @@ window.zamknijModal = () => {
 };
 
 window.zamknijIResetujModal = () => {
-    const modalBox = document.querySelector('.modal-box');
-    if(modalBox) modalBox.style.maxWidth = "1250px"; 
-    window.zamknijModal();
+    const m = document.getElementById('modal-view');
+    const mBox = m.querySelector('.modal-box');
+    m.style.display = 'none';
+    mBox.style.maxWidth = "900px"; // Resetujemy szerokość do domyślnej
+    document.body.style.overflow = 'auto';
 };
 
 async function sprawdzPowiadomieniaBezReloadu() {
