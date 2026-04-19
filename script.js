@@ -29,39 +29,34 @@ async function sprawdzUzytkownika() {
     const authBox = document.getElementById('auth-box');
 
     if (user) {
-        if (authBox) authBox.style.display = 'none'; // UKRYWA OKNO LOGOWANIA
-        
-        const pobierzDane = async () => {
-            const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
-            const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
-            const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-            mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
+        if (authBox) authBox.style.display = 'none';
+        const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+        const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
+        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
 
-            nav.innerHTML = `
-                <div style="position:relative; display:flex; gap:15px; align-items:center;">
-                    <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
-                    <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                    <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                        Moje Konto ▼
-                        ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
-                    </button>
-                    <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                        <div style="padding-bottom:10px; border-bottom:1px solid #eee; margin-bottom:10px;">
-                            <small style="color:gray;">Zalogowany jako:</small><br>
-                            <b style="font-size:14px; color:var(--primary);">${dajNazwe(user.email)}</b>
-                        </div>
-                        <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                        <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                            <span>✉️ Wiadomości</span>
-                            ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
-                        </div>
-                        <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
-                        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                        <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+        nav.innerHTML = `
+            <div style="position:relative; display:flex; gap:15px; align-items:center;">
+                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                </button>
+                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
                     </div>
-                </div>`;
-        };
-        await pobierzDane();
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                </div>
+            </div>`;
+    } else {
+        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
+        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
     }
 }
 
@@ -744,14 +739,12 @@ function renderCardHTML(o) {
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
-    const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 28;
-    const aktywne = lista.filter(o => (teraz - new Date(o.created_at)) < limit);
-    const top12 = aktywne.slice(0, 12);
     
-    // Wymuszamy 4 kolumny bezpośrednio w kodzie
+    // Bierzemy po prostu 12 najnowszych bez względu na datę
+    const top12 = lista.slice(0, 12);
+    
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
     k.style.gap = '20px';
     
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
