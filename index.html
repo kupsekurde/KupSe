@@ -179,19 +179,41 @@
     }
 
     /* Naprawa okna wyników wyszukiwania na telefonie */
-    #view-content > div[style*="display: flex"] {
-        flex-direction: column !important; /* Filtry lecą na górę */
+    #view-content #results-layout {
+        flex-direction: column !important; 
     }
 
-    #view-content #modal-grid {
-        grid-template-columns: repeat(2, 1fr) !important; /* 2 ogłoszenia w wynikach */
-        gap: 10px !important;
+    /* Przycisk pokazywania filtrów - domyślnie ukryty (pokazujemy w JS na mobile) */
+    #mobile-filter-toggle {
+        display: none;
     }
 
-    .ad-card img {
-        height: 120px !important; /* Mniejsze zdjęcia na telefonie, żeby było widać tekst */
+    @media (max-width: 768px) {
+        #mobile-filter-toggle {
+            display: block !important;
+        }
+        
+        /* Panel filtrów na mobile - domyślnie schowany, wyjeżdża klasą .active */
+        .side-filters {
+            display: none;
+            width: 100% !important;
+            position: relative !important;
+            top: 0 !important;
+            margin-bottom: 20px;
+        }
+        .side-filters.active {
+            display: block !important;
+        }
+
+        #view-content #modal-grid {
+            grid-template-columns: 1fr !important; /* Jedno ogłoszenie pod drugim */
+            gap: 15px !important;
+        }
+
+        .ad-card img {
+            height: 200px !important; /* Większe zdjęcie przy układzie 1-kolumnowym */
+        }
     }
-        .ad-card { background: white; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #eee; position: relative; }
         .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
         /* Modale */
