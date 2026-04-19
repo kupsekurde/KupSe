@@ -679,37 +679,25 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijIResetujModal()">&times;</button>
-        
-        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="display:none; width:100%; background:var(--primary); color:white; border:none; padding:15px; font-weight:bold; cursor:pointer; border-radius:8px; margin-bottom:10px; font-size:14px;">
+        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="display:none; width:100%; background:var(--primary); color:white; border:none; padding:15px; font-weight:bold; cursor:pointer; border-radius:10px; margin-bottom:15px;">
             🔍 FILTRUJ I SORTUJ WYNIKI
         </button>
-
         <div class="results-container" style="display:flex; gap:20px;">
             <div id="filter-sidebar" class="side-filters">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h4 style="margin:0;">Filtruj i sortuj</h4>
-                    <button onclick="window.toggleMobileFilters()" class="mobile-only" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+                    <button onclick="window.toggleMobileFilters()" style="background:none; border:none; font-size:24px; cursor:pointer;" class="mobile-only">&times;</button>
                 </div>
-                <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
-                <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                    <option value="newest">Najnowsze</option>
-                    <option value="oldest">Najstarsze</option>
-                    <option value="price-asc">Cena: najtańsze</option>
-                    <option value="price-desc">Cena: najdroższe</option>
-                </select>
                 <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
-                <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
-                <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:15px; border-radius:10px; cursor:pointer; font-weight:800;">ZASTOSUJ ZMIANY</button>
             </div>
-
             <div style="flex:1;">
-                <h2 style="margin-top:0; font-size:18px; padding-left:10px;">${tytul}</h2>
-                <div id="modal-grid" class="ads-grid-mobile">
+                <h2 style="margin-top:0; font-size:18px;">${tytul}</h2>
+                <div id="modal-grid" class="mobile-grid-fix">
                     ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Brak ogłoszeń.</p>'}
                 </div>
             </div>
@@ -717,6 +705,18 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     document.getElementById('modal-view').style.display = 'flex';
 };
 
+window.toggleMobileFilters = () => {
+    const s = document.getElementById('filter-sidebar');
+    if(s) s.classList.toggle('active-mobile');
+};
+
+window.zastosujFiltryBoczne = () => {
+    const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
+    const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
+    let wyniki = wynikiBazowe.filter(o => o.cena >= min && o.cena <= max);
+    window.pokazWynikiModal(ostatniTytul + " (wyniki)", wyniki);
+    window.toggleMobileFilters(); // Chowa panel po kliknięciu
+};
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
     const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
