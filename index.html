@@ -32,17 +32,49 @@
     #find-text { width: 50%; }
     #find-loc { width: 35%; }
 
-    .cat-container { overflow-x: auto; justify-content: flex-start; padding: 15px 20px; gap: 20px; -webkit-overflow-scrolling: touch; }
-    .cat-container::-webkit-scrollbar { display: none; }
-    .cat-item { min-width: 70px; }
-    .cat-icon { width: 60px; height: 60px; }
+    /* Ogłoszenia na stronie głównej - JEDEN SŁUPEK */
+    .ads-grid { grid-template-columns: 1fr !important; gap: 15px !important; padding: 10px !important; }
+    .ad-card img { height: 220px !important; }
 
-    /* Ogłoszenia na stronie głównej - 2 kolumny (żeby nie było za długo) */
-    .ads-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    /* PANEL FILTRÓW NA MOBILE - Wyjeżdżający z lewej */
+    .side-filters { 
+        position: fixed !important;
+        top: 0;
+        left: -100%; /* Schowany za ekranem */
+        width: 80% !important;
+        height: 100% !important;
+        z-index: 10001;
+        background: white !important;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+        transition: 0.3s ease;
+        overflow-y: auto;
+        display: block !important; /* Musi być block, żeby transition działało */
+    }
+    
+    .side-filters.active-mobile { 
+        left: 0; /* Wyjeżdża na ekran */
+    }
 
-    /* --- NOWE USTAWIENIA DLA WYNIKÓW WYSZUKIWANIA (FILTRY) --- */
+    /* Przycisk otwierający filtry na samej górze */
+    #mobile-filter-toggle {
+        display: flex !important;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--primary) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    /* Ogłoszenia w wynikach wyszukiwania - JEDEN SŁUPEK */
+    #modal-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 20px !important;
+    }
+
+    .modal-box { width: 100%; height: 100%; border-radius: 0; padding: 10px; max-height: 100vh; }
     .results-container { flex-direction: column !important; }
- }
+}
 
     
     /* Panel filtrów na mobile - domyślnie ukryty */
@@ -259,7 +291,7 @@
 
     </div>
     <div class="nav-right" id="user-nav">
-        <button onclick="'auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
+        <button onclick="document.getElementById('auth-box').style.display='block'; document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
     </div>
 </nav>
 
@@ -288,7 +320,7 @@
             <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
             <input type="password" id="pass" placeholder="Hasło" style="margin-bottom:15px;">
             <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
-            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="'login-view').classList.add('hidden'); 'register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
         </div>
         
        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
@@ -318,7 +350,7 @@
 </div>
     <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
     
-    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="'register-view').classList.add('hidden'); 'login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onconclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')"lick="'register-view').classList.add('hidden'); 'login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
 </div>
 
         </div> 
