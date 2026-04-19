@@ -806,9 +806,21 @@ window.zamknijModal = () => {
 };
 
 window.zamknijIResetujModal = () => {
-    const modalBox = document.querySelector('.modal-box');
-    if(modalBox) modalBox.style.maxWidth = "1250px"; 
-    window.zamknijModal();
+    const m = document.getElementById('modal-view');
+    if (!m) return;
+    const mBox = m.querySelector('.modal-box');
+    m.style.display = 'none';
+    
+    // Ważne: przywracamy domyślną szerokość dla ogłoszeń
+    if (mBox) {
+        mBox.style.maxWidth = "1250px"; 
+        mBox.style.width = "95%";
+    }
+    document.body.style.overflow = 'auto';
+    
+    // Czyścimy zawartość, żeby przy następnym otwarciu nie było "starych" śmieci
+    const mContent = document.getElementById('view-content');
+    if (mContent) mContent.innerHTML = "";
 };
 
 async function sprawdzPowiadomieniaBezReloadu() {
@@ -845,30 +857,33 @@ async function init() {
 
 // Uruchomienie wszystkiego
 init();
-// Funkcja zamykająca okienka po kliknięciu w tło
+// --- LOGIKA ZAMYKANIA OKIEN KLIKNIĘCIEM POZA NIMI ---
 window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
-    const modalFull = document.getElementById('modal-full');
-    const formModal = document.getElementById('form-modal');
+    const modalView = document.getElementById('modal-view'); // Okno wiadomości / ogłoszeń
+    const modalForm = document.getElementById('modal-form'); // Okno dodawania ogłoszeń
 
-    // 1. Zamykanie menu "Moje Konto"
+    // 1. Zamykanie menu "Moje Konto" jeśli klikniesz gdzieś indziej
     if (dropMenu && dropMenu.style.display === 'block') {
-        // Jeśli kliknięcie NIE jest wewnątrz menu i NIE jest przyciskiem otwierającym
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
             dropMenu.style.display = 'none';
         }
     }
 
-    // 2. Zamykanie modali pełnoekranowych (Ulubione, Wiadomości, Wyniki)
-    // Jeśli kliknięty element to dokładnie tło (modal-full), a nie jego zawartość
-    if (e.target === modalFull) {
-        modalFull.style.display = 'none';
-        document.body.style.overflow = 'auto'; // przywraca przewijanie strony
+    // 2. Zamykanie okna podglądu (Wiadomości, Ulubione, Detale ogłoszenia)
+    // Jeśli kliknięty element to dokładnie tło (modal-view), a nie biały środek
+    if (e.target === modalView) {
+        if (typeof window.zamknijIResetujModal === "function") {
+            window.zamknijIResetujModal();
+        } else {
+            modalView.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
     }
 
-    // 3. Zamykanie formularza "Dodaj ogłoszenie"
-    if (e.target === formModal) {
-        formModal.style.display = 'none';
+    // 3. Zamykanie formularza dodawania ogłoszenia
+    if (e.target === modalForm) {
+        modalForm.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
 });
