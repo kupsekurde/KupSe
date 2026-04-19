@@ -200,7 +200,7 @@ window.wyslijZChatu = async (odbiorca) => {
 // --- FUNKCJE SYSTEMOWE ---
 window.zamknijModal = () => {
     const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "1250px"; 
+    if(mb) mb.style.maxWidth = "1250px"; // Powrót do dużej szerokości dla detali ogłoszeń
     document.getElementById('modal-view').style.display = 'none';
 };
 
