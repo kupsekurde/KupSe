@@ -594,9 +594,16 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <div style="display:flex; gap:20px; margin-top:20px;">
-            <div style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
-                <h4 style="margin-top:0;">Filtruj i sortuj</h4>
+        <h2 style="margin-top:20px;">${tytul}</h2>
+        
+        <!-- Przycisk do filtrów widoczny tylko na telefonie -->
+        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer;">
+            🔍 Filtruj i sortuj
+        </button>
+
+        <div id="results-layout" style="display:flex; gap:20px;">
+            <div class="side-filters" style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
+                <h4 style="margin-top:0;">Parametry</h4>
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="newest">Najnowsze</option>
@@ -616,9 +623,8 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
             <div style="flex:1;">
-                <h2 style="margin-top:0;">${tytul}</h2>
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń o tych parametrach.</p>'}
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń.</p>'}
                 </div>
             </div>
         </div>`;
@@ -652,6 +658,10 @@ window.zastosujFiltryBoczne = () => {
 
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
     
+    // Na telefonie chowamy panel po kliknięciu "Zastosuj"
+    const sf = document.querySelector('.side-filters');
+    if(sf) sf.classList.remove('active');
+
     document.getElementById('side-szukaj').value = fraza;
     document.getElementById('side-sort').value = sort;
     if(min > 0) document.getElementById('side-cena-min').value = min;
@@ -875,4 +885,13 @@ window.otworzFormularzDodawania = () => {
     btn.disabled = false;
     btn.innerText = "Dodaj ogłoszenie";
     document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
+};
+// Funkcja do rozwijania filtrów na telefonie
+window.toggleMobileFilters = () => {
+    const filters = document.querySelector('.side-filters');
+    const btn = document.getElementById('mobile-filter-toggle');
+    if (filters) {
+        filters.classList.toggle('active');
+        btn.innerText = filters.classList.contains('active') ? '✖ Zamknij filtry' : '🔍 Filtruj i sortuj';
+    }
 };
