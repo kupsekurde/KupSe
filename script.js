@@ -94,33 +94,33 @@ window.pokazMojeOgloszenia = async () => {
 
 // --- ULUBIONE (NAPRAWIONE I MNIEJSZE) ---
 window.pokazUlubione = () => {
-    // 1. Ustawiamy małą szerokość okna (600px)
-    const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "600px";
-
-    // 2. Filtrujemy ogłoszenia (upewniamy się, że ID to liczba)
-    const ulubioneOgloszenia = daneOgloszen.filter(o => mojeUlubione.includes(Number(o.id)));
-
+    const okno = document.getElementById('modal-view');
     const content = document.getElementById('view-content');
+    const mb = document.querySelector('.modal-box');
+    
+    if(mb) mb.style.maxWidth = "600px";
+    
+    // Filtrujemy dane (upewniamy się, że id to liczba)
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(Number(o.id)));
+
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="text-align:center; margin-bottom:20px;">Twoje Ulubione ❤️</h2>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            ${ulubioneOgloszenia.map(o => `
-                <div onclick="window.pokazSzczegoly(${o.id})" style="cursor:pointer; border:1px solid #eee; border-radius:12px; overflow:hidden; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                    <img src="${o.zdjecia[0]}" style="width:100%; height:110px; object-fit:cover;">
+            ${ulubioneLista.map(o => `
+                <div onclick="window.pokazSzczegoly(${o.id})" style="cursor:pointer; border:1px solid #eee; border-radius:12px; overflow:hidden; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:120px; object-fit:cover;">
                     <div style="padding:10px;">
-                        <div style="font-weight:bold; color:var(--primary); font-size:15px;">${o.cena} zł</div>
-                        <div style="font-size:12px; height:32px; overflow:hidden; line-height:1.2; margin-top:4px;">${o.tytul}</div>
+                        <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.cena} zł</div>
+                        <div style="font-size:12px; height:32px; overflow:hidden; margin-top:5px;">${o.tytul}</div>
                     </div>
                 </div>
             `).join('')}
         </div>
-        ${ulubioneOgloszenia.length === 0 ? '<p style="text-align:center; color:gray; margin-top:20px; grid-column:1/3;">Nie masz jeszcze ulubionych ogłoszeń.</p>' : ''}`;
+        ${ulubioneLista.length === 0 ? '<p style="text-align:center; color:gray; margin-top:30px; grid-column: 1/3;">Nie masz jeszcze ulubionych ogłoszeń.</p>' : ''}`;
     
-    document.getElementById('modal-view').style.display = 'flex';
+    okno.style.display = 'flex';
 };
-
 // --- WIADOMOŚCI (POGRUBIENIE, USUWANIE, IMIONA) ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
