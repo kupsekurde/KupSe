@@ -34,56 +34,19 @@ let aktualneFotki = [];
 let wynikiBazowe = [];
 let ostatnieWyniki = [];
 let ostatniTytul = "";
-const OGLOSZENIA_NA_STRONE = 30;
+const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = () => {
-    const textInput = document.getElementById('find-text');
-    const locInput = document.getElementById('find-loc');
-    const text = textInput.value.toLowerCase();
-    const loc = locInput.value.toLowerCase();
+    const text = document.getElementById('find-text').value.toLowerCase();
+    const loc = document.getElementById('find-loc').value.toLowerCase();
     const wyniki = daneOgloszen.filter(o => {
         const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
         const mLoc = o.lokalizacja.toLowerCase().includes(loc);
         return mText && mLoc;
     });
     window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
-    textInput.value = ''; // Czyści pole tekstowe
-    locInput.value = '';  // Czyści pole lokalizacji
 };
-
-async function sprawdzUzytkownika() {
-    const { data: { user } } = await baza.auth.getUser();
-    const nav = document.getElementById('user-nav');
-    const authBox = document.getElementById('auth-box');
-    if (user) {
-        if (authBox) authBox.style.display = 'none';
-        const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
-        const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
-        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
-        mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
-        nav.innerHTML = `
-            <div style="position:relative; display:flex; gap:15px; align-items:center;">
-                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
-                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼ ${msgCount > 0 ? `<span style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
-                </button>
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span> ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
-                    </div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
-                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
-                </div>
-            </div>`;
-    } else {
-        if (authBox) authBox.style.display = 'block';
-        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
-    }
-}
-
+// --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('pass').value;
@@ -92,62 +55,68 @@ window.loguj = async () => {
     else location.reload();
 };
 
-window.zarejestruj = async () => {
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-pass').value;
-    if(!document.getElementById('reg-zgoda-regulamin').checked) return alert("Musisz zaakceptować regulamin!");
-    const { data, error } = await baza.auth.signUp({ email, password });
-    if (error) alert("Błąd: " + error.message);
-    else alert("Sprawdź email, aby potwierdzić konto (jeśli wymagane) lub zaloguj się.");
-};
+async function sprawdzUzytkownika() {
+    const { data: { user } } = await baza.auth.getUser();
+    const nav = document.getElementById('user-nav');
+    const authBox = document.getElementById('auth-box');
 
-window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    const OGLOSZENIA_NA_STRONE = 30; // Zmienione na 30
-    if (!tytul.includes("(wyniki)")) { wynikiBazowe = [...wyniki]; ostatniTytul = tytul; }
-    ostatnieWyniki = wyniki;
+    if (user) {
+        if (authBox) authBox.style.display = 'none';
+        const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+        const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
+        const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
+        mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
+
+        nav.innerHTML = `
+            <div style="position:relative; display:flex; gap:15px; align-items:center;">
+                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                    Moje Konto ▼
+                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                </button>
+                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
+                        <span>✉️ Wiadomości</span>
+                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                    </div>
+                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                </div>
+            </div>`;
+    } else {
+        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
+        nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
+    }
+}
+
+// --- MOJE OGŁOSZENIA (ZMNIEJSZONE OKNO) ---
+window.pokazMojeOgloszenia = async () => {
+    const { data: { user } } = await baza.auth.getUser();
+    const moje = daneOgloszen.filter(o => o.user_email === user.email);
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "550px"; 
+
     const content = document.getElementById('view-content');
-    const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
-    const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
-    const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
-
-    const czyMoto = tytul.includes('Motoryzacja');
-    const motoPodkaty = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
-    const czySpecjalneMoto = czyMoto && motoPodkaty.some(p => tytul.includes(p));
-
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2 style="margin-top:20px;">${tytul}</h2>
-        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()" style="width:100%; padding:15px; background:#111; color:white; border:none; border-radius:12px; font-weight:800; margin-bottom:20px; cursor:pointer;">🔍 Filtruj i Sortuj Wyniki</button>
-
-        <div id="results-layout" style="display:flex; flex-direction:column; gap:20px;">
-            <div class="side-filters" id="desktop-filters" style="display:none; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee;">
-                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
-                    <div><label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label><select id="side-sort" style="width:100%; padding:8px;"><option value="newest">Najnowsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option></select></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ</label><input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; padding:8px;"></div>
-                    ${czySpecjalneMoto ? `
-                        <div><label style="font-size:11px; font-weight:bold; color:gray;">MARKA</label><input type="text" id="sf-marka" style="width:100%; padding:8px;"></div>
-                        <div><label style="font-size:11px; font-weight:bold; color:gray;">MODEL</label><input type="text" id="sf-model" style="width:100%; padding:8px;"></div>
-                        <div><label style="font-size:11px; font-weight:bold; color:gray;">PRZEBIEG</label><div style="display:flex;gap:5px"><input type="number" id="sf-przebieg-min" placeholder="Od" style="width:50%; padding:8px;"><input type="number" id="sf-przebieg-max" placeholder="Do" style="width:50%; padding:8px;"></div></div>
-                        <div><label style="font-size:11px; font-weight:bold; color:gray;">SKRZYNIA</label><select id="sf-skrzynia" style="width:100%; padding:8px;"><option value="">Wszystkie</option><option value="Automatyczna">Automatyczna</option><option value="Manualna">Manualna</option></select></div>
-                    ` : `
-                        <div><label style="font-size:11px; font-weight:bold; color:gray;">STAN</label><select id="side-stan" style="width:100%; padding:8px;"><option value="">Wszystkie</option><option value="Nowe">Nowe</option><option value="Używane">Używane</option></select></div>
-                    `}
-                    <div><label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label><div style="display:flex;gap:5px"><input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px;"><input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px;"></div></div>
+        <h2 style="text-align:center; margin-bottom:20px;">Moje ogłoszenia</h2>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            ${moje.map(o => `
+                <div style="display:flex; gap:15px; border:1px solid #eee; padding:10px; border-radius:12px; align-items:center; background:#fafafa;">
+                    <img src="${o.zdjecia[0]}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:14px;">${o.tytul}</div>
+                        <div style="color:var(--primary); font-weight:bold;">${o.cena} zł</div>
+                    </div>
+                    <button onclick="window.usunOgloszenie(${o.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:20px;">🗑️</button>
                 </div>
-                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:15px; border-radius:10px; cursor:pointer; font-weight:800; margin-top:15px;">Zastosuj filtry</button>
-            </div>
-            <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:20px;">
-                ${porcja.map(o => renderCardHTML(o)).join('')}
-            </div>
-            ${sumaStron > 1 ? `<div style="display:flex; justify-content:center; gap:10px; margin-top:30px; padding-bottom:20px;">
-                <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona - 1})" ${strona === 1 ? 'disabled' : ''} class="sub-pill">←</button>
-                <span>${strona} / ${sumaStron}</span>
-                <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona + 1})" ${strona === sumaStron ? 'disabled' : ''} class="sub-pill">→</button>
-            </div>` : ''}
+            `).join('')}
+            ${moje.length === 0 ? '<p style="text-align:center; color:gray;">Brak ogłoszeń.</p>' : ''}
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Blokusje skrolowanie tła
-};
 };
 
 // --- ULUBIONE (NAPRAWIONE I MNIEJSZE) ---
@@ -553,81 +522,55 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
 
-    // Sprawdzamy czy kategoria to Motoryzacja i konkretne podkategorie
-    const czyMoto = tytul.includes('Motoryzacja');
-    const motoPodkaty = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
-    const czySpecjalneMoto = czyMoto && motoPodkaty.some(p => tytul.includes(p));
-
     content.innerHTML = `
-        <button class=\"close-btn\" onclick=\"window.zamknijModal()\">&times;</button>\n        <h2 style=\"margin-top:20px;\">${tytul}</h2>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="margin-top:20px;">${tytul}</h2>
         
-        <button id=\"mobile-filter-toggle\" onclick=\"window.toggleMobileFilters()\" style=\"width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer;\">
+        <!-- Przycisk do filtrów widoczny tylko na telefonie -->
+        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer;">
             🔍 Filtruj i sortuj
         </button>
 
-        <div id=\"results-layout\" style=\"display:flex; gap:20px;\">
-            <div class=\"side-filters\" style=\"width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;\">
-                <h4 style=\"margin-top:0;\">Parametry</h4>
-                
-                <label style=\"font-size:11px; font-weight:bold; color:gray;\">SORTOWANIE</label>
-                <select id=\"side-sort\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;\">
-                    <option value=\"newest\">Najnowsze</option>
-                    <option value=\"oldest\">Najstarsze</option>
-                    <option value=\"price-asc\">Cena: najtańsze</option>
-                    <option value=\"price-desc\">Cena: najdroższe</option>
+        <div id="results-layout" style="display:flex; gap:20px;">
+            <div class="side-filters" style="width:220px; flex-shrink:0; background:#f8f9fa; padding:15px; border-radius:15px; height:fit-content; position:sticky; top:0;">
+                <h4 style="margin-top:0;">Parametry</h4>
+                <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
+                <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                    <option value="newest">Najnowsze</option>
+                    <option value="oldest">Najstarsze</option>
+                    <option value="price-asc">Cena: najtańsze</option>
+                    <option value="price-desc">Cena: najdroższe</option>
                 </select>
-
-                <label style=\"font-size:11px; font-weight:bold; color:gray;\">SZUKAJ WYNIKÓW</label>
-                <input type=\"text\" id=\"side-szukaj\" placeholder=\"Np. Opel, iPhone...\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;\">
+                               <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
+                <input type="text" id="side-szukaj" placeholder="Np. Opel, iPhone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
                 
-                ${czySpecjalneMoto ? `
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">MARKA</label>
-                    <input type=\"text\" id=\"sf-marka\" placeholder=\"Np. BMW\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;\">
-                    
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">MODEL</label>
-                    <input type=\"text\" id=\"sf-model\" placeholder=\"Np. Seria 3\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;\">
-
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">PRZEBIEG (KM)</label>
-                    <div style=\"display:flex; gap:5px; margin-bottom:12px;\">
-                        <input type=\"number\" id=\"sf-przebieg-min\" placeholder=\"Od\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
-                        <input type=\"number\" id=\"sf-przebieg-max\" placeholder=\"Do\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
+                ${tytul.includes('Motoryzacja') ? `
+                    <label style="font-size:11px; font-weight:bold; color:gray;">ROK PRODUKCJI</label>
+                    <div style="display:flex; gap:5px; margin-bottom:12px;">
+                        <input type="number" id="sf-rok-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="number" id="sf-rok-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     </div>
-
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">SKRZYNIA BIEGÓW</label>
-                    <select id=\"sf-skrzynia\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;\">
-                        <option value=\"\">Wszystkie</option>
-                        <option value=\"Automatyczna\">Automatyczna</option>
-                        <option value=\"Manualna\">Manualna</option>
+                    <label style="font-size:11px; font-weight:bold; color:gray;">PALIWO</label>
+                    <select id="sf-paliwo" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <option value="">Wszystkie</option>
+                        <option value="Benzyna">Benzyna</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="LPG">LPG</option>
                     </select>
+                ` : ''}
 
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">ROK PRODUKCJI</label>
-                    <div style=\"display:flex; gap:5px; margin-bottom:12px;\">
-                        <input type=\"number\" id=\"sf-rok-min\" placeholder=\"Od\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
-                        <input type=\"number\" id=\"sf-rok-max\" placeholder=\"Do\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
-                    </div>
-                ` : `
-                    <label style=\"font-size:11px; font-weight:bold; color:gray;\">STAN</label>
-                    <select id=\"side-stan\" style=\"width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;\">
-                        <option value=\"\">Wszystkie</option>
-                        <option value=\"Nowe\">Nowe</option>
-                        <option value=\"Używane\">Używane</option>
-                    </select>
-                `}
-
-                <label style=\"font-size:11px; font-weight:bold; color:gray;\">CENA (ZŁ)</label>
-                <div style=\"display:flex; gap:5px; margin-bottom:12px;\">
-                    <input type=\"number\" id=\"side-cena-min\" placeholder=\"Od\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
-                    <input type=\"number\" id=\"side-cena-max\" placeholder=\"Do\" style=\"width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;\">
+                <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
+                <div style="display:flex; gap:5px; margin-bottom:12px;">
+                    <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
-                
-                <label style=\"font-size:11px; font-weight:bold; color:gray;\">LOKALIZACJA</label>
-                <input type=\"text\" id=\"side-lok\" placeholder=\"Miasto...\" style=\"width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;\">
-                
-                <button onclick=\"window.zastosujFiltryBoczne()\" style=\"width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;\">Zastosuj zmiany</button>
+                <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
+                <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
-            <div style=\"flex:1;\">
-                <div id=\"modal-grid\" style=\"display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;\">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style=\"padding:20px; color:gray;\">Nie znaleźliśmy ogłoszeń.</p>'}
+            <div style="flex:1;">
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:15px; max-height:75vh; overflow-y:auto; padding-right:10px;">
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń.</p>'}
                 </div>
             </div>
         </div>`;
@@ -641,13 +584,10 @@ window.zastosujFiltryBoczne = () => {
     const lok = document.getElementById('side-lok').value.toLowerCase().trim();
     const sort = document.getElementById('side-sort').value;
     
-    // Nowe pola
-    const marka = document.getElementById('sf-marka') ? document.getElementById('sf-marka').value.toLowerCase().trim() : "";
-    const model = document.getElementById('sf-model') ? document.getElementById('sf-model').value.toLowerCase().trim() : "";
-    const przebiegMin = document.getElementById('sf-przebieg-min') ? parseInt(document.getElementById('sf-przebieg-min').value) || 0 : 0;
-    const przebiegMax = document.getElementById('sf-przebieg-max') ? parseInt(document.getElementById('sf-przebieg-max').value) || 9999999 : 9999999;
-    const skrzynia = document.getElementById('sf-skrzynia') ? document.getElementById('sf-skrzynia').value : "";
-    const stan = document.getElementById('side-stan') ? document.getElementById('side-stan').value : "";
+    // Pola motoryzacyjne (jeśli istnieją)
+    const rMin = document.getElementById('sf-rok-min') ? parseInt(document.getElementById('sf-rok-min').value) || 0 : 0;
+    const rMax = document.getElementById('sf-rok-max') ? parseInt(document.getElementById('sf-rok-max').value) || 9999 : 9999;
+    const paliwo = document.getElementById('sf-paliwo') ? document.getElementById('sf-paliwo').value.toLowerCase() : "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
         const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
@@ -655,26 +595,17 @@ window.zastosujFiltryBoczne = () => {
         const cenaOk = o.cena >= min && o.cena <= max;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
         
-        // Sprawdzanie stanu (dla innych kategorii)
-        const stanOk = stan === "" || (o.opis && o.opis.includes(stan));
-
-        // Filtrowanie specjalistyczne dla Motoryzacji
+        // Dodatkowe sprawdzenie dla aut
         let motoOk = true;
-        if (marka || model || skrzynia || przebiegMin > 0 || przebiegMax < 9999999) {
-            const opisL = (o.opis || "").toLowerCase();
-            const markaOk = marka === "" || opisL.includes(marka);
-            const modelOk = model === "" || opisL.includes(model);
-            const skrzyniaOk = skrzynia === "" || opisL.includes(skrzynia.toLowerCase());
-            
-            // Szukanie przebiegu w opisie (zakładając format "Przebieg: 10000 km")
-            const przebiegMatch = o.opis ? o.opis.match(/Przebieg: (\d+)/) : null;
-            const autoPrzebieg = przebiegMatch ? parseInt(przebiegMatch[1]) : 0;
-            const przebiegFinalOk = (autoPrzebieg >= przebiegMin && autoPrzebieg <= przebiegMax);
-            
-            motoOk = markaOk && modelOk && skrzyniaOk && przebiegFinalOk;
+        if (paliwo || rMin > 0 || rMax < 9999) {
+            const rokMatch = o.opis.match(/Rok: (\d{4})/);
+            const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+            const rokOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+            const paliwoOk = paliwo === "" || o.opis.toLowerCase().includes(paliwo);
+            motoOk = rokOk && paliwoOk;
         }
 
-        return tekstOk && cenaOk && lokOk && stanOk && motoOk;
+        return tekstOk && cenaOk && lokOk && motoOk;
     });
 
     if (sort === 'price-asc') {
@@ -689,13 +620,15 @@ window.zastosujFiltryBoczne = () => {
 
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
     
+    // Na telefonie chowamy panel po kliknięciu "Zastosuj"
     const sf = document.querySelector('.side-filters');
     if(sf) sf.classList.remove('active');
 
-    // Przywracanie wartości w polach po odświeżeniu
-    if(document.getElementById('side-szukaj')) document.getElementById('side-szukaj').value = fraza;
-    if(document.getElementById('side-sort')) document.getElementById('side-sort').value = sort;
-    if(document.getElementById('side-lok')) document.getElementById('side-lok').value = lok;
+    document.getElementById('side-szukaj').value = fraza;
+    document.getElementById('side-sort').value = sort;
+    if(min > 0) document.getElementById('side-cena-min').value = min;
+    if(max < 99999999) document.getElementById('side-cena-max').value = max;
+    document.getElementById('side-lok').value = lok;
 };
 
 function renderCardHTML(o) {
@@ -757,7 +690,6 @@ window.pokazUlubione = () => {
 
 window.zamknijModal = () => {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    document.body.style.overflow = 'auto'; // Przywrócenie skrolowania tła
 };
 
 window.zamknijIResetujModal = () => {
