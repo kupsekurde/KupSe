@@ -24,23 +24,31 @@
         #find-text { width: 200px; }
         #find-loc { width: 150px; }
         .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
-        /* --- RESPONSYWNOŚĆ (MOBILE) --- */
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
 @media (max-width: 768px) {
-    /* 1. Nawigacja - układ pionowy, żeby logo i szukajka się zmieściły */
     .navbar {
         flex-direction: column;
         padding: 10px;
         gap: 10px;
-        /* To sprawi, że wyniki wyszukiwania będą w 2 kolumnach na telefonie */
-#view-content > div[style*="display: flex"] {
-    flex-direction: column !important; /* Panel filtrów wskoczy na górę */
-}
+    }
 
-#view-content div[style*="grid-template-columns"] {
-    grid-template-columns: repeat(2, 1fr) !important; /* 2 ogłoszenia obok siebie */
-    gap: 10px !important;
-    width: 100% !important;
-}
+    #view-content > div[style*="display: flex"] {
+        flex-direction: column !important;
+    }
+
+    #view-content div[style*="grid-template-columns"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    #view-content div[style*="width: 250px"], 
+    #view-content div[style*="width: 200px"] {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
 
 /* Naprawa szerokości panelu filtrów na mobile */
 #view-content div[style*="width: 250px"], 
