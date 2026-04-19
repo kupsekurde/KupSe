@@ -848,19 +848,32 @@ async function init() {
 
 // Uruchomienie wszystkiego
 init();
-// Funkcja zamykająca okienka po kliknięciu w tło
-window.addEventListener('mousedown', (e) => {
-    const dropMenu = document.getElementById('drop-menu');
-    const modalFull = document.getElementById('modal-full');
-    const formModal = document.getElementById('form-modal');
+// Obsługa kliknięcia poza okienkami (zamykanie)
+window.addEventListener('mousedown', function(e) {
+    const modalForm = document.getElementById('modal-form'); // Okno dodawania
+    const modalView = document.getElementById('modal-view'); // Okno podglądu/wiadomości
+    const dropMenu = document.getElementById('drop-menu');   // Menu Moje Konto
 
-    // 1. Zamykanie menu "Moje Konto"
+    // 1. Jeśli kliknięto w tło okna "Dodaj ogłoszenie"
+    if (e.target === modalForm) {
+        modalForm.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    // 2. Jeśli kliknięto w tło okna "Podgląd / Regulamin / Wiadomości"
+    if (e.target === modalView) {
+        modalView.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    // 3. Jeśli menu "Moje konto" jest otwarte i kliknięto poza nim
     if (dropMenu && dropMenu.style.display === 'block') {
-        // Jeśli kliknięcie NIE jest wewnątrz menu i NIE jest przyciskiem otwierającym
+        // Sprawdzamy czy kliknięcie NIE było w menu i NIE było w przycisk otwierający
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
             dropMenu.style.display = 'none';
         }
     }
+});
 
     // 2. Zamykanie modali pełnoekranowych (Ulubione, Wiadomości, Wyniki)
     // Jeśli kliknięty element to dokładnie tło (modal-full), a nie jego zawartość
