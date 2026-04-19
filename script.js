@@ -62,8 +62,10 @@ async function sprawdzUzytkownika() {
 
     if (user) {
         if (authBox) authBox.style.display = 'none';
+        // Liczymy nieprzeczytane wiadomości
         const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
         const msgCount = nData ? [...new Set(nData.map(m => m.nadawca))].length : 0;
+        
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
 
@@ -75,13 +77,13 @@ async function sprawdzUzytkownika() {
                     Moje Konto ${msgCount > 0 ? `(${msgCount})` : ''} ▼
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
-                        ✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-radius:8px;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-radius:8px;">
+                        ✉️ Wiadomości ${msgCount > 0 ? `(${msgCount})` : ''}
                     </div>
-                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-radius:8px;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold; border-radius:8px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='transparent'">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
             </div>`;
     } else {
@@ -146,7 +148,7 @@ window.pokazUlubione = () => {
     okno.style.display = 'flex';
 };
 // --- WIADOMOŚCI (POGRUBIENIE, USUWANIE, IMIONA) ---
-window.pokazSkrzynke = async () => {
+ = async () => {
     const { data: { user } } = await baza.auth.getUser();
     const { data } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     
@@ -199,7 +201,7 @@ window.otworzKonwersacje = async (ktos) => {
     mBox.innerHTML = `
         <div style="display:flex; flex-direction:column; height:500px;">
             <div style="display:flex; align-items:center; gap:10px; padding-bottom:15px; border-bottom:1px solid #eee; margin-bottom:15px;">
-                <button onclick="window.pokazSkrzynke()" style="background:none; border:none; cursor:pointer; font-size:18px;">←</button>
+                <button onclick="()" style="background:none; border:none; cursor:pointer; font-size:18px;">←</button>
                 <b style="font-size:16px;">${dajNazwe(ktos)}</b>
             </div>
             <div id="chat-area" style="flex:1; overflow-y:auto; padding-right:10px; display:flex; flex-direction:column; gap:10px;">
@@ -826,7 +828,8 @@ window.zamknijIResetujModal = () => {
     const m = document.getElementById('modal-view');
     const mBox = m.querySelector('.modal-box');
     m.style.display = 'none';
-    mBox.style.maxWidth = "900px"; // Resetujemy szerokość do domyślnej
+    mBox.style.maxWidth = "1250px"; // Resetujemy do dużej szerokości dla ogłoszeń
+    mBox.style.width = "95%";
     document.body.style.overflow = 'auto';
 };
 
