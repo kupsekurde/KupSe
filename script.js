@@ -71,27 +71,24 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800;">
+                    Moje Konto ${msgCount > 0 ? `(${msgCount})` : ''} ▼
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span>
-                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+                        ✉️ Wiadomości ${msgCount > 0 ? `<b>(${msgCount})</b>` : ''}
                     </div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
+                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-radius:8px; transition:0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold; border-radius:8px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='transparent'">🚪 Wyloguj</div>
                 </div>
             </div>`;
     } else {
-        if (authBox) authBox.style.display = 'block'; // Pokazuje logowanie tylko jeśli nie ma usera
+        if (authBox) authBox.style.display = 'block';
         nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
     }
 }
-
 // --- MOJE OGŁOSZENIA (ZMNIEJSZONE OKNO) ---
 window.pokazMojeOgloszenia = async () => {
     const { data: { user } } = await baza.auth.getUser();
