@@ -183,26 +183,26 @@
         flex-direction: column !important; 
     }
 
-    /* Przycisk filtrów widoczny teraz zawsze */
-    #filter-toggle-btn {
-        display: block;
-    }
-
-    /* Panel filtrów */
-    .side-filters {
-        display: none; /* Domyślnie schowany na PC i Mobile */
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* Gdy panel jest aktywny - pokazujemy go */
-    .side-filters.active {
-        display: block !important;
+    /* Przycisk pokazywania filtrów - domyślnie ukryty (pokazujemy w JS na mobile) */
+    #mobile-filter-toggle {
+        display: none;
     }
 
     @media (max-width: 768px) {
-        .modal-box {
-            padding: 15px;
+        #mobile-filter-toggle {
+            display: block !important;
+        }
+        
+        /* Panel filtrów na mobile - domyślnie schowany, wyjeżdża klasą .active */
+        .side-filters {
+            display: none;
+            width: 100% !important;
+            position: relative !important;
+            top: 0 !important;
+            margin-bottom: 20px;
+        }
+        .side-filters.active {
+            display: block !important;
         }
 
         #view-content #modal-grid {
@@ -262,10 +262,10 @@
 <nav class="navbar">
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
-<div class="nav-search">
-    <input type="text" id="find-text" autocomplete="off" name="search_text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
+       <div class="nav-search">
+    <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
-    <input type="text" id="find-loc" autocomplete="off" name="search_place" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+        <input type="text" id="find-loc" name="loc_search_field" autocomplete="new-password" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
 </div>
 
