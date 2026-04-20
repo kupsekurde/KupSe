@@ -263,10 +263,14 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
        <div class="nav-search">
-    <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="off">
+    <!-- Pole tekstowe: dodaliśmy value="", żeby "Opel" nie wracał -->
+    <input type="text" id="find-text" value="" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="off">
+    
     <div class="search-divider"></div>
-    <!-- Naprawiony input lokalizacji: usunięte śmieci i blokada autouzupełniania -->
-    <input type="text" id="find-loc" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+    
+    <!-- Pole lokalizacji: używamy triku z 'new-password' i 'off', żeby zabić maile -->
+    <input type="text" id="find-loc" value="" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+    
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
 </div>
     </div>
