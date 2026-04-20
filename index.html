@@ -265,7 +265,7 @@
        <div class="nav-search">
     <input type="text" id="find-text" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()">
     <div class="search-divider"></div>
-        <input type="text" id="find-loc" name="loc_search_field" autocomplete="new-password" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
+        <input type="text" id="find-loc" <input type="text" id="find-loc" autocomplete="off" placeholder="Cała Polska" onfocus="this.value=''" onkeyup="if(event.key==='Enter') window.szukaj()">name="loc_search_field" autocomplete="new-password" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()">
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
 </div>
 
