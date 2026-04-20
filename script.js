@@ -548,7 +548,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 </select>
 
                 <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
-<input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+<input type="text" id="side-szukaj" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
 
 <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
 <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
