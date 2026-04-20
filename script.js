@@ -230,6 +230,7 @@ window.pokazSkrzynke = async () => {
     });
     document.getElementById('view-content').innerHTML = html + (rozmowcy.length ? '' : '<p style="text-align:center; color:gray;">Brak wiadomości</p>') + '</div>';
     document.getElementById('modal-view').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 };
 
 window.usunRozmowe = async (zKim) => {
@@ -343,10 +344,9 @@ window.pokazSzczegoly = async (id) => {
                     </button>
                 </div>
                 <h3 style="margin-top:20px;">Opis</h3>
-                <p style="white-space:pre-line;">${o.opis}</p>
-            </div>
-        </div>`;
+                        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 };
 
 window.zmienGlowneZdjecie = (idx) => {
@@ -361,11 +361,10 @@ window.zmienGlowneZdjecie = (idx) => {
 window.otworzFullFoto = () => {
     let lb = document.getElementById('lightbox-box');
     if (!lb) {
-        lb = document.createElement('div');
+  lb = document.createElement('div');
         lb.id = 'lightbox-box';
-        lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9000; display:none; align-items:center; justify-content:center; user-select:none;";
+        lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; display:none; align-items:center; justify-content:center; user-select:none;";
         document.body.appendChild(lb);
-    }
     lb.innerHTML = `
         <button onclick="document.getElementById('lightbox-box').style.display='none'" 
                 style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">
@@ -529,6 +528,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                 </div>`).join('')}
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 };
 
 window.usunOgloszenie = async (id) => {
@@ -815,7 +815,7 @@ window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
     const modalView = document.getElementById('modal-view'); // Twoje ID dla podglądu
     const modalForm = document.getElementById('modal-form'); // Twoje ID dla dodawania
-
+document.body.style.overflow = 'hidden';
     // 1. Zamykanie menu "Moje Konto"
     if (dropMenu && dropMenu.style.display === 'block') {
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
@@ -841,6 +841,7 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('modal-view').style.display = 'none';
     document.getElementById('modal-form').style.display = 'flex';
     document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
+    document.body.style.overflow = 'hidden';
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
@@ -932,10 +933,11 @@ window.toggleMobileFilters = () => {
     const btn = document.getElementById('filter-toggle-btn');
     if (!filters) return;
 
-    const jestUkryty = (filters.style.display === 'none' || filters.style.display === '');
-    filters.style.display = jestUkryty ? 'block' : 'none';
+    const obecnieUkryte = (filters.style.display === 'none' || filters.style.display === '');
+    filters.style.display = obecnieUkryte ? 'block' : 'none';
     
     if (btn) {
-        btn.innerHTML = jestUkryty ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
+        // Używamy innerHTML i sprawdzamy czy btn istnieje, żeby nie było błędu null
+        btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
