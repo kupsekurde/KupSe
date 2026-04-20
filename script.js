@@ -548,7 +548,10 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 </select>
 
                 <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
-                <input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+<input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+
+<label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
+<input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
                 
                 ${czySpecjalneMoto ? `
                     <label style="font-size:11px; font-weight:bold; color:gray;">PRZEBIEG (KM)</label>
@@ -587,10 +590,10 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 };
 
 window.zastosujFiltryBoczne = () => {
-    const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
+    const fraza = document.getElementById('side-szukaj') ? document.getElementById('side-szukaj').value.toLowerCase().trim() : "";
     const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
     const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
-    const lok = document.getElementById('side-lok').value.toLowerCase().trim();
+    const lok = document.getElementById('side-lok') ? document.getElementById('side-lok').value.toLowerCase().trim() : "";
     const sort = document.getElementById('side-sort').value;
     
     // Pola motoryzacyjne (jeśli istnieją)
