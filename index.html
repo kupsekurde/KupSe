@@ -268,11 +268,13 @@
         <input type="email" name="fake_email">
     </div>
 
-    <input type="text" id="szukajka-glowna" value="" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="off">
+    <input type="text" id="szukajka-glowna" placeholder="Czego szukasz?" 
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="off">
     
     <div class="search-divider"></div>
     
-    <input type="text" id="miasto-input" value="" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+    <input type="text" id="miasto-input" placeholder="Cała Polska" 
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
     
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">Szukaj</button>
 </div>
