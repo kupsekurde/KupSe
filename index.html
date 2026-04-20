@@ -178,35 +178,39 @@
         padding: 10px !important;
     }
 
-    /* Naprawa okna wyników wyszukiwania na telefonie */
+    /* Na komputerze chcemy układ poziomy */
     #view-content #results-layout {
-        flex-direction: column !important; 
+        display: flex;
+        flex-direction: row; 
     }
 
-    /* Przycisk pokazywania filtrów - domyślnie ukryty (pokazujemy w JS na mobile) */
-    #mobile-filter-toggle {
+    /* Przycisk filtrów ukryty na komputerze */
+    #filter-toggle-btn {
         display: none;
     }
 
     @media (max-width: 768px) {
-        #mobile-filter-toggle {
-            display: block !important;
+        /* TYLKO NA TELEFONIE: */
+        #filter-toggle-btn {
+            display: block !important; /* Pokaż czarny przycisk */
+            width: 100%;
         }
         
-        /* Panel filtrów na mobile - domyślnie schowany, wyjeżdża klasą .active */
-        .side-filters {
-            display: none;
-            width: 100% !important;
-            position: relative !important;
-            top: 0 !important;
-            margin-bottom: 20px;
+        #view-content #results-layout {
+            flex-direction: column !important; /* Układ pionowy */
         }
+
+        .side-filters {
+            display: none; /* Schowaj filtry na start */
+            width: 100% !important;
+        }
+
         .side-filters.active {
-            display: block !important;
+            display: block !important; /* Pokaż jak klikniesz przycisk */
         }
 
         #view-content #modal-grid {
-            grid-template-columns: 1fr !important; /* Jedno ogłoszenie pod drugim */
+            grid-template-columns: 1fr !important; 
             gap: 15px !important;
         }
 
