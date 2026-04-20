@@ -460,6 +460,8 @@
     window.zamknijModal = function() {
         if(document.getElementById('modal-view')) document.getElementById('modal-view').style.display = 'none';
         if(document.getElementById('modal-form')) document.getElementById('modal-form').style.display = 'none';
+        // Ta linia przywraca suwak na stronie głównej:
+        document.body.style.overflow = 'auto';
     }
 </script>
 </body>
