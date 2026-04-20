@@ -481,17 +481,31 @@ window.wyslijOgloszenie = async (e) => {
     btn.disabled = true;
     btn.innerText = "Wysyłanie...";
 
-    const zdjeciaUrls = [];
-    const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+        const zdjeciaUrls = [];
+    // Ustawiamy opcje: max 0.6MB i max 1200px szerokości/wysokości
+    const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
     for (const file of inputPlik.files) {
         try {
-            const compressed = typeof imageCompression !== 'undefined' ? await imageCompression(file, options) : file;
+            let plikDoWyslania = file;
+            
+            // Sprawdzamy czy biblioteka kompresji jest dostępna
+            if (typeof imageCompression !== 'undefined') {
+                try {
+                    // Próbujemy zmniejszyć zdjęcie
+                    plikDoWyslania = await imageCompression(file, options);
+                } catch (e) {
+                    console.error("Kompresja nie udała się, wysyłam oryginał:", e);
+                }
+            }
+
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-            await baza.storage.from('zdjecia').upload(nazwa, compressed);
+            await baza.storage.from('zdjecia').upload(nazwa, plikDoWyslania);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { console.error("Błąd zdjęcia:", err); }
+        } catch (err) { 
+            console.error("Błąd przesyłania zdjęcia:", err); 
+        }
     }
 
     const { error } = await baza.from('ogloszenia').insert([{
@@ -908,16 +922,28 @@ window.edytujOgloszenie = (id) => {
         btn.innerText = "Kompresja i zapis...";
 
         const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
-        const noweUrls = [];
-        const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+                const noweUrls = [];
+        const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
         for (const f of nowePliki) {
             try {
-                const comp = await imageCompression(f, opt);
+                let plikDoWyslania = f;
+
+                if (typeof imageCompression !== 'undefined') {
+                    try {
+                        plikDoWyslania = await imageCompression(f, opt);
+                    } catch (e) {
+                        console.error("Kompresja w edycji nie udała się:", e);
+                    }
+                }
+
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-                await baza.storage.from('zdjecia').upload(name, comp);
-                noweUrls.push(baza.storage.from('zdjecia').getPublicUrl(name).data.publicUrl);
-            } catch(err) { console.error(err); }
+                await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
+                const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
+                noweUrls.push(publicUrl);
+            } catch(err) { 
+                console.error("Błąd zdjęcia w edycji:", err); 
+            }
         }
 
         const { error } = await baza.from('ogloszenia').update({
