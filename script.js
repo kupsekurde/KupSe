@@ -36,15 +36,22 @@ let ostatnieWyniki = [];
 let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
-window.szukaj = () => {
-    const tekst = document.getElementById('szukaj-fraza').value; // tu zmiana
-    const loc = document.getElementById('szukaj-miasto').value; // tu zmiana
-    const wyniki = daneOgloszen.filter(o => {
-        const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
-        const mLoc = o.lokalizacja.toLowerCase().includes(loc);
-        return mText && mLoc;
-    });
-    window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
+window.szukaj = async () => {
+    const p1 = document.getElementById('szukajka-glowna');
+    const p2 = document.getElementById('miasto-input');
+    if (!p1 || !p2) return;
+
+    const tekst = p1.value.toLowerCase().trim();
+    const loc = p2.value.toLowerCase().trim();
+
+    let query = baza.from('ogloszenia').select('*');
+    if (tekst) query = query.ilike('tytul', `%${tekst}%`);
+    if (loc) query = query.ilike('lokalizacja', `%${loc}%`);
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) return;
+
+    window.renderujOgloszenia(data);
 };
 // --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
