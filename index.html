@@ -178,26 +178,31 @@
         padding: 10px !important;
     }
 
-    /* Na komputerze chcemy układ poziomy */
+        /* Układ okna wyników */
     #view-content #results-layout {
         display: flex;
         flex-direction: row; 
+        gap: 20px;
     }
 
-    /* Przycisk filtrów ukryty na komputerze */
+    /* Czarny przycisk filtrów - teraz widoczny wszędzie */
     #filter-toggle-btn {
-        display: none;
+        display: block !important;
+        width: 100%;
+        padding: 15px;
+        background: #111;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        cursor: pointer;
+        font-size: 15px;
     }
 
     @media (max-width: 768px) {
-        /* TYLKO NA TELEFONIE: */
-        #filter-toggle-btn {
-            display: block !important; /* Pokaż czarny przycisk */
-            width: 100%;
-        }
-        
         #view-content #results-layout {
-            flex-direction: column !important; /* Układ pionowy */
+            flex-direction: column !important; 
         }
 
         .side-filters {
