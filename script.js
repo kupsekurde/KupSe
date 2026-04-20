@@ -71,7 +71,7 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">Moje Konto ▼</button>
+                <button onclick="window.toggleUserMenu(event)" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">Moje Konto ▼</button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
                     <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">
@@ -250,14 +250,16 @@ window.pokazSzczegoly = async (id) => {
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
+    
+    // Przycisk wstecz w czarnym stylu
     const btnWstecz = ostatnieWyniki.length > 0 
-        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#f0f0f0; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:8px;">← Powrót do listy</button>` 
+        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#111; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:8px;">← Powrót do listy</button>` 
         : "";
 
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         ${btnWstecz}
-        <div style="display:flex; flex-wrap:wrap; gap:20px;">
+        <div style="display:flex; flex-wrap:wrap; gap:20px; text-align: left;">
             <div style="flex:1.5; min-width:300px;">
                 <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
                     <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="window.otworzFullFoto()">
@@ -518,21 +520,18 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     let numeryStron = '';
     for (let i = 1; i <= sumaStron; i++) {
         numeryStron += `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${i})" 
-            style="padding:8px 13px; margin:0 3px; cursor:pointer; border-radius:8px; border:1px solid #ddd; 
-            background:${i === strona ? 'var(--primary)' : 'white'}; 
-            color:${i === strona ? 'white' : 'black'}; font-weight:bold;">${i}</button>`;
+            style="padding:8px 13px; margin:0 4px; cursor:pointer; border-radius:8px; border:1px solid #ddd; 
+            background:${i === strona ? '#111' : 'white'}; 
+            color:${i === strona ? 'white' : '#111'}; font-weight:bold;">${i}</button>`;
     }
 
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="margin-top:10px; margin-bottom:20px;">${tytul}</h2>
         
-        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer;">
-            🔍 Filtruj i sortuj wyniki
-        </button>
-
-        <div id="results-layout" style="display:flex; gap:25px; align-items: flex-start;">
-            <div class="side-filters" style="width:260px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:20px; border:1px solid #eee; position:sticky; top:0;">
+        <div id="results-layout" style="display:flex; gap:25px; align-items: flex-start; text-align: left;">
+            <!-- PANEL FILTRÓW (LEWA) -->
+            <div class="side-filters" id="desktop-filters" style="width:250px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:20px; border:1px solid #eee; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Parametry</h4>
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
@@ -547,17 +546,19 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                     <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
-                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:#111; color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
 
+            <!-- GRID OGŁOSZEŃ (PRAWA) -->
             <div style="flex:1;">
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px;">
-                    ${porcja.map(o => renderCardHTML(o)).join('')}
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Brak ogłoszeń.</p>'}
                 </div>
-                <div style="display:flex; justify-content:center; align-items:center; gap:5px; margin-top:40px; padding-bottom:30px;">
-                    ${strona > 1 ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona-1})" style="background:none; border:none; cursor:pointer; font-weight:bold;">←</button>` : ''}
+                <!-- NUMERY STRON -->
+                <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:40px; padding-bottom:30px;">
+                    ${strona > 1 ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona-1})" style="background:none; border:none; cursor:pointer; font-weight:bold; font-size:18px;">←</button>` : ''}
                     ${numeryStron}
-                    ${strona < sumaStron ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona+1})" style="background:none; border:none; cursor:pointer; font-weight:bold;">→</button>` : ''}
+                    ${strona < sumaStron ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona+1})" style="background:none; border:none; cursor:pointer; font-weight:bold; font-size:18px;">→</button>` : ''}
                 </div>
             </div>
         </div>`;
