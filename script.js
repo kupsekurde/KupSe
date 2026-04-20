@@ -37,20 +37,29 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
+    // Pobieramy dane z nowych ID, które masz w HTML
     const p1 = document.getElementById('szukajka-glowna');
     const p2 = document.getElementById('miasto-input');
+    
     if (!p1 || !p2) return;
 
     const tekst = p1.value.toLowerCase().trim();
     const loc = p2.value.toLowerCase().trim();
 
+    // Szukamy w bazie Supabase
     let query = baza.from('ogloszenia').select('*');
+
     if (tekst) query = query.ilike('tytul', `%${tekst}%`);
     if (loc) query = query.ilike('lokalizacja', `%${loc}%`);
 
     const { data, error } = await query.order('created_at', { ascending: false });
-    if (error) return;
 
+    if (error) {
+        console.error("Błąd bazy:", error);
+        return;
+    }
+
+    // Wywołujemy funkcję wyświetlania (zaraz zmienimy jej nazwę na taką bez "ó")
     window.renderujOgloszenia(data);
 };
 // --- LOGOWANIE I INTERFEJS ---
