@@ -343,8 +343,10 @@ window.pokazSzczegoly = async (id) => {
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
-                <h3 style="margin-top:20px;">Opis</h3>
-                        </div>`;
+                                <h3 style="margin-top:20px;">Opis</h3>
+                <p style="white-space:pre-line;">${o.opis}</p>
+            </div>
+        </div>`;
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };
@@ -361,10 +363,11 @@ window.zmienGlowneZdjecie = (idx) => {
 window.otworzFullFoto = () => {
     let lb = document.getElementById('lightbox-box');
     if (!lb) {
-  lb = document.createElement('div');
+        lb = document.createElement('div');
         lb.id = 'lightbox-box';
         lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; display:none; align-items:center; justify-content:center; user-select:none;";
         document.body.appendChild(lb);
+    }
     lb.innerHTML = `
         <button onclick="document.getElementById('lightbox-box').style.display='none'" 
                 style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">
@@ -937,7 +940,6 @@ window.toggleMobileFilters = () => {
     filters.style.display = obecnieUkryte ? 'block' : 'none';
     
     if (btn) {
-        // Używamy innerHTML i sprawdzamy czy btn istnieje, żeby nie było błędu null
         btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
