@@ -573,75 +573,77 @@ window.filtrujPoPodkat = (kat, podkat) => {
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const OGLOSZENIA_NA_STRONE = 50; 
-    if (!tytul.includes("(wyniki)")) {
-        wynikiBazowe = [...wyniki]; 
-        ostatniTytul = tytul;
-    }
+    if (!tytul.includes("(wyniki)")) { wynikiBazowe = [...wyniki]; ostatniTytul = tytul; }
     ostatnieWyniki = wyniki;
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
 
+    // Sprawdzamy czy to jedna z 5 kategorii moto
+    const motoPodkaty = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Pozostałe'];
+    const czyMoto = tytul.includes('Motoryzacja') && motoPodkaty.some(p => tytul.includes(p));
+
     let numeryStronHTML = "";
     for(let i = 1; i <= sumaStron; i++) {
-        numeryStronHTML += `
-            <button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki, ${i})" 
-                    style="padding:10px 15px; cursor:pointer; border-radius:8px; border:1px solid ${i === strona ? 'var(--primary)' : '#ddd'}; 
-                    background:${i === strona ? 'var(--primary)' : 'white'}; 
-                    color:${i === strona ? 'white' : 'black'}; font-weight:bold; min-width:40px;">${i}</button>`;
+        numeryStronHTML += `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki, ${i})" style="padding:10px 15px; margin:2px; cursor:pointer; border-radius:8px; border:1px solid ${i === strona ? 'var(--primary)' : '#ddd'}; background:${i === strona ? 'var(--primary)' : 'white'}; color:${i === strona ? 'white' : 'black'}; font-weight:bold;">${i}</button>`;
     }
 
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        <h2 style="margin-top:10px; margin-bottom:20px;">${tytul}</h2>
-        
-        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()">
-            🔍 Filtruj i Sortuj Wyniki
-        </button>
+        <h2 style="margin-top:10px;">${tytul}</h2>
+        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()">🔍 Filtruj i Sortuj Wyniki</button>
 
         <div id="results-layout" style="display:flex; gap:20px;">
             <div class="side-filters" style="display:none; width:260px; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; height: fit-content; flex-shrink:0;">
-                <h4 style="margin-top:0;">Parametry</h4>
+                <h4 style="margin:0 0 15px 0;">Parametry</h4>
                 
-                <label style="font-size:11px; font-weight:bold; color:gray;">CZEGO SZUKASZ?</label>
-                <input type="text" id="side-szukaj" placeholder="np. iphone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                <input type="text" id="side-szukaj" placeholder="Czego szukasz?" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
 
-                <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
+                ${czyMoto ? `
+                    <input type="text" id="sf-marka" placeholder="Marka" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                    <input type="text" id="sf-model" placeholder="Model" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                    <label style="font-size:10px; font-weight:bold; color:gray;">ROK PRODUKCJI</label>
+                    <div style="display:flex; gap:5px; margin-bottom:12px;">
+                        <input type="number" id="sf-rok-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="number" id="sf-rok-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <label style="font-size:10px; font-weight:bold; color:gray;">PRZEBIEG (KM)</label>
+                    <div style="display:flex; gap:5px; margin-bottom:12px;">
+                        <input type="number" id="sf-przebieg-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="number" id="sf-przebieg-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <label style="font-size:10px; font-weight:bold; color:gray;">POJEMNOŚĆ / MOC</label>
+                    <div style="display:flex; gap:5px; margin-bottom:12px;">
+                        <input type="number" id="sf-poj-min" placeholder="Poj. od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="number" id="sf-moc-min" placeholder="Moc od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <select id="sf-paliwo" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                        <option value="">Paliwo (Wszystkie)</option>
+                        <option value="Benzyna">Benzyna</option><option value="LPG">LPG</option><option value="Diesel">Diesel</option><option value="Hybryda">Hybryda</option><option value="Elektryczny">Elektryczny</option>
+                    </select>
+                ` : ''}
+
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
-                    <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                    <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                    <input type="number" id="side-cena-min" placeholder="Cena od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <input type="number" id="side-cena-max" placeholder="Cena do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
 
-                <label style="font-size:11px; font-weight:bold; color:gray;">STAN</label>
                 <select id="side-stan" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                    <option value="">Wszystkie</option>
-                    <option value="Nowy">Nowy</option>
-                    <option value="Używany">Używany</option>
-                    <option value="Uszkodzony">Uszkodzony</option>
+                    <option value="">Stan (Wszystkie)</option><option value="Nowy">Nowy</option><option value="Używany">Używany</option><option value="Uszkodzony">Uszkodzony</option>
+                </select>
+                <input type="text" id="side-lok" placeholder="Lokalizacja" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+                <select id="side-sort" style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                    <option value="newest">Najnowsze</option><option value="oldest">Najstarsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option>
                 </select>
 
-                <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
-                <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-
-                <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
-                <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                    <option value="newest">Od najnowszych</option>
-                    <option value="oldest">Od najstarszych</option>
-                    <option value="price-asc">Cena: najtańsze</option>
-                    <option value="price-desc">Cena: najdroższe</option>
-                </select>
-
-                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj</button>
             </div>
-
             <div style="flex:1;">
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:15px;">
                     ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
                 </div>
-                <div style="display:flex; justify-content:center; gap:8px; margin-top:30px; padding-bottom:20px; flex-wrap:wrap;">
-                    ${numeryStronHTML}
-                </div>
+                <div style="display:flex; justify-content:center; margin-top:20px;">${numeryStronHTML}</div>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
@@ -649,18 +651,39 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 };
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj')?.value.toLowerCase().trim() || "";
-    const min = parseFloat(document.getElementById('side-cena-min')?.value) || 0;
-    const max = parseFloat(document.getElementById('side-cena-max')?.value) || 99999999;
+    const cMin = parseFloat(document.getElementById('side-cena-min')?.value) || 0;
+    const cMax = parseFloat(document.getElementById('side-cena-max')?.value) || 99999999;
     const stan = document.getElementById('side-stan')?.value || "";
     const lok = document.getElementById('side-lok')?.value.toLowerCase().trim() || "";
     const sort = document.getElementById('side-sort').value;
 
+    // Pola Moto
+    const marka = document.getElementById('sf-marka')?.value.toLowerCase() || "";
+    const model = document.getElementById('sf-model')?.value.toLowerCase() || "";
+    const rMin = parseInt(document.getElementById('sf-rok-min')?.value) || 0;
+    const rMax = parseInt(document.getElementById('sf-rok-max')?.value) || 9999;
+    const pMax = parseInt(document.getElementById('sf-przebieg-max')?.value) || 9999999;
+    const paliwo = document.getElementById('sf-paliwo')?.value || "";
+
     let przefiltrowane = wynikiBazowe.filter(o => {
-        const tekstOk = fraza === "" || `${o.tytul} ${o.opis}`.toLowerCase().includes(fraza);
-        const cenaOk = o.cena >= min && o.cena <= max;
+        const d = (o.tytul + " " + o.opis).toLowerCase();
+        const tekstOk = fraza === "" || d.includes(fraza);
+        const cenaOk = o.cena >= cMin && o.cena <= cMax;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
         const stanOk = stan === "" || o.opis.includes(stan);
-        return tekstOk && cenaOk && lokOk && stanOk;
+        
+        // Logika Moto (szuka słów w opisie/tytule)
+        let motoOk = true;
+        if(marka && !d.includes(marka)) motoOk = false;
+        if(model && !d.includes(model)) motoOk = false;
+        if(paliwo && !o.opis.includes(paliwo)) motoOk = false;
+        if(rMin > 0 || rMax < 9999) {
+            const rokMatch = o.opis.match(/Rok: (\d{4})/);
+            const rok = rokMatch ? parseInt(rokMatch[1]) : 0;
+            if(rok > 0 && (rok < rMin || rok > rMax)) motoOk = false;
+        }
+
+        return tekstOk && cenaOk && lokOk && stanOk && motoOk;
     });
 
     if (sort === 'price-asc') przefiltrowane.sort((a, b) => a.cena - b.cena);
@@ -669,7 +692,6 @@ window.zastosujFiltryBoczne = () => {
     else przefiltrowane.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
-    
     const sf = document.querySelector('.side-filters');
     if(sf) sf.style.display = 'none';
     const btn = document.getElementById('filter-toggle-btn');
