@@ -36,41 +36,14 @@ let ostatnieWyniki = [];
 let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
-window.szukaj = async () => {
-    // Te ID muszą być takie same jak w Twoim HTML!
-    const tekstInput = document.getElementById('szukajka-glowna');
-    const locInput = document.getElementById('miasto-input');
-
-    if (!tekstInput || !locInput) {
-        console.error("Nie znaleziono pól wyszukiwarki w HTML!");
-        return;
-    }
-
-    const tekst = tekstInput.value.toLowerCase().trim();
-    const loc = locInput.value.toLowerCase().trim();
-
-    // Filtrowanie w bazie Supabase
-    let query = baza.from('ogloszenia').select('*');
-
-    if (tekst) query = query.ilike('tytul', `%${tekst}%`);
-    if (loc) query = query.ilike('lokalizacja', `%${loc}%`);
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Błąd bazy:", error);
-        return;
-    }
-
-    // Wyświetlanie wyników
-    window.renderujOgloszenia(data);
-
-    // Zmiana napisu nad ogłoszeniami
-    const tytulSekcji = document.getElementById('grid-title');
-    if (tytulSekcji) {
-        tytulSekcji.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
-    }
-};
+window.szukaj = () => {
+    const tekst = document.getElementById('szukaj-fraza').value; // tu zmiana
+    const loc = document.getElementById('szukaj-miasto').value; // tu zmiana
+    const wyniki = daneOgloszen.filter(o => {
+        const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
+        const mLoc = o.lokalizacja.toLowerCase().includes(loc);
+        return mText && mLoc;
+    });
     window.pokazWynikiModal("Wyniki wyszukiwania", wyniki);
 };
 // --- LOGOWANIE I INTERFEJS ---
