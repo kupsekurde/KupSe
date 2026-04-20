@@ -76,10 +76,9 @@ async function sprawdzUzytkownika() {
                     ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer; display:flex; justify-content:space-between;">
-                        <span>✉️ Wiadomości</span>
-                        ${msgCount > 0 ? `<b style="color:red;">${msgCount}</b>` : ''}
+                                        <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">
+                        <span>✉️ Wiadomości ${msgCount > 0 ? `(${msgCount})` : ''}</span>
                     </div>
                     <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
