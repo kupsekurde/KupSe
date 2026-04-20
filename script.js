@@ -121,12 +121,19 @@ window.zarejestruj = async () => {
     const zgoda = document.getElementById('reg-zgoda-regulamin').checked;
 
     if (!email || !password) return alert("Wypełnij email i hasło!");
+    
+    // --- TUTAJ JEST TWOJA NOWA WALIDACJA HASŁA ---
+    const passRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passRegex.test(password)) {
+        return alert("Hasło nie spełnia wymogów:\n• min. 8 znaków\n• duża litera\n• liczba\n• znak specjalny");
+    }
+
     if (!zgoda) return alert("Musisz zaakceptować regulamin!");
 
     const { data, error } = await baza.auth.signUp({ email, password });
     if (error) alert("Błąd: " + error.message);
     else {
-        alert("Konto utworzone! Jeśli włączyłeś potwierdzenie email, sprawdź swoją pocztę. W innym przypadku możesz się już zalogować.");
+        alert("Konto utworzone! Wysłaliśmy link aktywacyjny na Twój e-mail. Musisz go kliknąć, aby móc się zalogować.");
         location.reload();
     }
 };
