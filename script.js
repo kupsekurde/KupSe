@@ -37,8 +37,8 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = () => {
-    const text = document.getElementById('find-text').value.toLowerCase();
-    const loc = document.getElementById('find-loc').value.toLowerCase();
+    const tekst = document.getElementById('szukaj-fraza').value; // tu zmiana
+    const loc = document.getElementById('szukaj-miasto').value; // tu zmiana
     const wyniki = daneOgloszen.filter(o => {
         const mText = o.tytul.toLowerCase().includes(text) || o.opis.toLowerCase().includes(text);
         const mLoc = o.lokalizacja.toLowerCase().includes(loc);
