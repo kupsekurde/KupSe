@@ -913,9 +913,15 @@ window.otworzFormularzDodawania = () => {
 // Funkcja do rozwijania filtrów na telefonie
 window.toggleMobileFilters = () => {
     const filters = document.querySelector('.side-filters');
-    const btn = document.getElementById('mobile-filter-toggle');
-    if (filters) {
+    const btn = document.getElementById('filter-toggle-btn'); // To jest ten "Azor" - teraz nazwa pasuje!
+    
+    if (filters && btn) {
         filters.classList.toggle('active');
-        btn.innerText = filters.classList.contains('active') ? '✖ Zamknij filtry' : '🔍 Filtruj i sortuj';
+        // Zmieniamy tekst na przycisku, żeby użytkownik wiedział co się dzieje
+        if (filters.classList.contains('active')) {
+            btn.innerText = '✖ Zamknij filtry';
+        } else {
+            btn.innerText = '🔍 Filtruj i Sortuj Wyniki';
+        }
     }
 };
