@@ -71,9 +71,7 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                </button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">Moje Konto ▼</button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
                     <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">
@@ -248,19 +246,13 @@ async function init() {
 window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
-
     const { data: { user } } = await baza.auth.getUser();
     aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     aktualneZdjecieIndex = 0;
-    
-        const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
+    const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#f0f0f0; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:8px;">← Powrót do listy</button>` 
         : "";
-
-    document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        ${btnWstecz}
 
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
@@ -523,7 +515,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
 
-    // Generowanie numerów stron
     let numeryStron = '';
     for (let i = 1; i <= sumaStron; i++) {
         numeryStron += `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${i})" 
@@ -536,13 +527,12 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="margin-top:10px; margin-bottom:20px;">${tytul}</h2>
         
-        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer; display:none;">
-            🔍 Filtruj i sortuj
+        <button id="mobile-filter-toggle" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:bold; margin-bottom:15px; cursor:pointer;">
+            🔍 Filtruj i sortuj wyniki
         </button>
 
         <div id="results-layout" style="display:flex; gap:25px; align-items: flex-start;">
-            <!-- PANEL FILTRÓW -->
-            <div class="side-filters" style="display:block; width:260px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:20px; border:1px solid #eee; position:sticky; top:0;">
+            <div class="side-filters" style="width:260px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:20px; border:1px solid #eee; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Parametry</h4>
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
@@ -560,12 +550,10 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
             </div>
 
-            <!-- GRID OGŁOSZEŃ (5 POZIOMO) -->
             <div style="flex:1;">
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px;">
                     ${porcja.map(o => renderCardHTML(o)).join('')}
                 </div>
-                <!-- NUMERACJA STRON -->
                 <div style="display:flex; justify-content:center; align-items:center; gap:5px; margin-top:40px; padding-bottom:30px;">
                     ${strona > 1 ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona-1})" style="background:none; border:none; cursor:pointer; font-weight:bold;">←</button>` : ''}
                     ${numeryStron}
@@ -576,7 +564,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden'; 
 };
-
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj').value.toLowerCase().trim();
     const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
