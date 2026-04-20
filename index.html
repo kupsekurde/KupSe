@@ -263,13 +263,13 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
 <div class="nav-search">
-    <input type="text" id="find-text" value="" placeholder="Czego szukasz?" ... autocomplete="off">
+    <input type="text" id="szukajka-glowna" value="" placeholder="Czego szukasz?" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="off">
     
     <div class="search-divider"></div>
     
-    <input type="text" id="szukaj-miasto" name="search-location" value="" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+    <input type="text" id="miasto-input" value="" placeholder="Cała Polska" onkeyup="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
     
-    <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">OK</button>
+    <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">Szukaj</button>
 </div>
     </div>
     <div class="nav-right" id="user-nav">
