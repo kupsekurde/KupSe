@@ -531,8 +531,27 @@ window.usunOgloszenie = async (id) => {
 };
 
 // --- KATEGORIE I RENDEROWANIE ---
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    if (!p) return;
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
+    }
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
+};
+
+window.filtrujPoPodkat = (kat, podkat) => {
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
+};
+
+// --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    const OGLOSZENIA_NA_STRONE = 50; // Teraz masz 50 ogłoszeń (5x10)
+    const OGLOSZENIA_NA_STRONE = 12; // Ile ogłoszeń na jednej stronie
     if (!tytul.includes("(wyniki)")) {
         wynikiBazowe = [...wyniki]; 
         ostatniTytul = tytul;
@@ -543,6 +562,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
 
+    // To tworzy klikalne numerki stron 1, 2, 3...
     let numeryStronHTML = "";
     for(let i = 1; i <= sumaStron; i++) {
         numeryStronHTML += `
@@ -561,35 +581,20 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         </button>
 
         <div id="results-layout" style="display:flex; gap:20px;">
-            <!-- PANEL FILTRÓW - PRZYWRÓCONE WSZYSTKIE POLA -->
-            <div class="side-filters" style="display:none; width:260px; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; height: fit-content; flex-shrink:0;">
+            <div class="side-filters" style="display:none; width:260px; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; height: fit-content;">
                 <h4 style="margin-top:0;">Parametry</h4>
-                
-                <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ W WYNIKACH</label>
-                <input type="text" id="side-szukaj" placeholder="np. iphone..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-
-                <label style="font-size:11px; font-weight:bold; color:gray;">LOKALIZACJA</label>
-                <input type="text" id="side-lok" placeholder="Miasto..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
                 <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="newest">Najnowsze</option>
                     <option value="price-asc">Cena: najtańsze</option>
                     <option value="price-desc">Cena: najdroższe</option>
                 </select>
-
-                <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
-                <div style="display:flex; gap:5px; margin-bottom:15px;">
-                    <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                    <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                </div>
-
-                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj</button>
             </div>
 
             <div style="flex:1;">
                 <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:15px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń spełniających te kryteria.</p>'}
+                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p>Brak ogłoszeń.</p>'}
                 </div>
 
                 <div style="display:flex; justify-content:center; gap:8px; margin-top:30px; padding-bottom:20px; flex-wrap:wrap;">
@@ -603,30 +608,56 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
 
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj') ? document.getElementById('side-szukaj').value.toLowerCase().trim() : "";
-    const min = parseFloat(document.getElementById('side-cena-min')?.value) || 0;
-    const max = parseFloat(document.getElementById('side-cena-max')?.value) || 99999999;
+    const min = parseFloat(document.getElementById('side-cena-min').value) || 0;
+    const max = parseFloat(document.getElementById('side-cena-max').value) || 99999999;
     const lok = document.getElementById('side-lok') ? document.getElementById('side-lok').value.toLowerCase().trim() : "";
     const sort = document.getElementById('side-sort').value;
+    
+    // Pola motoryzacyjne (jeśli istnieją)
+    const rMin = document.getElementById('sf-rok-min') ? parseInt(document.getElementById('sf-rok-min').value) || 0 : 0;
+    const rMax = document.getElementById('sf-rok-max') ? parseInt(document.getElementById('sf-rok-max').value) || 9999 : 9999;
+    const paliwo = document.getElementById('sf-paliwo') ? document.getElementById('sf-paliwo').value.toLowerCase() : "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
-        const tekstDoPrzeszukania = `${o.tytul} ${o.opis}`.toLowerCase();
+        const tekstDoPrzeszukania = `${o.tytul} ${o.opis} ${o.podkategoria}`.toLowerCase();
         const tekstOk = fraza === "" || tekstDoPrzeszukania.includes(fraza);
         const cenaOk = o.cena >= min && o.cena <= max;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
-        return tekstOk && cenaOk && lokOk;
+        
+        // Dodatkowe sprawdzenie dla aut
+        let motoOk = true;
+        if (paliwo || rMin > 0 || rMax < 9999) {
+            const rokMatch = o.opis.match(/Rok: (\d{4})/);
+            const autoRok = rokMatch ? parseInt(rokMatch[1]) : 0;
+            const rokOk = (rMin === 0 && rMax === 9999) || (autoRok >= rMin && autoRok <= rMax);
+            const paliwoOk = paliwo === "" || o.opis.toLowerCase().includes(paliwo);
+            motoOk = rokOk && paliwoOk;
+        }
+
+        return tekstOk && cenaOk && lokOk && motoOk;
     });
 
-    if (sort === 'price-asc') przefiltrowane.sort((a, b) => a.cena - b.cena);
-    else if (sort === 'price-desc') przefiltrowane.sort((a, b) => b.cena - a.cena);
-    else przefiltrowane.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    if (sort === 'price-asc') {
+        przefiltrowane.sort((a, b) => a.cena - b.cena);
+    } else if (sort === 'price-desc') {
+        przefiltrowane.sort((a, b) => b.cena - a.cena);
+    } else if (sort === 'newest') {
+        przefiltrowane.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (sort === 'oldest') {
+        przefiltrowane.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
 
     window.pokazWynikiModal(ostatniTytul + " (wyniki)", przefiltrowane);
     
-    // TO CHOWA PANEL PO KLIKNIĘCIU:
+    // Na telefonie chowamy panel po kliknięciu "Zastosuj"
     const sf = document.querySelector('.side-filters');
-    const btn = document.getElementById('filter-toggle-btn');
-    if(sf) sf.style.display = 'none';
-    if(btn) btn.innerHTML = '🔍 Filtruj i Sortuj Wyniki';
+    if(sf) sf.classList.remove('active');
+
+    document.getElementById('side-szukaj').value = fraza;
+    document.getElementById('side-sort').value = sort;
+    if(min > 0) document.getElementById('side-cena-min').value = min;
+    if(max < 99999999) document.getElementById('side-cena-max').value = max;
+    document.getElementById('side-lok').value = lok;
 };
 
 function renderCardHTML(o) {
@@ -861,12 +892,12 @@ window.otworzFormularzDodawania = () => {
 window.toggleMobileFilters = () => {
     const filters = document.querySelector('.side-filters');
     const btn = document.getElementById('filter-toggle-btn');
-    if (!filters) return; // Jeśli nie ma panelu, nic nie rób (zapobiega błędom)
+    if (!filters) return;
 
-    const obecnieUkryte = (filters.style.display === 'none' || filters.style.display === '');
-    filters.style.display = obecnieUkryte ? 'block' : 'none';
+    const jestUkryty = (filters.style.display === 'none' || filters.style.display === '');
+    filters.style.display = jestUkryty ? 'block' : 'none';
     
     if (btn) {
-        btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
+        btn.innerHTML = jestUkryty ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
