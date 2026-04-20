@@ -853,7 +853,7 @@ window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
     const modalView = document.getElementById('modal-view'); // Twoje ID dla podglądu
     const modalForm = document.getElementById('modal-form'); // Twoje ID dla dodawania
-document.body.style.overflow = 'hidden';
+
     // 1. Zamykanie menu "Moje Konto"
     if (dropMenu && dropMenu.style.display === 'block') {
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
