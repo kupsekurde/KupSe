@@ -115,6 +115,22 @@ window.loguj = async () => {
     else location.reload();
 };
 
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    const zgoda = document.getElementById('reg-zgoda-regulamin').checked;
+
+    if (!email || !password) return alert("Wypełnij email i hasło!");
+    if (!zgoda) return alert("Musisz zaakceptować regulamin!");
+
+    const { data, error } = await baza.auth.signUp({ email, password });
+    if (error) alert("Błąd: " + error.message);
+    else {
+        alert("Konto utworzone! Jeśli włączyłeś potwierdzenie email, sprawdź swoją pocztę. W innym przypadku możesz się już zalogować.");
+        location.reload();
+    }
+};
+
 async function sprawdzUzytkownika() {
     const { data: { user } } = await baza.auth.getUser();
     const nav = document.getElementById('user-nav');
@@ -729,10 +745,8 @@ window.renderujOgloszenia = (lista) => {
     k.style.display = 'grid';
     k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
     k.style.gap = '20px';
-    // Mapujemy każde znalezione ogłoszenie i zamieniamy je na kartę HTML
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
-
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
