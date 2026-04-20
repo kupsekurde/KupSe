@@ -67,13 +67,11 @@ async function sprawdzUzytkownika() {
         const { data: uData } = await baza.from('ulubione').select('ogloszenie_id').eq('user_email', user.email);
         mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
 
-        nav.innerHTML = `
+            nav.innerHTML = `
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                </button>
+                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">Moje Konto ▼</button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
                     <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">
@@ -254,9 +252,7 @@ window.pokazSzczegoly = async (id) => {
     aktualneZdjecieIndex = 0;
     
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
-    const btnWstecz = ostatnieWyniki.length > 0 
-        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
-        : "";
+    const btnWstecz = ostatnieWyniki.length > 0 ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` : "";
 
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
@@ -511,78 +507,44 @@ window.filtrujPoPodkat = (kat, podkat) => {
 
 // --- PAGINACJA WYNIKÓW ---
 window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
-    const OGLOSZENIA_NA_STRONE = 30;
-    if (!tytul.includes("(wyniki)")) {
-        wynikiBazowe = [...wyniki]; 
-        ostatniTytul = tytul;
-    }
+    const OGLOSZENIA_NA_STRONE = 50; 
+    if (!tytul.includes("(wyniki)")) { wynikiBazowe = [...wyniki]; ostatniTytul = tytul; }
     ostatnieWyniki = wyniki;
     const content = document.getElementById('view-content');
     const start = (strona - 1) * OGLOSZENIA_NA_STRONE;
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
 
-    const czyMoto = tytul.includes('Motoryzacja');
-    const motoPodkaty = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
-    const czySpecjalneMoto = czyMoto && motoPodkaty.some(p => tytul.includes(p));
+    let stronyHTML = '';
+    for(let i=1; i<=sumaStron; i++) {
+        stronyHTML += `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${i})" style="margin:0 3px; padding:8px 12px; cursor:pointer; background:${i===strona ? 'var(--primary)' : 'white'}; color:${i===strona ? 'white' : 'black'}; border:1px solid #ddd; border-radius:8px; font-weight:bold;">${i}</button>`;
+    }
 
     content.innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         <h2 style="margin-top:10px; margin-bottom:20px;">${tytul}</h2>
-        
-        <button id="filter-toggle-btn" onclick="window.toggleMobileFilters()" style="width:100%; padding:12px; background:#111; color:white; border:none; border-radius:10px; font-weight:800; margin-bottom:20px; cursor:pointer;">
-            🔍 Filtruj i Sortuj Wyniki
-        </button>
-
         <div id="results-layout" style="display:flex; gap:25px; align-items: flex-start;">
-            <!-- PANEL FILTRÓW (LEWA STRONA) -->
-            <div class="side-filters" id="desktop-filters" style="display:none; width:260px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; position:sticky; top:0;">
+            <div class="side-filters" id="desktop-filters" style="display:block; width:250px; flex-shrink:0; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; position:sticky; top:0;">
                 <h4 style="margin-top:0;">Parametry</h4>
-                
                 <label style="font-size:11px; font-weight:bold; color:gray;">SORTOWANIE</label>
-                <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
-                    <option value="newest">Najnowsze</option>
-                    <option value="price-asc">Cena: najtańsze</option>
-                    <option value="price-desc">Cena: najdroższe</option>
-                </select>
-
-                <label style="font-size:11px; font-weight:bold; color:gray;">SZUKAJ WYNIKÓW</label>
-                <input type="text" id="side-szukaj" placeholder="Np. Opel..." style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
-                
-                ${czySpecjalneMoto ? `
-                    <label style="font-size:11px; font-weight:bold; color:gray;">PRZEBIEG (KM)</label>
-                    <div style="display:flex; gap:5px; margin-bottom:12px;">
-                        <input type="number" id="sf-przebieg-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                        <input type="number" id="sf-przebieg-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                    </div>
-                ` : ''}
-
+                <select id="side-sort" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;"><option value="newest">Najnowsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option></select>
                 <label style="font-size:11px; font-weight:bold; color:gray;">CENA (ZŁ)</label>
-                <div style="display:flex; gap:5px; margin-bottom:12px;">
-                    <input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                    <input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                </div>
-                
-                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj zmiany</button>
+                <div style="display:flex; gap:5px; margin-bottom:12px;"><input type="number" id="side-cena-min" placeholder="Od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;"><input type="number" id="side-cena-max" placeholder="Do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;"></div>
+                <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj</button>
             </div>
-
-            <!-- GRID OGŁOSZEŃ (PRAWA STRONA) -->
             <div style="flex:1;">
-                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:15px;">
-                    ${porcja.length ? porcja.map(o => renderCardHTML(o)).join('') : '<p style="padding:20px; color:gray;">Nie znaleźliśmy ogłoszeń.</p>'}
+                <div id="modal-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px;">
+                    ${porcja.map(o => renderCardHTML(o)).join('')}
                 </div>
-
-                ${sumaStron > 1 ? `
-                    <div style="display:flex; justify-content:center; gap:10px; margin-top:30px; padding-bottom:20px;">
-                        <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona - 1})" ${strona === 1 ? 'disabled style="opacity:0.5"' : 'style="cursor:pointer"'} class="sub-pill">← Poprzednia</button>
-                        <span style="align-self:center; font-weight:bold;">Strona ${strona} z ${sumaStron}</span>
-                        <button onclick="window.pokazWynikiModal(ostatniTytul, wyniki, ${strona + 1})" ${strona === sumaStron ? 'disabled style="opacity:0.5"' : 'style="cursor:pointer"'} class="sub-pill">Następna →</button>
-                    </div>
-                ` : ''}
+                <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:40px; padding-bottom:30px;">
+                    ${strona > 1 ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona - 1})" style="cursor:pointer; background:none; border:none; font-weight:bold;">← Poprzednia</button>` : ''}
+                    ${stronyHTML}
+                    ${strona < sumaStron ? `<button onclick="window.pokazWynikiModal('${ostatniTytul}', ostatnieWyniki, ${strona + 1})" style="cursor:pointer; background:none; border:none; font-weight:bold;">Następna →</button>` : ''}
+                </div>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; 
+    document.body.style.overflow = 'hidden';
 };
 
 window.zastosujFiltryBoczne = () => {
