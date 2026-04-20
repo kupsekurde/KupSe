@@ -37,30 +37,53 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
-    // Pobieramy dane z nowych ID, które masz w HTML
+    console.log("Start szukania..."); // Log w konsoli
+
     const p1 = document.getElementById('szukajka-glowna');
     const p2 = document.getElementById('miasto-input');
     
-    if (!p1 || !p2) return;
-
-    const tekst = p1.value.toLowerCase().trim();
-    const loc = p2.value.toLowerCase().trim();
-
-    // Szukamy w bazie Supabase
-    let query = baza.from('ogloszenia').select('*');
-
-    if (tekst) query = query.ilike('tytul', `%${tekst}%`);
-    if (loc) query = query.ilike('lokalizacja', `%${loc}%`);
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Błąd bazy:", error);
+    if (!p1 || !p2) {
+        console.error("BŁĄD: Nie znaleziono pól w HTML! Szukałem 'szukajka-glowna' i 'miasto-input'");
+        alert("Błąd techniczny: Nie znaleziono pól wyszukiwarki.");
         return;
     }
 
-    // Wywołujemy funkcję wyświetlania (zaraz zmienimy jej nazwę na taką bez "ó")
-    window.renderujOgloszenia(data);
+    const tekst = p1.value.toLowerCase().trim();
+    const loc = p2.value.toLowerCase().trim();
+    
+    console.log("Szukam frazy:", tekst, "w lokalizacji:", loc);
+
+    try {
+        let query = baza.from('ogloszenia').select('*');
+
+        // UWAGA: Sprawdź czy w Supabase kolumny nazywają się 'tytul' i 'lokalizacja'
+        if (tekst) query = query.ilike('tytul', `%${tekst}%`);
+        if (loc) query = query.ilike('lokalizacja', `%${loc}%`);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Błąd z bazy Supabase:", error);
+            alert("Błąd bazy: " + error.message);
+            return;
+        }
+
+        console.log("Znaleziono ogłoszeń:", data.length);
+
+        if (data.length === 0) {
+            document.getElementById('lista').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Brak wyników dla podanych kryteriów.</p>";
+        } else {
+            // Ważne: nazwa musi być taka sama jak ta, którą poprawiliśmy wcześniej!
+            window.renderujOgloszenia(data);
+        }
+
+        // Zmiana tytułu nad ogłoszeniami
+        const title = document.getElementById('grid-title');
+        if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
+
+    } catch (err) {
+        console.error("Nieoczekiwany błąd skryptu:", err);
+    }
 };
 // --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
