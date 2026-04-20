@@ -313,12 +313,51 @@
 
 <div class="container">
     <div id="auth-box">
-        <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
-            <h3>Logowanie</h3>
-            <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
-            <input type="password" id="pass" placeholder="Hasło" style="margin-bottom:15px;">
-            <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
-            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+                <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="margin-bottom:20px;">Logowanie</h3>
+            <input type="email" id="email" placeholder="Email" style="margin-bottom:12px;">
+            
+            <div style="display:flex; background:#f3f4f6; border-radius:10px; border:1px solid #ddd; margin-bottom:8px; overflow:hidden;">
+                <input type="password" id="pass" placeholder="Hasło" style="border:none; background:transparent; padding:12px; flex:1;">
+                <button onclick="window.togglePass('pass')" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:800; padding:0 15px; cursor:pointer; border-left:1px solid #ddd;">ODKRYJ</button>
+            </div>
+
+            <div style="text-align: right; margin-bottom: 20px;">
+                <span onclick="window.odzyskajHaslo()" style="font-size:12px; color:var(--gray); cursor:pointer; text-decoration:underline;">Zapomniałeś hasła?</span>
+            </div>
+// Przełączanie widoczności hasła
+window.togglePass = (id) => {
+    const input = document.getElementById(id);
+    const btn = event.target;
+    if (input.type === "password") {
+        input.type = "text";
+        btn.innerText = "UKRYJ";
+    } else {
+        input.type = "password";
+        btn.innerText = "ODKRYJ";
+    }
+};
+
+// Procedura odzyskiwania hasła przez Supabase
+window.odzyskajHaslo = async () => {
+    const email = document.getElementById('email').value.trim();
+    if (!email || !email.includes('@')) {
+        alert("Proszę wpisać poprawny adres e-mail w polu powyżej, abyśmy mogli wysłać link do resetowania hasła.");
+        return;
+    }
+    
+    try {
+        const { error } = await baza.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href 
+        });
+        if (error) throw error;
+        alert("Instrukcje resetowania hasła zostały wysłane na: " + email);
+    } catch (err) {
+        alert("Błąd: " + err.message);
+    }
+};
+            <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer; color:white; margin-bottom:15px;">Zaloguj się</button>
+            <p style="font-size:13px; margin:0;">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold; text-decoration:none;">Zarejestruj się</a></p>
         </div>
         
        <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
@@ -326,15 +365,15 @@
     <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
     
     <!-- Tutaj usunęliśmy napis o 6 znakach i zmniejszyliśmy margines dolny -->
-    <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
+    <div style="display:flex; background:#f3f4f6; border-radius:10px; border:1px solid #ddd; margin-bottom:10px; overflow:hidden;">
+        <input type="password" id="reg-pass" placeholder="Hasło" style="border:none; background:transparent; padding:12px; flex:1;">
+        <button onclick="window.togglePass('reg-pass')" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:800; padding:0 15px; cursor:pointer; border-left:1px solid #ddd;">ODKRYJ</button>
+    </div>
     
-    <!-- Nowa informacja o wymaganiach -->
-    <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
-        <strong>Hasło musi zawierać:</strong><br>
-        • min. 8 znaków<br>
-        • dużą literę<br>
-        • liczbę<br>
-        • znak specjalny
+    <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #fdfdfd; padding: 12px; border-radius: 10px; border: 1px solid #eee;">
+        <strong style="color:#444">Hasło musi zawierać:</strong><br>
+        • min. 8 znaków | • dużą literę<br>
+        • liczbę | • znak specjalny
     </div>
 <div style="text-align: left; font-size: 12px; margin-bottom: 15px; color: #444; padding: 0 10px;">
     <label style="display: flex; gap: 8px; cursor: pointer; margin-bottom: 8px;">
