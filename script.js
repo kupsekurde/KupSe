@@ -703,6 +703,17 @@ function renderCardHTML(o) {
         </div>`;
 }
 
+// Ta funkcja naprawia Twoją szukajkę - odpowiada za wyświetlanie wyników wyszukiwania
+window.renderujOgloszenia = (lista) => {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    k.style.display = 'grid';
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+    k.style.gap = '20px';
+    // Mapujemy każde znalezione ogłoszenie i zamieniamy je na kartę HTML
+    k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
+};
+
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
