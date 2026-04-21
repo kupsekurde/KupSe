@@ -89,12 +89,19 @@
         height: 60px;
     }
 
-    /* 3. Grid ogłoszeń - na telefonie 2 kolumny zamiast wielu */
+    /* 3. Grid ogłoszeń - na telefonie 2 kolumny (2x6) */
     .ads-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 20px !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* Dwie kolumny obok siebie */
+        gap: 15px !important;
         padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Naprawa kart, żeby nie były za wysokie */
+    .ad-card img {
+        height: 140px !important; 
     }
 
 
