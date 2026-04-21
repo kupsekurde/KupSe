@@ -332,38 +332,24 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
+    // Obsługa przycisku wstecz w telefonie
     history.pushState({ modalOpen: true }, ""); 
-    window.onpopstate = function() { window.zamknijModal(); };
+    window.onpopstate = function() {
+        window.zamknijModal();
+    };
 
     const { data: { user } } = await baza.auth.getUser();
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     window.aktualneZdjecieIndex = 0;
     
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
-    
-    // Budowanie tabelki parametrów dla Motoryzacji
-    let tabelkaParametrow = "";
-    const czyMoto = o.kategoria === 'Motoryzacja' && ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'].includes(o.podkategoria);
-    
-    if (czyMoto) {
-        tabelkaParametrow = `
-            <div style="margin-top:20px; background:#f9f9f9; border-radius:12px; padding:15px; border:1px solid #eee;">
-                <h4 style="margin:0 0 10px 0; font-size:14px; color:#666;">Dane techniczne</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:13px;">
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Marka:</b> ${o.marka || '-'}</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Model:</b> ${o.model || '-'}</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Rok produkcji:</b> ${o.rok || '-'}</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Przebieg:</b> ${o.przebieg || '-'} km</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Pojemność:</b> ${o.pojemnosc || '-'}</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Moc:</b> ${o.moc || '-'} KM</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Paliwo:</b> ${o.paliwo || '-'}</div>
-                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Skrzynia:</b> ${o.skrzynia || '-'}</div>
-                </div>
-            </div>`;
-    }
+    const btnWstecz = ostatnieWyniki.length > 0 
+        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
+        : "";
 
     document.getElementById('view-content').innerHTML = `
-        <button class="close-btn\" onclick="window.zamknijModal()">&times;</button>
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        ${btnWstecz}
         <div style="display:flex; flex-direction: column; gap:15px;">
             <div style="width:100%;">
                 <div style="background:#000; border-radius:15px; height:280px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
@@ -374,17 +360,14 @@ window.pokazSzczegoly = async (id) => {
                 </div>
             </div>
             <div style="width:100%;">
-                <div style="font-size:11px; color:gray;">Dodano: ${new Date(o.created_at).toLocaleDateString('pl-PL')}</div>
+                <div style="font-size:11px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
                 <h2 style="font-size:18px; margin:10px 0;">${o.tytul}</h2>
-                <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} z\u0142</h1>
-                <p style="font-size:14px;">\ud83d\udccd ${o.lokalizacja} | \ud83d\udcde ${telefonWidok}</p>
-                
-                ${tabelkaParametrow}
-
+                <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} zł</h1>
+                <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wy\u015blij wiadomo\u015b\u0107</button>
+                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
                     <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
-                        ${mojeUlubione.includes(o.id) ? '\u2764\ufe0f' : '\ud83e\udd0d'}
+                        ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
                 <h3 style="margin-top:20px; font-size:16px;">Opis</h3>
@@ -534,7 +517,7 @@ window.wyslijOgloszenie = async (e) => {
         }
     }
 
-        const { error } = await baza.from('ogloszenia').insert([{
+    const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
         kategoria: document.getElementById('f-kat').value,
@@ -543,16 +526,7 @@ window.wyslijOgloszenie = async (e) => {
         lokalizacja: document.getElementById('f-lok').value,
         opis: document.getElementById('f-opis').value,
         zdjecia: zdjeciaUrls,
-        telefon: document.getElementById('f-tel').value,
-        // Dodatkowe pola dla Motoryzacji:
-        marka: document.getElementById('extra-marka')?.value || null,
-        model: document.getElementById('extra-model')?.value || null,
-        rok: document.getElementById('extra-rok')?.value || null,
-        przebieg: document.getElementById('extra-przebieg')?.value || null,
-        pojemnosc: document.getElementById('extra-pojemnosc')?.value || null,
-        moc: document.getElementById('extra-moc')?.value || null,
-        paliwo: document.getElementById('extra-paliwo')?.value || null,
-        skrzynia: document.getElementById('extra-skrzynia')?.value || null
+        telefon: document.getElementById('f-tel').value
     }]);
 
     if (error) {
@@ -981,22 +955,13 @@ window.edytujOgloszenie = (id) => {
             }
         }
 
-                const { error } = await baza.from('ogloszenia').update({
+        const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
             telefon: document.getElementById('f-tel').value,
-            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls],
-            // Dodatkowe pola przy edycji:
-            marka: document.getElementById('extra-marka')?.value || null,
-            model: document.getElementById('extra-model')?.value || null,
-            rok: document.getElementById('extra-rok')?.value || null,
-            przebieg: document.getElementById('extra-przebieg')?.value || null,
-            pojemnosc: document.getElementById('extra-pojemnosc')?.value || null,
-            moc: document.getElementById('extra-moc')?.value || null,
-            paliwo: document.getElementById('extra-paliwo')?.value || null,
-            skrzynia: document.getElementById('extra-skrzynia')?.value || null
+            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
@@ -1033,8 +998,4 @@ window.toggleMobileFilters = () => {
     if (btn) {
         btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
-};
-window.pokazNumer = (nr) => {
-    const area = document.getElementById('phone-area');
-    if(area) area.innerHTML = `<b style="font-size:18px; color:#111;">${nr}</b>`;
 };
