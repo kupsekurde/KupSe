@@ -152,8 +152,9 @@ async function sprawdzUzytkownika() {
             <div style="position:relative; display:flex; gap:15px; align-items:center;">
                 <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
+                                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
                     Moje Konto ▼
+                    ${msgCount > 0 ? `<span style="position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white;">${msgCount}</span>` : ''}
                 </button>
                 <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
                     <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
@@ -269,10 +270,13 @@ window.otworzChat = async (zKim) => {
     const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "400px";
 
-    document.getElementById('view-content').innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
-            <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
+        document.getElementById('view-content').innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
+                <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
+            </div>
+            <button class="close-btn" onclick="window.zamknijModal()" style="position:static; font-size:25px;">&times;</button>
         </div>
         <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
             ${msg.map(m => {
@@ -706,6 +710,10 @@ window.zastosujFiltryBoczne = () => {
     const lok = document.getElementById('side-lok')?.value.toLowerCase().trim() || "";
     const sort = document.getElementById('side-sort').value;
 
+    // Funkcja pomocnicza do "inteligentnego" porównywania tekstu
+    const uproscTekst = (t) => t.replace(/[\s-]/g, '').toLowerCase();
+    const szukanaFrazaUproszczona = uproscTekst(fraza);
+
     // Pola Moto
     const marka = document.getElementById('sf-marka')?.value.toLowerCase() || "";
     const model = document.getElementById('sf-model')?.value.toLowerCase() || "";
@@ -715,17 +723,18 @@ window.zastosujFiltryBoczne = () => {
     const paliwo = document.getElementById('sf-paliwo')?.value || "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
-        const d = (o.tytul + " " + o.opis).toLowerCase();
-        const tekstOk = fraza === "" || d.includes(fraza);
+        const tytulOpisUproszczony = uproscTekst(o.tytul + " " + o.opis);
+        
+        const tekstOk = fraza === "" || tytulOpisUproszczony.includes(szukanaFrazaUproszczona);
         const cenaOk = o.cena >= cMin && o.cena <= cMax;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
         const stanOk = stan === "" || o.opis.includes(stan);
         
-        // Logika Moto (szuka słów w opisie/tytule)
         let motoOk = true;
-        if(marka && !d.includes(marka)) motoOk = false;
-        if(model && !d.includes(model)) motoOk = false;
+        if(marka && !tytulOpisUproszczony.includes(uproscTekst(marka))) motoOk = false;
+        if(model && !tytulOpisUproszczony.includes(uproscTekst(model))) motoOk = false;
         if(paliwo && !o.opis.includes(paliwo)) motoOk = false;
+        
         if(rMin > 0 || rMax < 9999) {
             const rokMatch = o.opis.match(/Rok: (\d{4})/);
             const rok = rokMatch ? parseInt(rokMatch[1]) : 0;
