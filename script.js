@@ -2,8 +2,6 @@ window.renderujOgloszenia = (lista) => {
     const k = document.getElementById('lista');
     if (!k) return;
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-    k.style.gap = '20px';
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
@@ -334,9 +332,15 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
+    // Obsługa przycisku wstecz w telefonie
+    history.pushState({ modalOpen: true }, ""); 
+    window.onpopstate = function() {
+        window.zamknijModal();
+    };
+
     const { data: { user } } = await baza.auth.getUser();
-    aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    aktualneZdjecieIndex = 0;
+    window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    window.aktualneZdjecieIndex = 0;
     
     const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
     const btnWstecz = ostatnieWyniki.length > 0 
@@ -346,28 +350,28 @@ window.pokazSzczegoly = async (id) => {
     document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         ${btnWstecz}
-        <div style="display:flex; flex-wrap:wrap; gap:20px;">
-            <div style="flex:1.5; min-width:300px;">
-                <div style="background:#000; border-radius:15px; height:350px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
-                    <img id="mainFoto" src="${aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in;" onclick="window.otworzFullFoto()">
+        <div style="display:flex; flex-direction: column; gap:15px;">
+            <div style="width:100%;">
+                <div style="background:#000; border-radius:15px; height:280px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;" onclick="window.otworzFullFoto()">
                 </div>
-                <div style="display:flex; gap:8px; margin-top:10px; overflow-x:auto;">
-                    ${aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:65px; height:65px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
+                <div style="display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:60px; height:60px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'}; flex-shrink:0;">`).join('')}
                 </div>
             </div>
-            <div style="flex:1;">
-                <div style="font-size:12px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
-                <h2>${o.tytul}</h2>
-                <h1 style="color:var(--primary);">${o.cena} zł</h1>
-                <p>📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:12px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+            <div style="width:100%;">
+                <div style="font-size:11px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
+                <h2 style="font-size:18px; margin:10px 0;">${o.tytul}</h2>
+                <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} zł</h1>
+                <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
+                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
-                                <h3 style="margin-top:20px;">Opis</h3>
-                <p style="white-space:pre-line;">${o.opis}</p>
+                <h3 style="margin-top:20px; font-size:16px;">Opis</h3>
+                <p style="white-space:pre-line; font-size:14px; line-height:1.5; color:#444;">${o.opis}</p>
             </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
