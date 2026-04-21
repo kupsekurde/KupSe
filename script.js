@@ -381,32 +381,37 @@ window.pokazSzczegoly = async (id) => {
 window.zmienGlowneZdjecie = (idx) => {
     window.aktualneZdjecieIndex = idx;
     const img = document.getElementById('mainFoto');
-    if(img && window.aktualneFotki) img.src = window.aktualneFotki[idx];
+    if(img && window.aktualneFotki) {
+        img.src = window.aktualneFotki[idx];
+    }
+    // To podświetla wybraną miniaturkę ramką
     document.querySelectorAll('.mini-foto').forEach((el, i) => {
         el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
     });
 };
-
 window.otworzFullFoto = () => {
     let lb = document.getElementById('lightbox-box');
     if (!lb) {
         lb = document.createElement('div');
         lb.id = 'lightbox-box';
-        lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; display:none; align-items:center; justify-content:center; user-select:none;";
+        // Zwiększyłem z-index do 30000, żeby nic go nie przykryło
+        lb.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:30000; display:none; align-items:center; justify-content:center; user-select:none;";
         document.body.appendChild(lb);
     }
+    
+    // Używamy "window." przed nazwami, żeby obrazek się wczytał
     lb.innerHTML = `
         <button onclick="document.getElementById('lightbox-box').style.display='none'" 
                 style="position:absolute; top:25px; right:25px; background:white; border:none; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; z-index:9001; display:flex; align-items:center; justify-content:center;">
             &times;
         </button>
         <button onclick="window.navFullFoto(-1)" 
-                style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
+                style="position:absolute; left:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:15px; cursor:pointer; font-size:30px; border-radius:10px; z-index:9002;">
             ❮
         </button>
-        <img id="lb-img" src="${aktualneFotki[aktualneZdjecieIndex]}" style="max-width:90%; max-height:90%; object-fit:contain;">
+        <img id="lb-img" src="${window.aktualneFotki[window.aktualneZdjecieIndex]}" style="max-width:95%; max-height:95%; object-fit:contain;">
         <button onclick="window.navFullFoto(1)" 
-                style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:20px 15px; cursor:pointer; font-size:40px; border-radius:10px;">
+                style="position:absolute; right:20px; background:rgba(255,255,255,0.15); color:white; border:none; padding:15px; cursor:pointer; font-size:30px; border-radius:10px; z-index:9002;">
             ❯
         </button>
     `;
@@ -414,9 +419,9 @@ window.otworzFullFoto = () => {
 };
 
 window.navFullFoto = (dir) => {
-    aktualneZdjecieIndex = (aktualneZdjecieIndex + dir + aktualneFotki.length) % aktualneFotki.length;
+    window.aktualneZdjecieIndex = (window.aktualneZdjecieIndex + dir + window.aktualneFotki.length) % window.aktualneFotki.length;
     const img = document.getElementById('lb-img');
-    if(img) img.src = aktualneFotki[aktualneZdjecieIndex];
+    if(img) img.src = window.aktualneFotki[window.aktualneZdjecieIndex];
 };
 
 // --- FILTROWANIE SPECJALISTYCZNE ---
