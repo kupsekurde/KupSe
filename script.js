@@ -332,7 +332,6 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
-    // Przycisk wstecz w telefonie
     history.pushState({ modalOpen: true }, ""); 
     window.onpopstate = function() { window.zamknijModal(); };
 
@@ -340,71 +339,58 @@ window.pokazSzczegoly = async (id) => {
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     window.aktualneZdjecieIndex = 0;
     
-    // Formatowanie daty i godziny
-    const dataOpcje = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-    const dataGodzina = new Date(o.created_at).toLocaleString('pl-PL', dataOpcje);
-
-    // Logika numeru telefonu
-    let telefonHTML = `<span style="color:red; font-weight:bold;">[Zaloguj się, aby zobaczyć numer]</span>`;
-    if (user) {
-        telefonHTML = `
-            <div id="phone-area">
-                <button onclick="window.pokazNumer('${o.telefon}')" style="width:100%; padding:12px; background:#f3f4f6; border:2px dashed #ccc; border-radius:10px; cursor:pointer; font-weight:bold; color:#444;">
-                    📱 Wyświetl numer kontaktowy
-                </button>
+    const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
+    
+    // Budowanie tabelki parametrów dla Motoryzacji
+    let tabelkaParametrow = "";
+    const czyMoto = o.kategoria === 'Motoryzacja' && ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'].includes(o.podkategoria);
+    
+    if (czyMoto) {
+        tabelkaParametrow = `
+            <div style="margin-top:20px; background:#f9f9f9; border-radius:12px; padding:15px; border:1px solid #eee;">
+                <h4 style="margin:0 0 10px 0; font-size:14px; color:#666;">Dane techniczne</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:13px;">
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Marka:</b> ${o.marka || '-'}</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Model:</b> ${o.model || '-'}</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Rok produkcji:</b> ${o.rok || '-'}</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Przebieg:</b> ${o.przebieg || '-'} km</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Pojemność:</b> ${o.pojemnosc || '-'}</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Moc:</b> ${o.moc || '-'} KM</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Paliwo:</b> ${o.paliwo || '-'}</div>
+                    <div style="border-bottom:1px solid #eee; padding:5px 0;"><b>Skrzynia:</b> ${o.skrzynia || '-'}</div>
+                </div>
             </div>`;
     }
 
-    const btnWstecz = ostatnieWyniki.length > 0 
-        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
-        : "";
-
     document.getElementById('view-content').innerHTML = `
-        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-        ${btnWstecz}
-        
-        <div style="display:flex; flex-wrap:wrap; gap:30px;">
-            <!-- LEWA STRONA: ZDJĘCIA -->
-            <div style="flex:1.5; min-width:300px;">
-                <div style="background:#000; border-radius:15px; height:400px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; cursor:zoom-in; transition: 0.3s;" onclick="window.otworzFullFoto()">
+        <button class="close-btn\" onclick="window.zamknijModal()">&times;</button>
+        <div style="display:flex; flex-direction: column; gap:15px;">
+            <div style="width:100%;">
+                <div style="background:#000; border-radius:15px; height:280px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;" onclick="window.otworzFullFoto()">
                 </div>
-                <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto; padding-bottom:10px;">
-                    ${window.aktualneFotki.map((img, i) => `
-                        <img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" 
-                             style="width:70px; height:70px; object-fit:cover; border-radius:10px; cursor:pointer; border:3px solid ${i===0?'var(--primary)':'transparent'}; transition:0.2s; flex-shrink:0;">
-                    `).join('')}
+                <div style="display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:5px;">
+                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:60px; height:60px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'}; flex-shrink:0;">`).join('')}
                 </div>
             </div>
-
-            <!-- PRAWA STRONA: DANE -->
-            <div style="flex:1; min-width:280px; background:#fff; padding:20px; border-radius:20px; border:1px solid #eee;">
-                <div style="font-size:12px; color:gray; margin-bottom:5px;">📅 Dodano: ${dataGodzina}</div>
-                <h1 style="font-size:24px; margin:0 0 10px 0; color:#111;">${o.tytul}</h1>
-                <div style="font-size:32px; font-weight:800; color:var(--primary); margin-bottom:20px;">${o.cena} zł</div>
+            <div style="width:100%;">
+                <div style="font-size:11px; color:gray;">Dodano: ${new Date(o.created_at).toLocaleDateString('pl-PL')}</div>
+                <h2 style="font-size:18px; margin:10px 0;">${o.tytul}</h2>
+                <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} z\u0142</h1>
+                <p style="font-size:14px;">\ud83d\udccd ${o.lokalizacja} | \ud83d\udcde ${telefonWidok}</p>
                 
-                <div style="margin-bottom:20px; padding:15px; background:#f9fafb; border-radius:12px;">
-                    <div style="font-size:13px; color:gray; margin-bottom:10px;">📍 Lokalizacja: <b>${o.lokalizacja}</b></div>
-                    ${telefonHTML}
-                </div>
+                ${tabelkaParametrow}
 
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:16px;">
-                        ✉️ Wyślij wiadomość
-                    </button>
-                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="width:100%; padding:12px; background:#fff; border:1px solid #ddd; border-radius:12px; cursor:pointer; font-weight:bold;">
-                        ${mojeUlubione.includes(o.id) ? '❤️ W ulubionych' : '🤍 Dodaj do ulubionych'}
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wy\u015blij wiadomo\u015b\u0107</button>
+                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+                        ${mojeUlubione.includes(o.id) ? '\u2764\ufe0f' : '\ud83e\udd0d'}
                     </button>
                 </div>
-            </div>
-
-            <!-- DÓŁ: OPIS -->
-            <div style="width:100%; margin-top:20px; padding:25px; background:#fff; border-radius:20px; border:1px solid #eee;">
-                <h3 style="margin:0 0 15px 0; border-bottom:2px solid #f3f4f6; padding-bottom:10px;">Opis ogłoszenia</h3>
-                <p style="white-space:pre-line; font-size:15px; line-height:1.6; color:#333;">${o.opis}</p>
+                <h3 style="margin-top:20px; font-size:16px;">Opis</h3>
+                <p style="white-space:pre-line; font-size:14px; line-height:1.5; color:#444;">${o.opis}</p>
             </div>
         </div>`;
-        
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };
@@ -548,7 +534,7 @@ window.wyslijOgloszenie = async (e) => {
         }
     }
 
-    const { error } = await baza.from('ogloszenia').insert([{
+        const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: document.getElementById('f-tytul').value,
         kategoria: document.getElementById('f-kat').value,
@@ -557,7 +543,16 @@ window.wyslijOgloszenie = async (e) => {
         lokalizacja: document.getElementById('f-lok').value,
         opis: document.getElementById('f-opis').value,
         zdjecia: zdjeciaUrls,
-        telefon: document.getElementById('f-tel').value
+        telefon: document.getElementById('f-tel').value,
+        // Dodatkowe pola dla Motoryzacji:
+        marka: document.getElementById('extra-marka')?.value || null,
+        model: document.getElementById('extra-model')?.value || null,
+        rok: document.getElementById('extra-rok')?.value || null,
+        przebieg: document.getElementById('extra-przebieg')?.value || null,
+        pojemnosc: document.getElementById('extra-pojemnosc')?.value || null,
+        moc: document.getElementById('extra-moc')?.value || null,
+        paliwo: document.getElementById('extra-paliwo')?.value || null,
+        skrzynia: document.getElementById('extra-skrzynia')?.value || null
     }]);
 
     if (error) {
@@ -986,13 +981,22 @@ window.edytujOgloszenie = (id) => {
             }
         }
 
-        const { error } = await baza.from('ogloszenia').update({
+                const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
             telefon: document.getElementById('f-tel').value,
-            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
+            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls],
+            // Dodatkowe pola przy edycji:
+            marka: document.getElementById('extra-marka')?.value || null,
+            model: document.getElementById('extra-model')?.value || null,
+            rok: document.getElementById('extra-rok')?.value || null,
+            przebieg: document.getElementById('extra-przebieg')?.value || null,
+            pojemnosc: document.getElementById('extra-pojemnosc')?.value || null,
+            moc: document.getElementById('extra-moc')?.value || null,
+            paliwo: document.getElementById('extra-paliwo')?.value || null,
+            skrzynia: document.getElementById('extra-skrzynia')?.value || null
         }).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
