@@ -10,301 +10,390 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #ff4f00; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+                :root { 
+            --primary: #ff6a00; 
+            --primary-hover: #e65f00;
+            --bg: #0b0f1a; 
+            --card-bg: #161c2d;
+            --white: #ffffff; 
+            --text: #f1f5f9; 
+            --gray: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.07);
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            color: var(--text); 
+            overflow-x: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
         
         /* Nawigacja */
-        .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .navbar { 
+            background: rgba(11, 15, 26, 0.8); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 10px 5%; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
         .nav-left { display: flex; align-items: center; gap: 20px; }
-        .main-logo { height: 50px; cursor: pointer; }
+        .main-logo { height: 50px; cursor: pointer; transition: transform 0.3s; }
+        .main-logo:hover { transform: scale(1.02); }
         
         /* Wyszukiwarka */
-        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
-        .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; }
+        .nav-search { 
+            display: flex; 
+            align-items: center; 
+            background: rgba(255,255,255,0.05); 
+            padding: 5px 15px; 
+            border-radius: 50px; 
+            border: 1px solid var(--border); 
+            transition: 0.3s;
+        }
+        .nav-search:focus-within { background: rgba(255,255,255,0.08); border-color: var(--primary); }
+        .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; color: white; }
+        .nav-search input::placeholder { color: var(--gray); }
         #find-text { width: 200px; }
         #find-loc { width: 150px; }
-        .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
-/* --- RESPONSYWNOŚĆ (MOBILE) --- */
-/* --- RESPONSYWNOŚĆ (MOBILE) --- */
-@media (max-width: 768px) {
-    .navbar {
-        flex-direction: column !important; /* Układa logo, szukajkę i konto jedno pod drugim */
-        padding: 15px 10px !important;
-        gap: 15px !important;
-    }
+        .search-divider { width: 1px; height: 20px; background: var(--border); margin: 0 10px; }
 
-    .nav-left {
-        flex-direction: column !important; /* Logo nad szukajką */
-        width: 100% !important;
-        gap: 12px !important;
-    }
+        /* --- RESPONSYWNOŚĆ (MOBILE) --- */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column !important;
+                padding: 15px 10px !important;
+                gap: 15px !important;
+                background: #0b0f1a !important;
+            }
 
-    .nav-search {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        padding: 8px 12px !important;
-        display: flex !important;
-        justify-content: space-between !important;
-    }
+            .nav-left {
+                flex-direction: column !important;
+                width: 100% !important;
+                gap: 12px !important;
+            }
 
-    /* Tutaj naprawiłem nazwy, żeby szukajka się mieściła: */
-    #szukajka-glowna { 
-        width: 45% !important; 
-        font-size: 13px !important;
-    }
-    #miasto-input { 
-        width: 28% !important; 
-        font-size: 13px !important;
-    }
-    .nav-search button {
-        width: auto !important;
-        font-size: 13px !important;
-        font-weight: 800 !important;
-        padding: 0 !important;
-        white-space: nowrap !important; /* Blokuje uciekanie napisu "Szukaj" */
-        margin-left: 5px !important;
-    }
+            .nav-search {
+                width: 100% !important;
+                box-sizing: border-box !important;
+                padding: 8px 12px !important;
+                display: flex !important;
+                justify-content: space-between !important;
+            }
 
-    /* Naprawa paska użytkownika (Witaj, Dodaj, Konto), żeby nie nachodziły na siebie */
-    #user-nav {
-        width: 100% !important;
-    }
-    #user-nav > div {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        justify-content: center !important;
-        gap: 8px !important;
-        width: 100% !important;
-    }
+            #szukajka-glowna { 
+                width: 45% !important; 
+                font-size: 13px !important;
+            }
+            #miasto-input { 
+                width: 28% !important; 
+                font-size: 13px !important;
+            }
+            .nav-search button {
+                width: auto !important;
+                font-size: 13px !important;
+                font-weight: 800 !important;
+                padding: 0 !important;
+                white-space: nowrap !important;
+                margin-left: 5px !important;
+            }
+
+            #user-nav {
+                width: 100% !important;
+            }
+            #user-nav > div {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                gap: 8px !important;
+                width: 100% !important;
+            }
             /* Naprawa jajowatego kółka powiadomień */
-    #user-nav span[style*="background:red"] {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        position: absolute !important;
-        top: -8px !important;
-        right: -8px !important;
-        width: 22px !important;
-        height: 22px !important;
-        min-width: 22px !important;
-        min-height: 22px !important;
-        border-radius: 50% !important;
-        aspect-ratio: 1 / 1 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-        z-index: 10 !important;
-    }
-    #user-nav span {
-        display: block !important;
-        width: 100% !important;
-        text-align: center !important;
-        font-size: 14px !important;
-        margin-bottom: 5px !important;
-    }
+            #user-nav span[style*="background:red"] {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                position: absolute !important;
+                top: -8px !important;
+                right: -8px !important;
+                width: 22px !important;
+                height: 22px !important;
+                min-width: 22px !important;
+                min-height: 22px !important;
+                border-radius: 50% !important;
+                aspect-ratio: 1 / 1 !important;
+                padding: 0 !important;
+                line-height: 1 !important;
+                z-index: 10 !important;
+                background: #ff3b30 !important; /* Ładniejsza czerwień */
+            }
+            #user-nav span {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+                font-size: 14px !important;
+                margin-bottom: 5px !important;
+                color: white !important;
+            }
 
-    /* 2. Kategorie - najważniejsza zmiana! 
-       Na mobile robimy przesuwany pasek (jak w Allegro/OLX) zamiast 12 ikon na raz */
-    .cat-container {
-        overflow-x: auto; /* Pozwala przesuwać palcem w bok */
-        justify-content: flex-start;
-        padding: 15px 20px;
-        gap: 20px;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .cat-container::-webkit-scrollbar { display: none; } /* Ukrywamy brzydki pasek przewijania */
+            /* Kategorie Mobile */
+            .cat-container {
+                overflow-x: auto;
+                justify-content: flex-start;
+                padding: 15px 20px;
+                gap: 20px;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .cat-container::-webkit-scrollbar { display: none; }
 
-    .cat-item {
-        min-width: 70px; /* Ikony nie będą się ściskać */
-    }
+            .cat-item {
+                min-width: 70px;
+            }
 
-    .cat-icon {
-        width: 60px;
-        height: 60px;
-    }
+            .cat-icon {
+                width: 60px;
+                height: 60px;
+            }
 
-    /* 3. Grid ogłoszeń - na telefonie 2 kolumny (2x6) */
-    .ads-grid {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important; /* Dwie kolumny obok siebie */
-        gap: 15px !important;
-        padding: 10px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    
-    /* Naprawa kart, żeby nie były za wysokie */
-    .ad-card img {
-        height: 140px !important; 
-    }
+            .ads-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 15px !important;
+                padding: 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .ad-card img {
+                height: 140px !important; 
+            }
 
+            .modal-box {
+                width: 95%;
+                padding: 15px;
+                border-radius: 20px;
+                background: var(--card-bg) !important;
+            }
 
-    /* 4. Modale - na telefonie muszą zajmować prawie cały ekran */
-    .modal-box {
-        width: 95%;
-        padding: 15px;
-        border-radius: 15px;
-    }
-
-    /* 5. Formularze - większe pola, łatwiejsze do klikania palcem */
-    form input, form select, form textarea {
-        font-size: 16px; /* Zapobiega auto-zoomowi w iPhone */
-    }
-}
+            form input, form select, form textarea {
+                font-size: 16px;
+            }
+        }
         
         /* Kategorie */
-.cat-wrapper { 
-    background: white; 
-    border-bottom: 1px solid #eee; 
-    width: 100%;
-}
-.cat-container { 
-    display: flex; 
-    /* justify-content: space-between sprawi, że pierwsza ikona będzie pod logo, 
-       a ostatnia pod przyciskiem "Dodaj" */
-    justify-content: space-between; 
-    align-items: flex-start;
-    padding: 25px 5%; /* 5% marginesu bocznego - tak samo jak w .navbar */
-    max-width: 1400px; 
-    margin: 0 auto;
-    gap: 10px;
-}
-.cat-item { 
-    flex: 0 1 auto;
-    text-align: center; 
-    cursor: pointer; 
-    transition: 0.3s;
-    min-width: 90px;
-}
-.cat-icon { 
-    width: 85px;  /* Powiększona ikona */
-    height: 85px; /* Powiększona ikona */
-    background: white; 
-    border-radius: 22px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin: 0 auto; 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.06); 
-    border: 1px solid #f0f0f0;
-    transition: 0.3s;
-}
-.cat-item:hover .cat-icon {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(255, 79, 0, 0.15);
-    border-color: var(--primary);
-}
-.cat-icon img { 
-    width: 65%; 
-    height: 65%; 
-    object-fit: contain; 
-}
-.cat-item span { 
-    font-size: 13px; /* Powiększony tekst */
-    font-weight: 800; 
-    display: block; 
-    margin-top: 12px; 
-    color: var(--text); 
-}
+        .cat-wrapper { 
+            background: #070a14; 
+            border-bottom: 1px solid var(--border); 
+            width: 100%;
+        }
+        .cat-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            padding: 25px 5%; 
+            max-width: 1400px; 
+            margin: 0 auto;
+            gap: 10px;
+        }
+        .cat-item { 
+            flex: 0 1 auto;
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.3s;
+            min-width: 90px;
+        }
+        .cat-icon { 
+            width: 85px; 
+            height: 85px; 
+            background: var(--card-bg); 
+            border-radius: 24px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+            border: 1px solid var(--border);
+            transition: 0.3s;
+        }
+        .cat-item:hover .cat-icon {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 106, 0, 0.2);
+            border-color: var(--primary);
+        }
+        .cat-icon img { 
+            width: 60%; 
+            height: 60%; 
+            object-fit: contain; 
+            filter: brightness(0) invert(1); /* Ikony na biało */
+        }
+        .cat-item span { 
+            font-size: 13px;
+            font-weight: 700; 
+            display: block; 
+            margin-top: 12px; 
+            color: var(--gray); 
+        }
+        .cat-item:hover span { color: white; }
+
         /* Panel podkategorii */
-        .subcat-panel { display: none; background: #f8f9fa; padding: 12px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
-        .sub-pill { padding: 6px 15px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .sub-pill:hover { background: var(--primary); color: white; }
+        .subcat-panel { 
+            display: none; 
+            background: #111827; 
+            padding: 12px 5%; 
+            justify-content: center; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+            border-top: 1px solid var(--border); 
+        }
+        .sub-pill { 
+            padding: 6px 15px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            color: white;
+        }
+        .sub-pill:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
         /* Grid ogłoszeń */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
         .ads-grid {
-        
-        gap: 10px !important;
-        padding: 10px !important;
-    }
+            gap: 20px !important;
+            padding: 10px !important;
+        }
 
         /* Układ okna wyników */
-    #view-content #results-layout {
-        display: flex;
-        flex-direction: row; 
-        gap: 20px;
-    }
-
-    /* Czarny przycisk filtrów - teraz widoczny wszędzie */
-    #filter-toggle-btn {
-        display: block !important;
-        width: 100%;
-        padding: 15px;
-        background: #111;
-        color: white;
-        border: none;
-        border-radius: 12px;
-        font-weight: 800;
-        margin-bottom: 20px;
-        cursor: pointer;
-        font-size: 15px;
-    }
-
-    @media (max-width: 768px) {
         #view-content #results-layout {
-            flex-direction: column !important; 
+            display: flex;
+            flex-direction: row; 
+            gap: 20px;
         }
 
-        .side-filters {
-            display: none; /* Schowaj filtry na start */
-            width: 100% !important;
+        /* Czarny przycisk filtrów */
+        #filter-toggle-btn {
+            display: block !important;
+            width: 100%;
+            padding: 15px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: 0.3s;
         }
+        #filter-toggle-btn:hover { background: #334155; }
 
-        .side-filters.active {
-            display: block !important; /* Pokaż jak klikniesz przycisk */
-        }
+        @media (max-width: 768px) {
+            #view-content #results-layout {
+                flex-direction: column !important; 
+            }
 
-        #view-content #modal-grid {
-            grid-template-columns: 1fr !important; 
-            gap: 15px !important;
-        }
+            .side-filters {
+                display: none;
+                width: 100% !important;
+            }
 
-        .ad-card img {
-            height: 200px !important; /* Większe zdjęcie przy układzie 1-kolumnowym */
+            .side-filters.active {
+                display: block !important;
+            }
+
+            #view-content #modal-grid {
+                grid-template-columns: 1fr !important; 
+                gap: 15px !important;
+            }
+
+            .ad-card img {
+                height: 200px !important;
+            }
         }
-    }
-        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
         
         /* Modale */
-        /* Główne tło okienek */
-.modal { 
-    display: none; 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.7); 
-    backdrop-filter: blur(5px); 
-    z-index: 9999; /* Zwiększyłem, żeby nic nie przykrywało */
-    justify-content: center; 
-    align-items: center; 
-    overflow-y: auto; /* Pozwala przewijać gdy ogłoszenie jest długie */
-}
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(8px); 
+            z-index: 9999; 
+            justify-content: center; 
+            align-items: center; 
+            overflow-y: auto; 
+        }
 
-/* Kontener wewnątrz okna */
-.modal-box {  
-    background: white; 
-    width: 95%; 
-    max-width: 1250px; /* Zwiększone z 850px */
-    max-height: 90vh; 
-    border-radius: 25px; 
-    padding: 30px; 
-    overflow-y: auto; 
-    position: relative; 
-}
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #666; font-weight: bold; border: none; background: none; }
+        .modal-box {  
+            background: var(--card-bg); 
+            width: 95%; 
+            max-width: 1250px; 
+            max-height: 90vh; 
+            border-radius: 25px; 
+            padding: 30px; 
+            overflow-y: auto; 
+            position: relative; 
+            border: 1px solid var(--border);
+            color: white;
+        }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: var(--gray); font-weight: bold; border: none; background: none; }
+        .close-btn:hover { color: white; }
 
         /* Formularz */
-        form input, form select, form textarea { padding: 12px; border-radius: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; font-family: inherit; }
-        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
+        form input, form select, form textarea { 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border); 
+            width: 100%; 
+            box-sizing: border-box; 
+            font-family: inherit; 
+            background: rgba(0,0,0,0.2); 
+            color: white; 
+        }
+        form input:focus { border-color: var(--primary); outline: none; }
 
-        .btn-account { background: #f3f4f6; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 800; cursor: pointer; }
+        .btn-submit { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: 0.3s;
+        }
+        .btn-submit:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .btn-account { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; padding: 10px 20px; border-radius: 50px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        .btn-account:hover { background: rgba(255,255,255,0.1); }
+
         .hidden { display: none; }
-        footer { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; background: white; border-top: 1px solid #eee; margin-top: 40px; }
-        /* Ukrywamy okno logowania na starcie, żeby nie migało */
-#auth-box { display: none; }
+        footer { 
+            text-align: center; 
+            padding: 40px; 
+            color: var(--gray); 
+            font-size: 13px; 
+            background: #070a14; 
+            border-top: 1px solid var(--border); 
+            margin-top: 40px; 
+        }
+        #auth-box { display: none; }
     </style>
 </head>
 <body>
