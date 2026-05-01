@@ -160,14 +160,18 @@ async function sprawdzUzytkownika() {
                         ${msgCount > 0 ? `<span style="background:red; color:white; border-radius:50%; width:20px; height:20px; min-width:20px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold; flex-shrink:0;">${msgCount}</span>` : ''}
                     </button>
                     
-                    <div id="drop-menu" style="display:none; position:absolute; top:110%; right:0; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-radius:15px; padding:10px; z-index:2001; min-width:180px; border:1px solid #eee;">
-                        <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5;">📝 Moje ogłoszenia</div>
-                        <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5; display:flex; justify-content:space-between;">
-                            <span>✉️ Wiadomości</span>
-                            ${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}
-                        </div>
-                        <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5;">❤️ Ulubione (${mojeUlubione.length})</div>
-                        <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
+                                    <div id="drop-menu" style="display:none; position:absolute; top:110%; right:0; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-radius:15px; padding:8px; z-index:2001; min-width:190px; border:1px solid #eee;">
+                    <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5; font-size:14px; display:flex; align-items:center; gap:10px; font-family: inherit;">
+                        <span style="width:20px; text-align:center;">📝</span> <span>Moje ogłoszenia</span>
+                    </div>
+                    <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5; font-size:14px; display:flex; align-items:center; gap:10px; font-family: inherit;">
+                        <span style="width:20px; text-align:center;">✉️</span> <span>Wiadomości ${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}</span>
+                    </div>
+                    <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5; font-size:14px; display:flex; align-items:center; gap:10px; font-family: inherit;">
+                        <span style="width:20px; text-align:center;">❤️</span> <span>Ulubione (${mojeUlubione.length})</span>
+                    </div>
+                    <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold; font-size:14px; display:flex; align-items:center; gap:10px; font-family: inherit;">
+                        <span style="width:20px; text-align:center;">🚪</span> <span>Wyloguj</span>
                     </div>
                 </div>
             </div>`;
