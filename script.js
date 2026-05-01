@@ -155,9 +155,9 @@ async function sprawdzUzytkownika() {
                 <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px;">+ Dodaj</button>
                 
                 <div style="position:relative;">
-                    <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; font-size:13px; display:flex; align-items:center; gap:5px;">
+                    <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; font-size:13px; display:flex; align-items:center; gap:5px; position:relative;">
                         Moje Konto ▼
-                        ${msgCount > 0 ? `<span style="background:red; color:white; border-radius:50%; width:20px; height:20px; min-width:20px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold; flex-shrink:0;">${msgCount}</span>` : ''}
+                        ${msgCount > 0 ? `<span style="position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; width:22px; height:22px; min-width:22px; min-height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold; flex-shrink:0; line-height:1; aspect-ratio:1/1;">${msgCount}</span>` : ''}
                     </button>
                     
                                     <div id="drop-menu" style="display:none; position:absolute; top:110%; right:0; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-radius:15px; padding:8px; z-index:2001; min-width:190px; border:1px solid #eee;">
