@@ -149,21 +149,26 @@ async function sprawdzUzytkownika() {
         mojeUlubione = uData ? uData.map(x => Number(x.ogloszenie_id)) : [];
 
         nav.innerHTML = `
-            <div style="position:relative; display:flex; gap:15px; align-items:center;">
-                <span style="font-weight:800; font-size:14px;">Witaj ${dajNazwe(user.email)}</span>
-                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">+ Dodaj</button>
-                                <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; position:relative;">
-                    Moje Konto ▼
-                    ${msgCount > 0 ? `<span style="position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white;">${msgCount}</span>` : ''}
-                </button>
-                <div id="drop-menu" style="display:none; position:absolute; top:50px; right:0; background:white; box-shadow:0 5px 25px rgba(0,0,0,0.2); border-radius:15px; padding:15px; z-index:2001; min-width:220px;">
-                    <div onclick="window.pokazMojeOgloszenia()" style="padding:10px; cursor:pointer;">📝 Moje ogłoszenia</div>
-                    <div onclick="window.pokazSkrzynke()" style="padding:10px; cursor:pointer;">
-                        <span>✉️ Wiadomości ${msgCount > 0 ? `(${msgCount})` : ''}</span>
+            <div style="position:relative; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;">
+                <span style="font-weight:800; font-size:13px; width:100%; text-align:center; margin-bottom:5px;">Witaj ${dajNazwe(user.email)}</span>
+                
+                <button onclick="window.otworzFormularzDodawania()" style="background:#111; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:13px;">+ Dodaj</button>
+                
+                <div style="position:relative;">
+                    <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; font-size:13px; display:flex; align-items:center; gap:5px;">
+                        Moje Konto ▼
+                        ${msgCount > 0 ? `<span style="background:red; color:white; border-radius:50%; width:20px; height:20px; min-width:20px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold; flex-shrink:0;">${msgCount}</span>` : ''}
+                    </button>
+                    
+                    <div id="drop-menu" style="display:none; position:absolute; top:110%; right:0; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-radius:15px; padding:10px; z-index:2001; min-width:180px; border:1px solid #eee;">
+                        <div onclick="window.pokazMojeOgloszenia()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5;">📝 Moje ogłoszenia</div>
+                        <div onclick="window.pokazSkrzynke()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5; display:flex; justify-content:space-between;">
+                            <span>✉️ Wiadomości</span>
+                            ${msgCount > 0 ? `<b style="color:red;">(${msgCount})</b>` : ''}
+                        </div>
+                        <div onclick="window.pokazUlubione()" style="padding:12px; cursor:pointer; border-bottom:1px solid #f5f5f5;">❤️ Ulubione (${mojeUlubione.length})</div>
+                        <div onclick="window.wyloguj()" style="padding:12px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                     </div>
-                    <div onclick="window.pokazUlubione()" style="padding:10px; cursor:pointer;">❤️ Ulubione (${mojeUlubione.length})</div>
-                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                    <div onclick="window.wyloguj()" style="padding:10px; cursor:pointer; color:red; font-weight:bold;">🚪 Wyloguj</div>
                 </div>
             </div>`;
     } else {
@@ -326,10 +331,28 @@ window.toggleUserMenu = (e) => {
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
 async function init() {
+    // 1. Ładujemy ogłoszenia
     const { data } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
     daneOgloszen = data || [];
+    renderTop12(daneOgloszen);
+    
+    // 2. Sprawdzamy logowanie
     await sprawdzUzytkownika();
-    // Renderowanie listy głównej...
+
+    // 3. RADAR WIADOMOŚCI (Realtime)
+    const { data: { user } } = await baza.auth.getUser();
+    if (user) {
+        baza.channel('zmiany-wiadomosci')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'wiadomosci',
+                filter: `odbiorca=eq.${user.email}` 
+            }, () => {
+                sprawdzUzytkownika(); // Odśwież licznik gdy przyjdzie nowa wiadomość
+            })
+            .subscribe();
+    }
 }
 
 // --- SZCZEGÓŁY OGŁOSZENIA ---
