@@ -9,92 +9,302 @@
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
-        <style>
-        :root { 
-            --primary: #ff4f00; 
-            --primary-hover: #e64600;
-            --bg: #0b0f1a; /* Nowoczesne ciemne tło */
-            --card-bg: #161b28; /* Tło kart ogłoszeń */
-            --white: #ffffff; 
-            --text: #f1f5f9; 
-            --gray: #94a3b8; 
-            --nav-bg: #111827;
-        }
+    <style>
+        :root { --primary: #ff4f00; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* Nawigacja - Profesjonalny wygląd */
-        .navbar { background: var(--nav-bg); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 30px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #1f2937; }
+        /* Nawigacja */
+        .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
-        .main-logo { height: 45px; cursor: pointer; filter: drop-shadow(0 0 8px rgba(255,79,0,0.2)); }
+        .main-logo { height: 50px; cursor: pointer; }
         
-        /* Wyszukiwarka - Mniejsze ramki */
-        .nav-search { display: flex; align-items: center; background: #1f2937; padding: 4px 12px; border-radius: 10px; border: 1px solid #374151; transition: 0.3s; }
-        .nav-search:focus-within { border-color: var(--primary); }
-        .nav-search input { padding: 6px; border: none; background: transparent; outline: none; font-size: 14px; color: white; }
-        .search-divider { width: 1px; height: 18px; background: #374151; margin: 0 8px; }
+        /* Wyszukiwarka */
+        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
+        .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; }
+        #find-text { width: 200px; }
+        #find-loc { width: 150px; }
+        .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column !important; /* Układa logo, szukajkę i konto jedno pod drugim */
+        padding: 15px 10px !important;
+        gap: 15px !important;
+    }
 
-        /* Przyciski - KONIEC TANDETY */
-        .btn-account { 
-            background: rgba(255, 255, 255, 0.03); 
-            color: white; 
-            border: 1px solid #374151; 
-            padding: 10px 22px; 
-            border-radius: 12px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn-account:hover { background: #1f2937; border-color: var(--primary); transform: translateY(-1px); }
+    .nav-left {
+        flex-direction: column !important; /* Logo nad szukajką */
+        width: 100% !important;
+        gap: 12px !important;
+    }
 
-        .btn-submit { 
-            background: linear-gradient(135deg, #ff4f00, #ff7841); 
-            color: white; 
-            border: none; 
-            padding: 14px; 
-            border-radius: 12px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(255,79,0,0.3);
-            transition: 0.3s;
-        }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255,79,0,0.4); }
+    .nav-search {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 8px 12px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+    }
 
-        /* Kategorie - Ciemne */
-        .cat-wrapper { background: #111827; border-bottom: 1px solid #1f2937; width: 100%; }
-        .cat-icon { background: #1f2937; border: 1px solid #374151; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .cat-item span { color: #cbd5e1; font-weight: 600; }
+    /* Tutaj naprawiłem nazwy, żeby szukajka się mieściła: */
+    #szukajka-glowna { 
+        width: 45% !important; 
+        font-size: 13px !important;
+    }
+    #miasto-input { 
+        width: 28% !important; 
+        font-size: 13px !important;
+    }
+    .nav-search button {
+        width: auto !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        padding: 0 !important;
+        white-space: nowrap !important; /* Blokuje uciekanie napisu "Szukaj" */
+        margin-left: 5px !important;
+    }
+
+    /* Naprawa paska użytkownika (Witaj, Dodaj, Konto), żeby nie nachodziły na siebie */
+    #user-nav {
+        width: 100% !important;
+    }
+    #user-nav > div {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+            /* Naprawa jajowatego kółka powiadomień */
+    #user-nav span[style*="background:red"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        top: -8px !important;
+        right: -8px !important;
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+        border-radius: 50% !important;
+        aspect-ratio: 1 / 1 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        z-index: 10 !important;
+    }
+    #user-nav span {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* 2. Kategorie - najważniejsza zmiana! 
+       Na mobile robimy przesuwany pasek (jak w Allegro/OLX) zamiast 12 ikon na raz */
+    .cat-container {
+        overflow-x: auto; /* Pozwala przesuwać palcem w bok */
+        justify-content: flex-start;
+        padding: 15px 20px;
+        gap: 20px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .cat-container::-webkit-scrollbar { display: none; } /* Ukrywamy brzydki pasek przewijania */
+
+    .cat-item {
+        min-width: 70px; /* Ikony nie będą się ściskać */
+    }
+
+    .cat-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    /* 3. Grid ogłoszeń - na telefonie 2 kolumny (2x6) */
+    .ads-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* Dwie kolumny obok siebie */
+        gap: 15px !important;
+        padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Naprawa kart, żeby nie były za wysokie */
+    .ad-card img {
+        height: 140px !important; 
+    }
+
+
+    /* 4. Modale - na telefonie muszą zajmować prawie cały ekran */
+    .modal-box {
+        width: 95%;
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    /* 5. Formularze - większe pola, łatwiejsze do klikania palcem */
+    form input, form select, form textarea {
+        font-size: 16px; /* Zapobiega auto-zoomowi w iPhone */
+    }
+}
         
-        /* Ostatnio przeglądane - Styl poziomych kart */
-        .recent-grid { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
-        .recent-grid::-webkit-scrollbar { display: none; }
-        .recent-card { min-width: 220px; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid #1f2937; }
+        /* Kategorie */
+.cat-wrapper { 
+    background: white; 
+    border-bottom: 1px solid #eee; 
+    width: 100%;
+}
+.cat-container { 
+    display: flex; 
+    /* justify-content: space-between sprawi, że pierwsza ikona będzie pod logo, 
+       a ostatnia pod przyciskiem "Dodaj" */
+    justify-content: space-between; 
+    align-items: flex-start;
+    padding: 25px 5%; /* 5% marginesu bocznego - tak samo jak w .navbar */
+    max-width: 1400px; 
+    margin: 0 auto;
+    gap: 10px;
+}
+.cat-item { 
+    flex: 0 1 auto;
+    text-align: center; 
+    cursor: pointer; 
+    transition: 0.3s;
+    min-width: 90px;
+}
+.cat-icon { 
+    width: 85px;  /* Powiększona ikona */
+    height: 85px; /* Powiększona ikona */
+    background: white; 
+    border-radius: 22px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto; 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06); 
+    border: 1px solid #f0f0f0;
+    transition: 0.3s;
+}
+.cat-item:hover .cat-icon {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(255, 79, 0, 0.15);
+    border-color: var(--primary);
+}
+.cat-icon img { 
+    width: 65%; 
+    height: 65%; 
+    object-fit: contain; 
+}
+.cat-item span { 
+    font-size: 13px; /* Powiększony tekst */
+    font-weight: 800; 
+    display: block; 
+    margin-top: 12px; 
+    color: var(--text); 
+}
+        /* Panel podkategorii */
+        .subcat-panel { display: none; background: #f8f9fa; padding: 12px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
+        .sub-pill { padding: 6px 15px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .sub-pill:hover { background: var(--primary); color: white; }
 
-        /* Formularz - Mniejsze ramki */
-        form input, form select, form textarea { 
-            padding: 10px !important; 
-            background: #1f2937 !important; 
-            border: 1px solid #374151 !important; 
-            color: white !important;
-            border-radius: 8px !important;
-            font-size: 14px !important;
+        /* Grid ogłoszeń */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
+        .ads-grid {
+        
+        gap: 10px !important;
+        padding: 10px !important;
+    }
+
+        /* Układ okna wyników */
+    #view-content #results-layout {
+        display: flex;
+        flex-direction: row; 
+        gap: 20px;
+    }
+
+    /* Czarny przycisk filtrów - teraz widoczny wszędzie */
+    #filter-toggle-btn {
+        display: block !important;
+        width: 100%;
+        padding: 15px;
+        background: #111;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    @media (max-width: 768px) {
+        #view-content #results-layout {
+            flex-direction: column !important; 
         }
 
-        /* MODAL CHAT - 50% szerokości TYLKO NA PC */
-        @media (min-width: 769px) {
-            .chat-window-desktop { 
-                max-width: 450px !important; 
-                margin-left: auto !important; 
-                margin-right: 5% !important;
-            }
+        .side-filters {
+            display: none; /* Schowaj filtry na start */
+            width: 100% !important;
         }
 
-        /* Karty ogłoszeń */
-        .ad-card { background: var(--card-bg); border-radius: 16px; border: 1px solid #1f2937; transition: 0.3s; }
-        .ad-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+        .side-filters.active {
+            display: block !important; /* Pokaż jak klikniesz przycisk */
+        }
 
+        #view-content #modal-grid {
+            grid-template-columns: 1fr !important; 
+            gap: 15px !important;
+        }
+
+        .ad-card img {
+            height: 200px !important; /* Większe zdjęcie przy układzie 1-kolumnowym */
+        }
+    }
+        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        
+        /* Modale */
+        /* Główne tło okienek */
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.7); 
+    backdrop-filter: blur(5px); 
+    z-index: 9999; /* Zwiększyłem, żeby nic nie przykrywało */
+    justify-content: center; 
+    align-items: center; 
+    overflow-y: auto; /* Pozwala przewijać gdy ogłoszenie jest długie */
+}
+
+/* Kontener wewnątrz okna */
+.modal-box {  
+    background: white; 
+    width: 95%; 
+    max-width: 1250px; /* Zwiększone z 850px */
+    max-height: 90vh; 
+    border-radius: 25px; 
+    padding: 30px; 
+    overflow-y: auto; 
+    position: relative; 
+}
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #666; font-weight: bold; border: none; background: none; }
+
+        /* Formularz */
+        form input, form select, form textarea { padding: 12px; border-radius: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; font-family: inherit; }
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
+
+        .btn-account { background: #f3f4f6; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 800; cursor: pointer; }
         .hidden { display: none; }
-        footer { background: #111827; border-top: 1px solid #1f2937; padding: 40px; color: var(--gray); }
-        #auth-box { display: none; }
+        footer { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; background: white; border-top: 1px solid #eee; margin-top: 40px; }
+        /* Ukrywamy okno logowania na starcie, żeby nie migało */
+#auth-box { display: none; }
     </style>
 </head>
 <body>
@@ -184,14 +394,7 @@
 
         </div> 
 
-    <!-- Sekcja Ostatnio Przeglądane -->
-    <div id="recent-section" style="display:none; margin-top:40px;">
-        <h2 style="font-size: 22px; color: var(--primary); margin-bottom: 15px;">Ostatnio przeglądane</h2>
-        <div id="recent-list" class="recent-grid"></div>
-        <div style="height: 1px; background: #1f2937; margin: 30px 0;"></div>
-    </div>
-
-    <h2 id="grid-title" style="margin-top:20px">Najnowsze ogłoszenia</h2>
+    <h2 id="grid-title" style="margin-top:40px">Najnowsze ogłoszenia</h2>
     <div id="lista" class="ads-grid"></div>
 </div>
 
@@ -213,7 +416,7 @@
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
           <h2 id="form-title">Dodaj ogłoszenie</h2>
         <form id="form-dodaj" onsubmit="window.wyslijOgloszenie(event)" style="display:grid; gap:15px">
-    <inp<input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia (min. 20 znaków)" required minlength="20">ut type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
+    <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <select id="f-kat" onchange="window.updateFormSubcats()" required>
