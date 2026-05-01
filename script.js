@@ -814,8 +814,7 @@ window.toggleUlubione = async (e, id) => {
         mojeUlubione.push(id);
     }
     document.querySelectorAll(`.fav-btn-${id}`).forEach(btn => btn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍');
-    await sprawdzUzytkownika(); // TO ODŚWIEŻA MENU "MOJE KONTO" NATYCHMIAST
-};
+    await sprawdzUzytkownika(); 
 };
 
 window.pokazUlubione = () => {
