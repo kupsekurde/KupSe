@@ -265,6 +265,7 @@ window.usunRozmowe = async (zKim) => {
 window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
+    await sprawdzUzytkownika(); // TO ODŚWIEŻA LICZNIK NATYCHMIAST
     const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
     
     const mb = document.querySelector('.modal-box');
@@ -813,8 +814,8 @@ window.toggleUlubione = async (e, id) => {
         mojeUlubione.push(id);
     }
     document.querySelectorAll(`.fav-btn-${id}`).forEach(btn => btn.innerText = mojeUlubione.includes(id) ? '❤️' : '🤍');
-    const favCountEl = document.getElementById('fav-count-nav');
-    if (favCountEl) favCountEl.innerText = mojeUlubione.length;
+    await sprawdzUzytkownika(); // TO ODŚWIEŻA MENU "MOJE KONTO" NATYCHMIAST
+};
 };
 
 window.pokazUlubione = () => {
