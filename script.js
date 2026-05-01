@@ -320,19 +320,25 @@ window.wyslijZChatu = async (odbiorca) => {
 
 // --- FUNKCJE SYSTEMOWE ---
 window.zamknijModal = () => {
+    const modalView = document.getElementById('modal-view');
+    const modalForm = document.getElementById('modal-form');
     const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "1250px"; 
-    document.getElementById('modal-view').style.display = 'none';
-    // Ta linia poniżej naprawia problem ze znikającym suwakiem:
+    
+    if(mb) {
+        mb.style.maxWidth = "1250px";
+        mb.style.background = "var(--card-bg)";
+    }
+    
+    if(modalView) modalView.style.display = 'none';
+    if(modalForm) modalForm.style.display = 'none';
+    
     document.body.style.overflow = 'auto'; 
 };
-window.toggleUserMenu = (e) => { 
-    e.stopPropagation(); 
-    const m = document.getElementById('drop-menu'); 
-    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
-};
 
-window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
+window.wyloguj = async () => { 
+    const { error } = await baza.auth.signOut(); 
+    if(!error) location.reload(); 
+};
 
 async function init() {
     // 1. Ładujemy ogłoszenia
@@ -785,21 +791,28 @@ window.zastosujFiltryBoczne = () => {
 };
 
 function renderCardHTML(o) {
-    const isFav = mojeUlubione.includes(o.id);
+    const isFav = mojeUlubione.includes(Number(o.id));
     const pelnaData = formatujDate(o.created_at);
     
     return `
-        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
-            <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
+        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:var(--card-bg); border-radius:16px; overflow:hidden; box-shadow:0 10px 20px rgba(0,0,0,0.2); cursor:pointer; position:relative; border:1px solid rgba(255,255,255,0.05); transition:0.3s ease;">
+            <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:12px; right:12px; z-index:100; background:rgba(15,23,42,0.6); backdrop-filter:blur(8px); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); font-size: 18px; transition:0.2s;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <img src="${o.zdjecia[0]}" style="width:100%; height:150px; object-fit:cover;">
-            <div style="padding:12px;">
-                <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
-                <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
-                <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between; align-items: center;">
-                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">📍 ${o.lokalizacja}</span>
-                    <span style="font-size:10px; opacity:0.8; text-align: right;">${pelnaData}</span>
+            <div style="width:100%; height:170px; overflow:hidden;">
+                <img src="${o.zdjecia[0]}" style="width:100%; height:100%; object-fit:cover; transition:0.5s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            </div>
+            <div style="padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <b style="font-size:18px; color:var(--primary); font-weight:800;">${o.cena.toLocaleString()} zŁ</b>
+                </div>
+                <div style="font-size:14px; height:40px; overflow:hidden; color:var(--text); font-weight:600; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${o.tytul}</div>
+                
+                <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items: center;">
+                    <span style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:4px;">
+                        📍 ${o.lokalizacja}
+                    </span>
+                    <span style="font-size:11px; color:var(--text-muted); opacity:0.7;">${pelnaData}</span>
                 </div>
             </div>
         </div>`;
