@@ -66,11 +66,20 @@
     }
 
     /* Naprawa paska użytkownika (Witaj, Dodaj, Konto), żeby nie nachodziły na siebie */
+    #user-nav {
+        width: 100% !important;
+    }
     #user-nav > div {
         display: flex !important;
         flex-wrap: wrap !important;
         justify-content: center !important;
         gap: 8px !important;
+        width: 100% !important;
+    }
+    /* Naprawa jajowatego kółka powiadomień */
+    #user-nav span[style*="background:red"] {
+        aspect-ratio: 1 / 1 !important;
+        line-height: 1 !important;
     }
     #user-nav span {
         display: block !important;
