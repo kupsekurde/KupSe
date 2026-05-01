@@ -511,29 +511,80 @@
 
     // Funkcje do okien modalnych (Regulamin, Kontakt itp.)
     window.pokazModalPrawny = function(typ) {
-        const modal = document.getElementById('modal-view');
-        const content = document.getElementById('view-content');
-        let tytul = "";
-        let tresc = "";
+    const modal = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    let tytul = "";
+    let tresc = "";
 
-        if(typ === 'regulamin') {
-            tytul = "Regulamin Serwisu KupSe";
-            tresc = "1. Serwis KupSe pozwala na darmowe wystawianie ogłoszeń.<br>2. Zakazane jest wystawianie przedmiotów nielegalnych.<br>3. Użytkownik odpowiada za treść ogłoszenia.";
-        } else if(typ === 'polityka') {
-            tytul = "Polityka Prywatności";
-            tresc = "Twoje dane (email, telefon) są przetwarzane wyłącznie w celu wyświetlania ogłoszeń.";
-        } else if(typ === 'kontakt') {
-            tytul = "Pomoc i Kontakt";
-            tresc = "Napisz do nas: kontakt@kupse.pl<br>Pracujemy pon-pt 9:00 - 17:00.";
-        }
-
-        content.innerHTML = `
-            <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
-            <h2 style="color: var(--primary)">${tytul}</h2>
-            <div style="line-height: 1.6; text-align: left; margin-top: 20px;">${tresc}</div>
+    if(typ === 'regulamin') {
+        tytul = "Regulamin Serwisu KupSe.pl";
+        tresc = `
+            <div style="font-size: 14px; color: #333;">
+                <p><strong>I. POSTANOWIENIA OGÓLNE</strong></p>
+                <ol>
+                    <li>Serwis KupSe (dalej "Serwis") jest platformą ogłoszeniową online, która umożliwia użytkownikom zamieszczanie ogłoszeń sprzedaży oraz kontaktowanie się w sprawie transakcji.</li>
+                    <li>Właścicielem i administratorem Serwisu jest KupSe (dalej "Administrator").</li>
+                    <li>Korzystanie z Serwisu oznacza akceptację niniejszego Regulaminu w całości.</li>
+                </ol>
+                <p><strong>II. ODPOWIEDZIALNOŚĆ I ROLA SERWISU</strong></p>
+                <ol>
+                    <li><strong>Administrator nie jest stroną transakcji.</strong> Serwis służy wyłącznie jako platforma kojarząca Sprzedających z Kupującymi.</li>
+                    <li>Administrator nie ponosi odpowiedzialności za nienależyte wykonanie lub niewykonanie umów przez Użytkowników, za jakość, bezpieczeństwo lub legalność oferowanych towarów.</li>
+                    <li>Użytkownik ponosi pełną i wyłączną odpowiedzialność za treść publikowanych ogłoszeń, w tym za ich zgodność z prawdą oraz stanem prawnym i faktycznym.</li>
+                </ol>
+                <p><strong>III. ZASADY PUBLIKACJI OGŁOSZEŃ</strong></p>
+                <ol>
+                    <li>Zakazuje się wystawiania przedmiotów pochodzących z przestępstwa oraz takich, których obrót jest prawnie zakazany (narkotyki, broń, materiały wybuchowe, towary podrabiane itp.).</li>
+                    <li>Ogłoszenie musi zawierać rzetelny opis oraz faktyczną cenę. Administrator zastrzega sobie prawo do usunięcia ogłoszeń naruszających zasady współżycia społecznego lub dobre imię Serwisu bez podania przyczyny.</li>
+                </ol>
+                <p><strong>IV. REKLAMACJE I SPORY</strong></p>
+                <ol>
+                    <li>Wszelkie spory wynikające z transakcji pomiędzy Użytkownikami powinny być rozstrzygane polubownie bezpośrednio między stronami.</li>
+                    <li>Administrator nie uczestniczy w sporach i nie świadczy usług ochrony kupujących, chyba że wyraźnie zaznaczono inaczej w odrębnych regulaminach usług płatnych.</li>
+                </ol>
+            </div>
         `;
-        modal.style.display = 'flex';
+    } else if(typ === 'polityka') {
+        tytul = "Polityka Prywatności i Plików Cookies";
+        tresc = `
+            <div style="font-size: 14px; color: #333;">
+                <p><strong>I. ADMINISTRATOR DANYCH</strong></p>
+                <p>Administratorem danych osobowych zbieranych za pośrednictwem Serwisu jest KupSe. Kontakt w sprawach ochrony danych: kontakt@kupse.pl.</p>
+                <p><strong>II. ZAKRES I CEL ZBIERANIA DANYCH</strong></p>
+                <ol>
+                    <li>Dane zbierane podczas rejestracji (e-mail) służą wyłącznie do autoryzacji dostępu i komunikacji technicznej.</li>
+                    <li>Dane zamieszczane w ogłoszeniach (numer telefonu, lokalizacja) są publikowane w celu umożliwienia kontaktu zainteresowanym kontrahentom. Użytkownik publikuje te dane dobrowolnie.</li>
+                    <li>Dane są przetwarzane zgodnie z RODO (Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679).</li>
+                </ol>
+                <p><strong>III. PRAWA UŻYTKOWNIKA</strong></p>
+                <p>Każdy Użytkownik ma prawo do: dostępu do swoich danych, ich sprostowania, usunięcia ("prawo do bycia zapomnianym"), ograniczenia przetwarzania oraz przenoszenia danych.</p>
+                <p><strong>IV. PLIKI COOKIES</strong></p>
+                <p>Serwis wykorzystuje pliki cookies do celów statystycznych, marketingowych oraz zapewnienia prawidłowego działania funkcji technicznych (logowanie, zapamiętywanie preferencji).</p>
+            </div>
+        `;
+    } else if(typ === 'kontakt') {
+        tytul = "Centrum Pomocy i Kontakt";
+        tresc = `
+            <div style="text-align: center; padding: 20px;">
+                <p>Masz pytania lub chcesz zgłosić nadużycie?</p>
+                <h3 style="color: var(--primary);">kontakt@kupse.pl</h3>
+                <p>Nasze biuro obsługi klienta pracuje:<br><strong>Poniedziałek - Piątek: 09:00 - 17:00</strong></p>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #666;">Zgłoszenia dotyczące nielegalnych treści lub oszustw są rozpatrywane w trybie priorytetowym (do 24h).</p>
+            </div>
+        `;
     }
+
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">${tytul}</h2>
+        <div style="line-height: 1.6; text-align: left; max-height: 60vh; overflow-y: auto; padding-right: 10px;">${tresc}</div>
+        <div style="margin-top: 25px; text-align: right;">
+            <button onclick="window.zamknijModal()" style="padding: 10px 25px; background: #111; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Zamknij</button>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
 
     window.zamknijModal = function() {
         if(document.getElementById('modal-view')) document.getElementById('modal-view').style.display = 'none';
