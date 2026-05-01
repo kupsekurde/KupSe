@@ -17,7 +17,604 @@
             --card-bg: #161c2d;
             --white: #ffffff; 
             --text: #f1f5f9; 
-            --gray: #94a3b8; 
+            --gray: #94a3b8; <!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KupSe - Twój Portal Ogłoszeniowy</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #ff4f00; --bg: #f3f4f7; --white: #ffffff; --text: #111827; --gray: #6b7280; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Nawigacja */
+        .navbar { background: var(--white); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .main-logo { height: 50px; cursor: pointer; }
+        
+        /* Wyszukiwarka */
+        .nav-search { display: flex; align-items: center; background: #f3f4f6; padding: 5px 15px; border-radius: 50px; border: 1px solid #e5e7eb; }
+        .nav-search input { padding: 8px; border: none; background: transparent; outline: none; font-size: 14px; }
+        #find-text { width: 200px; }
+        #find-loc { width: 150px; }
+        .search-divider { width: 1px; height: 20px; background: #d1d5db; margin: 0 10px; }
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
+/* --- RESPONSYWNOŚĆ (MOBILE) --- */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column !important; /* Układa logo, szukajkę i konto jedno pod drugim */
+        padding: 15px 10px !important;
+        gap: 15px !important;
+    }
+
+    .nav-left {
+        flex-direction: column !important; /* Logo nad szukajką */
+        width: 100% !important;
+        gap: 12px !important;
+    }
+
+    .nav-search {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 8px 12px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+    }
+
+    /* Tutaj naprawiłem nazwy, żeby szukajka się mieściła: */
+    #szukajka-glowna { 
+        width: 45% !important; 
+        font-size: 13px !important;
+    }
+    #miasto-input { 
+        width: 28% !important; 
+        font-size: 13px !important;
+    }
+    .nav-search button {
+        width: auto !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        padding: 0 !important;
+        white-space: nowrap !important; /* Blokuje uciekanie napisu "Szukaj" */
+        margin-left: 5px !important;
+    }
+
+    /* Naprawa paska użytkownika (Witaj, Dodaj, Konto), żeby nie nachodziły na siebie */
+    #user-nav {
+        width: 100% !important;
+    }
+    #user-nav > div {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+            /* Naprawa jajowatego kółka powiadomień */
+    #user-nav span[style*="background:red"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        top: -8px !important;
+        right: -8px !important;
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+        border-radius: 50% !important;
+        aspect-ratio: 1 / 1 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        z-index: 10 !important;
+    }
+    #user-nav span {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* 2. Kategorie - najważniejsza zmiana! 
+       Na mobile robimy przesuwany pasek (jak w Allegro/OLX) zamiast 12 ikon na raz */
+    .cat-container {
+        overflow-x: auto; /* Pozwala przesuwać palcem w bok */
+        justify-content: flex-start;
+        padding: 15px 20px;
+        gap: 20px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .cat-container::-webkit-scrollbar { display: none; } /* Ukrywamy brzydki pasek przewijania */
+
+    .cat-item {
+        min-width: 70px; /* Ikony nie będą się ściskać */
+    }
+
+    .cat-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    /* 3. Grid ogłoszeń - na telefonie 2 kolumny (2x6) */
+    .ads-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* Dwie kolumny obok siebie */
+        gap: 15px !important;
+        padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Naprawa kart, żeby nie były za wysokie */
+    .ad-card img {
+        height: 140px !important; 
+    }
+
+
+    /* 4. Modale - na telefonie muszą zajmować prawie cały ekran */
+    .modal-box {
+        width: 95%;
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    /* 5. Formularze - większe pola, łatwiejsze do klikania palcem */
+    form input, form select, form textarea {
+        font-size: 16px; /* Zapobiega auto-zoomowi w iPhone */
+    }
+}
+        
+        /* Kategorie */
+.cat-wrapper { 
+    background: white; 
+    border-bottom: 1px solid #eee; 
+    width: 100%;
+}
+.cat-container { 
+    display: flex; 
+    /* justify-content: space-between sprawi, że pierwsza ikona będzie pod logo, 
+       a ostatnia pod przyciskiem "Dodaj" */
+    justify-content: space-between; 
+    align-items: flex-start;
+    padding: 25px 5%; /* 5% marginesu bocznego - tak samo jak w .navbar */
+    max-width: 1400px; 
+    margin: 0 auto;
+    gap: 10px;
+}
+.cat-item { 
+    flex: 0 1 auto;
+    text-align: center; 
+    cursor: pointer; 
+    transition: 0.3s;
+    min-width: 90px;
+}
+.cat-icon { 
+    width: 85px;  /* Powiększona ikona */
+    height: 85px; /* Powiększona ikona */
+    background: white; 
+    border-radius: 22px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto; 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06); 
+    border: 1px solid #f0f0f0;
+    transition: 0.3s;
+}
+.cat-item:hover .cat-icon {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(255, 79, 0, 0.15);
+    border-color: var(--primary);
+}
+.cat-icon img { 
+    width: 65%; 
+    height: 65%; 
+    object-fit: contain; 
+}
+.cat-item span { 
+    font-size: 13px; /* Powiększony tekst */
+    font-weight: 800; 
+    display: block; 
+    margin-top: 12px; 
+    color: var(--text); 
+}
+        /* Panel podkategorii */
+        .subcat-panel { display: none; background: #f8f9fa; padding: 12px 5%; justify-content: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
+        .sub-pill { padding: 6px 15px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .sub-pill:hover { background: var(--primary); color: white; }
+
+        /* Grid ogłoszeń */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; width: 90%; }
+        .ads-grid {
+        
+        gap: 10px !important;
+        padding: 10px !important;
+    }
+
+        /* Układ okna wyników */
+    #view-content #results-layout {
+        display: flex;
+        flex-direction: row; 
+        gap: 20px;
+    }
+
+    /* Czarny przycisk filtrów - teraz widoczny wszędzie */
+    #filter-toggle-btn {
+        display: block !important;
+        width: 100%;
+        padding: 15px;
+        background: #111;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    @media (max-width: 768px) {
+        #view-content #results-layout {
+            flex-direction: column !important; 
+        }
+
+        .side-filters {
+            display: none; /* Schowaj filtry na start */
+            width: 100% !important;
+        }
+
+        .side-filters.active {
+            display: block !important; /* Pokaż jak klikniesz przycisk */
+        }
+
+        #view-content #modal-grid {
+            grid-template-columns: 1fr !important; 
+            gap: 15px !important;
+        }
+
+        .ad-card img {
+            height: 200px !important; /* Większe zdjęcie przy układzie 1-kolumnowym */
+        }
+    }
+        .ad-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        
+        /* Modale */
+        /* Główne tło okienek */
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.7); 
+    backdrop-filter: blur(5px); 
+    z-index: 9999; /* Zwiększyłem, żeby nic nie przykrywało */
+    justify-content: center; 
+    align-items: center; 
+    overflow-y: auto; /* Pozwala przewijać gdy ogłoszenie jest długie */
+}
+
+/* Kontener wewnątrz okna */
+.modal-box {  
+    background: white; 
+    width: 95%; 
+    max-width: 1250px; /* Zwiększone z 850px */
+    max-height: 90vh; 
+    border-radius: 25px; 
+    padding: 30px; 
+    overflow-y: auto; 
+    position: relative; 
+}
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: #666; font-weight: bold; border: none; background: none; }
+
+        /* Formularz */
+        form input, form select, form textarea { padding: 12px; border-radius: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; font-family: inherit; }
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
+
+        .btn-account { background: #f3f4f6; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 800; cursor: pointer; }
+        .hidden { display: none; }
+        footer { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; background: white; border-top: 1px solid #eee; margin-top: 40px; }
+        /* Ukrywamy okno logowania na starcie, żeby nie migało */
+#auth-box { display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-left">
+        <img src="KupSe.png" class="main-logo" onclick="location.reload()">
+<div class="nav-search">
+    <div style="display: none;">
+        <input type="text" name="fake_user">
+        <input type="email" name="fake_email">
+    </div>
+
+    <input type="text" id="szukajka-glowna" placeholder="Czego szukasz?" 
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="off">
+    
+    <div class="search-divider"></div>
+    
+    <input type="text" id="miasto-input" placeholder="Cała Polska" 
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+    
+    <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">Szukaj</button>
+</div>
+    </div>
+    <div class="nav-right" id="user-nav">
+        <button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>
+    </div>
+</nav>
+
+<div class="cat-wrapper">
+    <div class="cat-container">
+        <div class="cat-item" onclick="window.toggleSubcats('Motoryzacja')"><div class="cat-icon"><img src="cat-moto.png"></div><span>Motoryzacja</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Dom')"><div class="cat-icon"><img src="cat-dom.png"></div><span>Dom</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Elektronika')"><div class="cat-icon"><img src="cat-elektronika.png"></div><span>Elektronika</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Ogród')"><div class="cat-icon"><img src="cat-ogrod.png"></div><span>Ogród</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Moda')"><div class="cat-icon"><img src="cat-moda.png"></div><span>Moda</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Rolnictwo')"><div class="cat-icon"><img src="cat-rolnictwo.png"></div><span>Rolnictwo</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Zwierzęta')"><div class="cat-icon"><img src="cat-zwierzeta.png"></div><span>Zwierzęta</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Dzieci')"><div class="cat-icon"><img src="cat-dzieci.png"></div><span>Dzieci</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Sport')"><div class="cat-icon"><img src="cat-sport.png"></div><span>Sport</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Nauka')"><div class="cat-icon"><img src="cat-nauka.png"></div><span>Nauka</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Usługi')"><div class="cat-icon"><img src="cat-uslugi.png"></div><span>Usługi</span></div>
+        <div class="cat-item" onclick="window.toggleSubcats('Inne')"><div class="cat-icon"><img src="cat-inne.png"></div><span>Inne</span></div>
+    </div>
+    <div id="subcat-panel" class="subcat-panel"></div>
+</div>
+
+<div class="container">
+    <div id="auth-box">
+        <div id="login-view" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+            <h3>Logowanie</h3>
+            <input type="email" id="email" placeholder="Email" style="margin-bottom:10px;">
+            <input type="password" id="pass" placeholder="Hasło" style="margin-bottom:15px;">
+            <button onclick="window.loguj()" style="width:100%; background:var(--primary); border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Zaloguj</button>
+            <p style="font-size:13px">Brak konta? <a href="javascript:void(0)" onclick="document.getElementById('login-view').classList.add('hidden'); document.getElementById('register-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zarejestruj się</a></p>
+        </div>
+        
+       <div id="register-view" class="hidden" style="max-width:320px; margin: 20px auto; background:white; padding:30px; border-radius:25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center;">
+    <h3>Rejestracja</h3>
+    <input type="email" id="reg-email" placeholder="Email" style="margin-bottom:10px;">
+    
+    <!-- Tutaj usunęliśmy napis o 6 znakach i zmniejszyliśmy margines dolny -->
+    <input type="password" id="reg-pass" placeholder="Hasło" style="margin-bottom:5px;">
+    
+    <!-- Nowa informacja o wymaganiach -->
+    <div style="font-size: 11px; color: #666; margin-bottom: 15px; text-align: left; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+        <strong>Hasło musi zawierać:</strong><br>
+        • min. 8 znaków<br>
+        • dużą literę<br>
+        • liczbę<br>
+        • znak specjalny
+    </div>
+<div style="text-align: left; font-size: 12px; margin-bottom: 15px; color: #444; padding: 0 10px;">
+    <label style="display: flex; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+        <input type="checkbox" id="reg-zgoda-regulamin" required style="width: auto;">
+        <span>Akceptuję <b>Regulamin</b> oraz <b>Politykę Prywatności</b> serwisu KupSe. *</span>
+    </label>
+    <label style="display: flex; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="reg-zgoda-marketing" style="width: auto;">
+        <span>Chcę otrzymywać informacje o promocjach i nowych ogłoszeniach.</span>
+    </label>
+</div>
+    <button onclick="window.zarejestruj()" style="width:100%; background:#111; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; color:white">Załóż konto</button>
+    
+    <p style="font-size:13px">Masz konto? <a href="javascript:void(0)" onclick="document.getElementById('register-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden')" style="color:var(--primary); font-weight:bold">Zaloguj się</a></p>
+</div>
+
+        </div> 
+
+    <h2 id="grid-title" style="margin-top:40px">Najnowsze ogłoszenia</h2>
+    <div id="lista" class="ads-grid"></div>
+</div>
+
+<footer>
+    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; font-weight: 600;">
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('regulamin')" style="color: var(--gray); text-decoration: none;">Regulamin</a>
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('polityka')" style="color: var(--gray); text-decoration: none;">Polityka Prywatności</a>
+        <a href="javascript:void(0)" onclick="window.pokazModalPrawny('kontakt')" style="color: var(--gray); text-decoration: none;">Pomoc i Kontakt</a>
+    </div>
+    <p>&copy; 2026 KupSe - Wszystkie prawa zastrzeżone.</p>
+    <p style="font-size: 11px; color: #999; max-width: 600px; margin: 10px auto 0; line-height: 1.4;">
+        Administratorem danych jest KupSe. Korzystając z serwisu, akceptujesz zasady przetwarzania danych osobowych zgodnie z RODO.
+    </p>
+</footer>
+
+
+<div id="modal-form" class="modal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+          <h2 id="form-title">Dodaj ogłoszenie</h2>
+        <form id="form-dodaj" onsubmit="window.wyslijOgloszenie(event)" style="display:grid; gap:15px">
+    <input type="text" id="f-tytul" placeholder="Tytuł ogłoszenia" required>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <select id="f-kat" onchange="window.updateFormSubcats()" required>
+            <option value="">Kategoria</option>
+            <option value="Motoryzacja">Motoryzacja</option>
+            <option value="Dom">Dom</option>
+            <option value="Elektronika">Elektronika</option>
+            <option value="Ogród">Ogród</option>
+            <option value="Moda">Moda</option>
+            <option value="Rolnictwo">Rolnictwo</option>
+            <option value="Zwierzęta">Zwierzęta</option>
+            <option value="Dzieci">Dzieci</option>
+            <option value="Sport">Sport</option>
+            <option value="Nauka">Nauka</option>
+            <option value="Usługi">Usługi</option>
+            <option value="Inne">Inne</option>
+        </select>
+        <select id="f-podkat" onchange="window.updateFormSubcats()" required>
+            <option value="">Podkategoria</option>
+        </select>
+    </div>
+
+    <div id="extra-fields"></div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <input type="number" id="f-cena" placeholder="Cena (zł)" required>
+        <input type="text" id="f-lok" placeholder="Miasto" required>
+    </div>
+    <select id="f-woj" required>
+        <option value="">Wybierz województwo</option>
+        <option value="dolnośląskie">dolnośląskie</option>
+        <option value="kujawsko-pomorskie">kujawsko-pomorskie</option>
+        <option value="lubelskie">lubelskie</option>
+        <option value="lubuskie">lubuskie</option>
+        <option value="łódzkie">łódzkie</option>
+        <option value="małopolskie">małopolskie</option>
+        <option value="mazowieckie">mazowieckie</option>
+        <option value="opolskie">opolskie</option>
+        <option value="podkarpackie">podkarpackie</option>
+        <option value="podlaskie">podlaskie</option>
+        <option value="pomorskie">pomorskie</option>
+        <option value="śląskie">śląskie</option>
+        <option value="świętokrzyskie">świętokrzyskie</option>
+        <option value="warmińsko-mazurskie">warmińsko-mazurskie</option>
+        <option value="wielkopolskie">wielkopolskie</option>
+        <option value="zachodniopomorskie">zachodniopomorskie</option>
+    </select>
+
+    <textarea id="f-opis" placeholder="Szczegółowy opis przedmiotu..." style="height:120px" required></textarea>
+    
+     <div style="display: flex; flex-direction: column; gap: 5px;">
+        <input type="tel" id="f-tel" placeholder="Numer telefonu (9 cyfr)" 
+               pattern="[0-9]{9}" maxlength="9" 
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+        <small style="font-size: 11px; color: #666;">
+            * Twój numer telefonu będzie widoczny dla osób zainteresowanych zakupem.
+        </small>
+    </div>
+    
+    <div id="foto-container" style="background:#f9f9f9; padding:15px; border-radius:10px; border:2px dashed #ddd; position:relative;">
+        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
+        <input type="file" id="f-plik" accept="image/*" multiple required 
+               onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
+        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
+    </div>
+    
+    <button type="submit" id="btn-save" class="btn-submit">Opublikuj ogłoszenie</button>
+</form>
+    </div>
+</div>
+
+<div id="modal-view" class="modal">
+    <div class="modal-box" id="view-content"></div>
+</div>
+
+<script src="script.js"></script>
+
+<div id="cookie-bar" style="position: fixed; bottom: 0; left: 0; right: 0; background: #111; color: white; padding: 15px; text-align: center; font-size: 13px; z-index: 9999; display: none; justify-content: center; align-items: center; gap: 20px;">
+    <span>Ta strona używa ciasteczek (cookies), aby działać poprawnie.</span>
+    <button onclick="zaakceptujCookies()" style="background: var(--primary); border: none; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Rozumiem</button>
+</div>
+
+<script>
+    // Obsługa cookies
+    if (!localStorage.getItem('cookiesZaakceptowane')) {
+        document.getElementById('cookie-bar').style.display = 'flex';
+    }
+    function zaakceptujCookies() {
+        localStorage.setItem('cookiesZaakceptowane', 'true');
+        document.getElementById('cookie-bar').remove();
+    }
+
+    // Funkcje do okien modalnych (Regulamin, Kontakt itp.)
+    window.pokazModalPrawny = function(typ) {
+    const modal = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    let tytul = "";
+    let tresc = "";
+
+    if(typ === 'regulamin') {
+        tytul = "Regulamin Serwisu KupSe.pl";
+        tresc = `
+            <div style="font-size: 14px; color: #333;">
+                <p><strong>I. POSTANOWIENIA OGÓLNE</strong></p>
+                <ol>
+                    <li>Serwis KupSe (dalej "Serwis") jest platformą ogłoszeniową online, która umożliwia użytkownikom zamieszczanie ogłoszeń sprzedaży oraz kontaktowanie się w sprawie transakcji.</li>
+                    <li>Właścicielem i administratorem Serwisu jest KupSe (dalej "Administrator").</li>
+                    <li>Korzystanie z Serwisu oznacza akceptację niniejszego Regulaminu w całości.</li>
+                </ol>
+                <p><strong>II. ODPOWIEDZIALNOŚĆ I ROLA SERWISU</strong></p>
+                <ol>
+                    <li><strong>Administrator nie jest stroną transakcji.</strong> Serwis służy wyłącznie jako platforma kojarząca Sprzedających z Kupującymi.</li>
+                    <li>Administrator nie ponosi odpowiedzialności za nienależyte wykonanie lub niewykonanie umów przez Użytkowników, za jakość, bezpieczeństwo lub legalność oferowanych towarów.</li>
+                    <li>Użytkownik ponosi pełną i wyłączną odpowiedzialność za treść publikowanych ogłoszeń, w tym za ich zgodność z prawdą oraz stanem prawnym i faktycznym.</li>
+                </ol>
+                <p><strong>III. ZASADY PUBLIKACJI OGŁOSZEŃ</strong></p>
+                <ol>
+                    <li>Zakazuje się wystawiania przedmiotów pochodzących z przestępstwa oraz takich, których obrót jest prawnie zakazany (narkotyki, broń, materiały wybuchowe, towary podrabiane itp.).</li>
+                    <li>Ogłoszenie musi zawierać rzetelny opis oraz faktyczną cenę. Administrator zastrzega sobie prawo do usunięcia ogłoszeń naruszających zasady współżycia społecznego lub dobre imię Serwisu bez podania przyczyny.</li>
+                </ol>
+                <p><strong>IV. REKLAMACJE I SPORY</strong></p>
+                <ol>
+                    <li>Wszelkie spory wynikające z transakcji pomiędzy Użytkownikami powinny być rozstrzygane polubownie bezpośrednio między stronami.</li>
+                    <li>Administrator nie uczestniczy w sporach i nie świadczy usług ochrony kupujących, chyba że wyraźnie zaznaczono inaczej w odrębnych regulaminach usług płatnych.</li>
+                </ol>
+            </div>
+        `;
+    } else if(typ === 'polityka') {
+        tytul = "Polityka Prywatności i Plików Cookies";
+        tresc = `
+            <div style="font-size: 14px; color: #333;">
+                <p><strong>I. ADMINISTRATOR DANYCH</strong></p>
+                <p>Administratorem danych osobowych zbieranych za pośrednictwem Serwisu jest KupSe. Kontakt w sprawach ochrony danych: kontakt@kupse.pl.</p>
+                <p><strong>II. ZAKRES I CEL ZBIERANIA DANYCH</strong></p>
+                <ol>
+                    <li>Dane zbierane podczas rejestracji (e-mail) służą wyłącznie do autoryzacji dostępu i komunikacji technicznej.</li>
+                    <li>Dane zamieszczane w ogłoszeniach (numer telefonu, lokalizacja) są publikowane w celu umożliwienia kontaktu zainteresowanym kontrahentom. Użytkownik publikuje te dane dobrowolnie.</li>
+                    <li>Dane są przetwarzane zgodnie z RODO (Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679).</li>
+                </ol>
+                <p><strong>III. PRAWA UŻYTKOWNIKA</strong></p>
+                <p>Każdy Użytkownik ma prawo do: dostępu do swoich danych, ich sprostowania, usunięcia ("prawo do bycia zapomnianym"), ograniczenia przetwarzania oraz przenoszenia danych.</p>
+                <p><strong>IV. PLIKI COOKIES</strong></p>
+                <p>Serwis wykorzystuje pliki cookies do celów statystycznych, marketingowych oraz zapewnienia prawidłowego działania funkcji technicznych (logowanie, zapamiętywanie preferencji).</p>
+            </div>
+        `;
+    } else if(typ === 'kontakt') {
+        tytul = "Centrum Pomocy i Kontakt";
+        tresc = `
+            <div style="text-align: center; padding: 20px;">
+                <p>Masz pytania lub chcesz zgłosić nadużycie?</p>
+                <h3 style="color: var(--primary);">kontakt@kupse.pl</h3>
+                <p>Nasze biuro obsługi klienta pracuje:<br><strong>Poniedziałek - Piątek: 09:00 - 17:00</strong></p>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #666;">Zgłoszenia dotyczące nielegalnych treści lub oszustw są rozpatrywane w trybie priorytetowym (do 24h).</p>
+            </div>
+        `;
+    }
+
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">${tytul}</h2>
+        <div style="line-height: 1.6; text-align: left; max-height: 60vh; overflow-y: auto; padding-right: 10px;">${tresc}</div>
+        <div style="margin-top: 25px; text-align: right;">
+            <button onclick="window.zamknijModal()" style="padding: 10px 25px; background: #111; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Zamknij</button>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
+
+    window.zamknijModal = function() {
+        if(document.getElementById('modal-view')) document.getElementById('modal-view').style.display = 'none';
+        if(document.getElementById('modal-form')) document.getElementById('modal-form').style.display = 'none';
+        // Ta linia przywraca suwak na stronie głównej:
+        document.body.style.overflow = 'auto';
+    }
+</script>
+</body>
+</html>
+
             --border: rgba(255, 255, 255, 0.07);
         }
         body { 
