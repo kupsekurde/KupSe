@@ -374,7 +374,8 @@ window.pokazSzczegoly = async (id) => {
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     window.aktualneZdjecieIndex = 0;
     
-    const telefonWidok = user ? `<b>${o.telefon}</b>` : `<span style="color:red;">[Zaloguj się]</span>`;
+    const telFormat = o.telefon ? o.telefon.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : 'Brak numeru';
+    const telefonWidok = user ? `<b>${telFormat}</b>` : `<span style="color:red; font-size:12px;">[Zaloguj się, aby zobaczyć numer]</span>`;
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
         : "";
@@ -787,6 +788,8 @@ window.zastosujFiltryBoczne = () => {
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
     const pelnaData = formatujDate(o.created_at);
+    // Jeśli nie ma zdjęć, użyj obrazka zastępczego
+    const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
         <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
