@@ -384,9 +384,13 @@ window.pokazSzczegoly = async (id) => {
         user = session.data?.session?.user || null;
     }
 
-    history.pushState({ modalOpen: true }, ""); 
+    // Ten fragment mówi telefonowi: "Dodaj nowy krok do historii"
+    if (!window.modalStatePushed) {
+        history.pushState({ modalOpen: true }, "");
+        window.modalStatePushed = true;
+    }
+
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    window.aktualneZdjecieIndex = 0;
     
     const telFormat = o.telefon ? o.telefon.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : 'Brak numeru';
     const telefonWidok = user ? `<b>${telFormat}</b>` : `<span style="color:red; font-size:12px;">[Zaloguj się]</span>`;
@@ -1094,3 +1098,21 @@ window.toggleMobileFilters = () => {
         btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
+// Obsługa przycisku "Wstecz" na telefonie
+window.addEventListener('popstate', function(event) {
+    const modalView = document.getElementById('modal-view');
+    const modalForm = document.getElementById('modal-form');
+
+    // Jeśli jakiekolwiek okno jest otwarte, zamknij je zamiast wychodzić ze strony
+    if ((modalView && modalView.style.display === 'flex') || (modalForm && modalForm.style.display === 'flex')) {
+        window.zamknijModal();
+        window.modalStatePushed = false;
+    }
+});
+
+// Dodatkowa poprawka do funkcji zamykania, żeby czyściła status
+const staraFunkcjaZamknij = window.zamknijModal;
+window.zamknijModal = function() {
+    staraFunkcjaZamknij();
+    window.modalStatePushed = false;
+}
