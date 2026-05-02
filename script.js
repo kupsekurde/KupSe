@@ -376,6 +376,12 @@ window.pokazSzczegoly = async (id) => {
     
     const telFormat = o.telefon ? o.telefon.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : 'Brak numeru';
     const telefonWidok = user ? `<b>${telFormat}</b>` : `<span style="color:red; font-size:12px;">[Zaloguj się, aby zobaczyć numer]</span>`;
+    
+    // NAPRAWIONY PRZYCISK WIADOMOŚCI
+    const przyciskChatu = (user && user.email !== o.user_email) 
+        ? `<button onclick="event.stopPropagation(); window.otworzChat('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;"><span style="font-size:18px;">✉</span> Wyślij wiadomość</button>`
+        : `<p style="font-size:11px; color:gray; text-align:center; width:100%;">Zaloguj się, aby wysłać wiadomość</p>`;
+
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
         : "";
@@ -397,9 +403,9 @@ window.pokazSzczegoly = async (id) => {
                 <h2 style="font-size:18px; margin:10px 0;">${o.tytul}</h2>
                 <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} zł</h1>
                 <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="window.wyslijWiadomosc('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Wyślij wiadomość</button>
-                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer;">
+                <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
+                    ${przyciskChatu}
+                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
@@ -407,6 +413,7 @@ window.pokazSzczegoly = async (id) => {
                 <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
                     <p style="white-space:pre-line; font-size:14px; line-height:1.6; color:#333; margin: 0;">${o.opis}</p>
                 </div>
+            </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
