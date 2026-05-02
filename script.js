@@ -459,10 +459,23 @@ window.otworzFullFoto = () => {
     lb.style.display = 'flex';
 };
 
-window.navFullFoto = (dir) => {
-    window.aktualneZdjecieIndex = (window.aktualneZdjecieIndex + dir + window.aktualneFotki.length) % window.aktualneFotki.length;
-    const img = document.getElementById('lb-img');
-    if(img) img.src = window.aktualneFotki[window.aktualneZdjecieIndex];
+window.udostepnijOgloszenie = (e, id) => {
+    if(e) e.stopPropagation();
+    // Tworzymy link prowadzący prosto do tego ogłoszenia
+    const link = window.location.origin + window.location.pathname + '?id=' + id;
+    
+    // Jeśli używasz telefonu, otworzy się systemowe menu udostępniania
+    if (navigator.share) {
+        navigator.share({
+            title: 'Zobacz to ogłoszenie!',
+            url: link
+        }).catch(() => {});
+    } else {
+        // Jeśli używasz komputera, link po prostu skopiuje się do schowka
+        navigator.clipboard.writeText(link).then(() => {
+            alert("Link do ogłoszenia został skopiowany do schowka!");
+        });
+    }
 };
 
 // --- FILTROWANIE SPECJALISTYCZNE ---
@@ -890,6 +903,14 @@ async function init() {
         if (error) throw error;
         daneOgloszen = data || [];
         renderTop12(daneOgloszen);
+        
+        // --- TO SPRAWI, ŻE LINKI BĘDĄ DZIAŁAĆ ---
+        const parametry = new URLSearchParams(window.location.search);
+        const idZLinku = parametry.get('id');
+        if (idZLinku) {
+            // Jeśli w linku jest ID, to automatycznie otwieramy to ogłoszenie
+            window.pokazSzczegoly(Number(idZLinku));
+        }
         
         // 2. Sprawdzanie użytkownika i powiadomienia na żywo
         const { data: { user } } = await baza.auth.getUser();
