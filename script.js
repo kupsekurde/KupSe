@@ -403,9 +403,10 @@ window.pokazSzczegoly = async (id) => {
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
-                <h3 style="margin-top:20px; font-size:16px;">Opis</h3>
-                <p style="white-space:pre-line; font-size:14px; line-height:1.5; color:#444;">${o.opis}</p>
-            </div>
+                <h3 style="margin-top:20px; font-size:16px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Opis przedmiotu</h3>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
+                    <p style="white-space:pre-line; font-size:14px; line-height:1.6; color:#333; margin: 0;">${o.opis}</p>
+                </div>
         </div>`;
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
