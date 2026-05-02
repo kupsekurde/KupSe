@@ -405,6 +405,12 @@ window.pokazSzczegoly = async (id) => {
                 <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
                     ${przyciskChatu}
+                    <!-- Przycisk udostępniania -->
+                    <button onclick="window.udostepnijOgloszenie('${o.tytul.replace(/'/g, "\\'")}', '${o.id}')" 
+                            style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
+                        🔗
+                    </button>
+                    <!-- Przycisk ulubionych -->
                     <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
@@ -421,13 +427,16 @@ window.pokazSzczegoly = async (id) => {
 
 window.zmienGlowneZdjecie = (idx) => {
     window.aktualneZdjecieIndex = idx;
-    const img = document.getElementById('mainFoto');
-    if(img && window.aktualneFotki) {
-        img.src = window.aktualneFotki[idx];
+    const mainImg = document.getElementById('mainFoto');
+    if(mainImg && window.aktualneFotki) {
+        mainImg.src = window.aktualneFotki[idx];
     }
-    // To podświetla wybraną miniaturkę ramką
-    document.querySelectorAll('.mini-foto').forEach((el, i) => {
-        el.style.borderColor = (i === idx) ? 'var(--primary)' : 'transparent';
+    
+    // Podświetlanie aktywnej miniaturki
+    const wszystkieMini = document.querySelectorAll('.mini-foto');
+    wszystkieMini.forEach((foto, i) => {
+        foto.style.border = (i === idx) ? '3px solid var(--primary)' : '2px solid transparent';
+        foto.style.opacity = (i === idx) ? '1' : '0.6';
     });
 };
 window.otworzFullFoto = () => {
@@ -901,6 +910,23 @@ async function init() {
         console.log("Użytkownik nie jest zalogowany");
     }
 }
+
+// Funkcje udostępniania i obsługi okien
+window.otworzChat = otworzChat;
+window.wyslijZChatu = wyslijZChatu;
+
+window.udostepnijOgloszenie = async (tytul, id) => {
+    const url = window.location.origin + window.location.pathname + '?id=' + id;
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: tytul, text: `Sprawdź to ogłoszenie: ${tytul}`, url: url });
+        } catch (err) { console.log('Anulowano'); }
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Link skopiowany do schowka!');
+        });
+    }
+};
 
 // Uruchomienie wszystkiego
 init();
