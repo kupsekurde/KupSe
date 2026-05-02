@@ -388,10 +388,10 @@ window.pokazSzczegoly = async (id) => {
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót</button>` 
         : "";
 
-    document.getElementById('view-content').innerHTML = `
+        document.getElementById('view-content').innerHTML = `
         <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
         ${btnWstecz}
-        <div style="display:flex; flex-direction: column; gap:15px;">
+        <div style="display:flex; flex-direction: column; gap:15px; margin-top: 25px;">
             <div style="width:100%;">
                 <div style="background:#000; border-radius:15px; height:280px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
                     <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;" onclick="window.otworzFullFoto()">
