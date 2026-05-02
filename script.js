@@ -364,10 +364,16 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
-    history.pushState({ modalOpen: true }, ""); 
-    window.onpopstate = function() { window.zamknijModal(); };
+    // Dodajemy małe zabezpieczenie, żeby okno nie "mignęło" bez danych użytkownika
+    let { data: { user } } = await baza.auth.getUser();
+    
+    // Jeśli getUser() nic nie zwrócił, spróbujmy pobrać sesję jeszcze raz (ważne na telefonach)
+    if (!user) {
+        const session = await baza.auth.getSession();
+        user = session.data?.session?.user || null;
+    }
 
-    const { data: { user } } = await baza.auth.getUser();
+    history.pushState({ modalOpen: true }, ""); 
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     window.aktualneZdjecieIndex = 0;
     
