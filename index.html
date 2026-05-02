@@ -313,18 +313,20 @@
     <div class="nav-left">
         <img src="KupSe.png" class="main-logo" onclick="location.reload()">
 <div class="nav-search">
-    <div style="display: none;">
-        <input type="text" name="fake_user">
-        <input type="email" name="fake_email">
-    </div>
+    <!-- Ukryte pola "pułapki" dla przeglądarki, aby tu wpisywała e-maile zamiast do wyszukiwarki -->
+    <input type="text" style="display:none" aria-hidden="true">
+    <input type="password" style="display:none" aria-hidden="true">
 
     <input type="text" id="szukajka-glowna" placeholder="Czego szukasz?" 
-           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="one-time-code" spellcheck="false">
+           onkeydown="if(event.key==='Enter') window.szukaj()" 
+           autocomplete="one-time-code" spellcheck="false">
     
     <div class="search-divider"></div>
     
-    <input type="text" id="miasto-input" placeholder="Cała Polska" 
-           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="off" spellcheck="false">
+    <!-- Pole lokalizacji z unikalną nazwą 'kupa-miasto', która nie kojarzy się przeglądarce z adresem -->
+    <input type="text" id="miasto-input" name="kupa-miasto" placeholder="Cała Polska" 
+           onkeydown="if(event.key==='Enter') window.szukaj()" 
+           autocomplete="off" spellcheck="false">
     
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">Szukaj</button>
 </div>
