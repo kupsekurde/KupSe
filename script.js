@@ -898,24 +898,24 @@ async function sprawdzPowiadomieniaBezReloadu() {
 }
 async function init() {
     try {
-        // 1. Pobieranie ogłoszeń z bazy
+        // 1. Najpierw pobieramy ogłoszenia
         const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         daneOgloszen = data || [];
         renderTop12(daneOgloszen);
         
-        // --- TO SPRAWI, ŻE LINKI BĘDĄ DZIAŁAĆ ---
-        const parametry = new URLSearchParams(window.location.search);
-        const idZLinku = parametry.get('id');
-        if (idZLinku) {
-            // Jeśli w linku jest ID, to automatycznie otwieramy to ogłoszenie
-            window.pokazSzczegoly(Number(idZLinku));
-        }
-        
-        // 2. Sprawdzanie użytkownika i powiadomienia na żywo
+        // 2. TERAZ sprawdzamy logowanie (to musi być przed otwarciem ogłoszenia!)
         const { data: { user } } = await baza.auth.getUser();
         await sprawdzUzytkownika();
 
+        // 3. Dopiero gdy wiemy kim jest użytkownik, sprawdzamy czy w linku jest ID ogłoszenia
+        const parametry = new URLSearchParams(window.location.search);
+        const idZLinku = parametry.get('id');
+        if (idZLinku) {
+            window.pokazSzczegoly(Number(idZLinku));
+        }
+        
+        // 4. Uruchamiamy powiadomienia na żywo
         if (user) {
             baza.channel('zmiany-wiadomosci')
                 .on('postgres_changes', { 
