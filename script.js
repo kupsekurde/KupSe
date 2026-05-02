@@ -290,9 +290,9 @@ window.otworzChat = async (zKim) => {
         </div>
         <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
             ${msg.map(m => {
-                const moja = m.nadawca === user.email;
+                                const moja = m.nadawca === user.email;
                 const d = new Date(m.created_at);
-                const czas = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')} | ${d.getDate()}.${d.getMonth()+1}`;
+                const czas = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} | ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
                 return `
                 <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
                     <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
