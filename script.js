@@ -404,12 +404,11 @@ window.pokazSzczegoly = async (id) => {
                 <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} zł</h1>
                 <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
-                    ${przyciskChatu}
-                    <!-- Przycisk udostępniania -->
-                    <button onclick="window.udostepnijOgloszenie('${o.tytul.replace(/'/g, "\\'")}', '${o.id}')" 
-                            style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
-                        🔗
-                    </button>
+    ${przyciskChatu}
+    <button onclick="window.udostepnijOgloszenie(event, ${o.id})" 
+            style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
+        🔗
+    </button>
                     <!-- Przycisk ulubionych -->
                     <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
@@ -915,16 +914,36 @@ async function init() {
 window.otworzChat = otworzChat;
 window.wyslijZChatu = wyslijZChatu;
 
-window.udostepnijOgloszenie = async (tytul, id) => {
+window.udostepnijOgloszenie = async (event, id) => {
+    // Zapobiega otwieraniu ogłoszenia, jeśli klikniemy w ikonę na liście
+    if(event && event.stopPropagation) event.stopPropagation(); 
+    
+    // Szukamy danych ogłoszenia w głównej tablicy po ID
+    const ogl = daneOgloszen.find(x => Number(x.id) === Number(id));
+    const tytul = ogl ? ogl.tytul : "Ogłoszenie";
+    
+    // Budujemy link
     const url = window.location.origin + window.location.pathname + '?id=' + id;
+
     if (navigator.share) {
+        // Obsługa na telefonach (Native Share)
         try {
-            await navigator.share({ title: tytul, text: `Sprawdź to ogłoszenie: ${tytul}`, url: url });
-        } catch (err) { console.log('Anulowano'); }
+            await navigator.share({
+                title: tytul,
+                text: `Sprawdź to ogłoszenie na naszym portalu: ${tytul}`,
+                url: url
+            });
+        } catch (err) {
+            console.log('Udostępnianie przerwane.');
+        }
     } else {
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Link skopiowany do schowka!');
-        });
+        // Obsługa na komputerach (Kopiowanie do schowka)
+        try {
+            await navigator.clipboard.writeText(url);
+            alert('Skopiowano link do ogłoszenia do schowka!');
+        } catch (err) {
+            alert('Nie udało się skopiować linku.');
+        }
     }
 };
 
