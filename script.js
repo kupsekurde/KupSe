@@ -44,7 +44,13 @@ const SUB_DATA = {
     'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
-const formatujDate = (d) => new Date(d).toLocaleDateString('pl-PL');
+const formatujDate = (d) => {
+    const dataObj = new Date(d);
+    const dzien = String(dataObj.getDate()).padStart(2, '0');
+    const miesiac = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const rok = dataObj.getFullYear();
+    return `${dzien}.${miesiac}.${rok}`;
+};
 
 let daneOgloszen = [];
 let mojeUlubione = [];
@@ -292,7 +298,12 @@ window.otworzChat = async (zKim) => {
             ${msg.map(m => {
                                 const moja = m.nadawca === user.email;
                 const d = new Date(m.created_at);
-                const czas = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} | ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+                const g = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                const dz = String(d.getDate()).padStart(2, '0');
+                const ms = String(d.getMonth() + 1).padStart(2, '0');
+                const r = d.getFullYear();
+                const czas = `${g}:${min} | ${dz}.${ms}.${r}`;
                 return `
                 <div style="max-width:85%; align-self: ${moja ? 'flex-end' : 'flex-start'};">
                     <div style="background:${moja ? 'var(--primary)' : '#f0f0f0'}; color:${moja ? 'white' : 'black'}; padding:7px 12px; border-radius:12px; font-size:13px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
