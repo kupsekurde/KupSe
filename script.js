@@ -405,10 +405,11 @@ window.pokazSzczegoly = async (id) => {
                 <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
     ${przyciskChatu}
-    <button onclick="window.udostepnijOgloszenie(event, ${o.id})" 
-            style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
+    // NOWY KOD:
+h += `<button onclick="window.udostepnijOgloszenie(event, ${o.id})" 
+        style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
         🔗
-    </button>
+      </button>`;
                     <!-- Przycisk ulubionych -->
                     <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
