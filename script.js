@@ -303,7 +303,7 @@ window.otworzChat = async (zKim) => {
             }).join('')}
         </div>
         <div style="display:flex; gap:5px; margin-top:10px;">
-            <input type="text" id="chat-input" placeholder="Napisz..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+            <input type="text" id="chat-input" placeholder="Napisz..." autocomplete="off" spellcheck="false" style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
             <button onclick="window.wyslijZChatu('${zKim}')" style="background:var(--primary); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">➤</button>
         </div>`;
     const win = document.getElementById('chat-window'); win.scrollTop = win.scrollHeight;
