@@ -364,26 +364,22 @@ window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
-    // Obsługa przycisku wstecz w telefonie
     history.pushState({ modalOpen: true }, ""); 
-    window.onpopstate = function() {
-        window.zamknijModal();
-    };
+    window.onpopstate = function() { window.zamknijModal(); };
 
     const { data: { user } } = await baza.auth.getUser();
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
     window.aktualneZdjecieIndex = 0;
     
     const telFormat = o.telefon ? o.telefon.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : 'Brak numeru';
-    const telefonWidok = user ? `<b>${telFormat}</b>` : `<span style="color:red; font-size:12px;">[Zaloguj się, aby zobaczyć numer]</span>`;
+    const telefonWidok = user ? `<b>${telFormat}</b>` : `<span style="color:red; font-size:12px;">[Zaloguj się]</span>`;
     
-    // NAPRAWIONY PRZYCISK WIADOMOŚCI
     const przyciskChatu = (user && user.email !== o.user_email) 
-        ? `<button onclick="event.stopPropagation(); window.otworzChat('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;"><span style="font-size:18px;">✉</span> Wyślij wiadomość</button>`
-        : `<p style="font-size:11px; color:gray; text-align:center; width:100%;">Zaloguj się, aby wysłać wiadomość</p>`;
+        ? `<button onclick="event.stopPropagation(); window.otworzChat('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">✉ Wyślij wiadomość</button>`
+        : `<p style="font-size:11px; color:gray; text-align:center; width:100%;">Zaloguj się, aby napisać</p>`;
 
     const btnWstecz = ostatnieWyniki.length > 0 
-        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót do listy</button>` 
+        ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="margin-bottom:15px; background:#eee; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">← Powrót</button>` 
         : "";
 
     document.getElementById('view-content').innerHTML = `
@@ -404,20 +400,15 @@ window.pokazSzczegoly = async (id) => {
                 <h1 style="color:var(--primary); font-size:24px; margin:5px 0;">${o.cena} zł</h1>
                 <p style="font-size:14px;">📍 ${o.lokalizacja} | 📞 ${telefonWidok}</p>
                 <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
-    ${przyciskChatu}
-    // NOWY KOD:
-h += `<button onclick="window.udostepnijOgloszenie(event, ${o.id})" 
-        style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;" title="Udostępnij">
-        🔗
-      </button>`;
-                    <!-- Przycisk ulubionych -->
+                    ${przyciskChatu}
+                    <button onclick="window.udostepnijOgloszenie(event, ${o.id})" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">🔗</button>
                     <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="padding:15px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px;">
                         ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
                     </button>
                 </div>
-                <h3 style="margin-top:20px; font-size:16px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Opis przedmiotu</h3>
+                <h3 style="margin-top:20px; font-size:16px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Opis</h3>
                 <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
-                    <p style="white-space:pre-line; font-size:14px; line-height:1.6; color:#333; margin: 0;">${o.opis}</p>
+                    <p style="white-space:pre-line; font-size:14px; line-height:1.6; color:#333;">${o.opis}</p>
                 </div>
             </div>
         </div>`;
@@ -893,60 +884,33 @@ async function sprawdzPowiadomieniaBezReloadu() {
     }
 }
 async function init() {
-    // 1. NAJPIERW ładujemy ogłoszenia (to musi działać dla każdego)
     try {
+        // 1. Pobieranie ogłoszeń z bazy
         const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         daneOgloszen = data || [];
         renderTop12(daneOgloszen);
-    } catch (e) {
-        console.error("Błąd pobierania ogłoszeń:", e);
-    }
-
-    // 2. POTEM sprawdzamy logowanie (jeśli nie wyjdzie, to trudno, ogłoszenia już są)
-    try {
+        
+        // 2. Sprawdzanie użytkownika i powiadomienia na żywo
+        const { data: { user } } = await baza.auth.getUser();
         await sprawdzUzytkownika();
+
+        if (user) {
+            baza.channel('zmiany-wiadomosci')
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'wiadomosci', 
+                    filter: `odbiorca=eq.${user.email}` 
+                }, () => {
+                    sprawdzUzytkownika();
+                })
+                .subscribe();
+        }
     } catch (e) {
-        console.log("Użytkownik nie jest zalogowany");
+        console.error("Błąd podczas ładowania strony:", e);
     }
 }
-
-// Funkcje udostępniania i obsługi okien
-window.otworzChat = otworzChat;
-window.wyslijZChatu = wyslijZChatu;
-
-window.udostepnijOgloszenie = async (event, id) => {
-    // Zapobiega otwieraniu ogłoszenia, jeśli klikniemy w ikonę na liście
-    if(event && event.stopPropagation) event.stopPropagation(); 
-    
-    // Szukamy danych ogłoszenia w głównej tablicy po ID
-    const ogl = daneOgloszen.find(x => Number(x.id) === Number(id));
-    const tytul = ogl ? ogl.tytul : "Ogłoszenie";
-    
-    // Budujemy link
-    const url = window.location.origin + window.location.pathname + '?id=' + id;
-
-    if (navigator.share) {
-        // Obsługa na telefonach (Native Share)
-        try {
-            await navigator.share({
-                title: tytul,
-                text: `Sprawdź to ogłoszenie na naszym portalu: ${tytul}`,
-                url: url
-            });
-        } catch (err) {
-            console.log('Udostępnianie przerwane.');
-        }
-    } else {
-        // Obsługa na komputerach (Kopiowanie do schowka)
-        try {
-            await navigator.clipboard.writeText(url);
-            alert('Skopiowano link do ogłoszenia do schowka!');
-        } catch (err) {
-            alert('Nie udało się skopiować linku.');
-        }
-    }
-};
 
 // Uruchomienie wszystkiego
 init();
