@@ -319,12 +319,12 @@
     </div>
 
     <input type="text" id="szukajka-glowna" placeholder="Czego szukasz?" 
-           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="off">
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="one-time-code" spellcheck="false">
     
     <div class="search-divider"></div>
     
     <input type="text" id="miasto-input" placeholder="Cała Polska" 
-           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="new-password">
+           onkeydown="if(event.key==='Enter') window.szukaj()" autocomplete="off" spellcheck="false">
     
     <button onclick="window.szukaj()" style="background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; margin-left: 5px;">Szukaj</button>
 </div>
