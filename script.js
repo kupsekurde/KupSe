@@ -379,15 +379,15 @@ window.pokazSzczegoly = async (id) => {
     let { data: { user } } = await baza.auth.getUser();
     
     // Jeśli getUser() nic nie zwrócił, spróbujmy pobrać sesję jeszcze raz (ważne na telefonach)
-    if (!user) {
+        if (!user) {
         const session = await baza.auth.getSession();
         user = session.data?.session?.user || null;
     }
 
-    // Ten fragment mówi telefonowi: "Dodaj nowy krok do historii"
-    if (!window.modalStatePushed) {
+    // Informujemy telefon, że otworzyliśmy okno
+    if (!window.czyOkienkoOtwarte) {
         history.pushState({ modalOpen: true }, "");
-        window.modalStatePushed = true;
+        window.czyOkienkoOtwarte = true;
     }
 
     window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
@@ -895,7 +895,18 @@ window.pokazUlubione = () => {
 };
 
 window.zamknijModal = () => {
+    // 1. Ukrywamy wszystkie okna
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    
+    // 2. Przywracamy przewijanie strony głównej
+    document.body.style.overflow = 'auto';
+    
+    // 3. Resetujemy szerokość okna (żeby wiadomości nie były za szerokie)
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "1250px";
+    
+    // 4. Mówimy systemowi, że okno jest już zamknięte
+    window.czyOkienkoOtwarte = false;
 };
 
 window.zamknijIResetujModal = () => {
@@ -1098,21 +1109,16 @@ window.toggleMobileFilters = () => {
         btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
-// Obsługa przycisku "Wstecz" na telefonie
+// Specjalny kod dla telefonów: Przycisk "Wstecz" zamyka ogłoszenie
 window.addEventListener('popstate', function(event) {
     const modalView = document.getElementById('modal-view');
     const modalForm = document.getElementById('modal-form');
+    
+    // Sprawdzamy czy któreś okno jest widoczne
+    const czyWidacPodglad = modalView && modalView.style.display === 'flex';
+    const czyWidacFormularz = modalForm && modalForm.style.display === 'flex';
 
-    // Jeśli jakiekolwiek okno jest otwarte, zamknij je zamiast wychodzić ze strony
-    if ((modalView && modalView.style.display === 'flex') || (modalForm && modalForm.style.display === 'flex')) {
-        window.zamknijModal();
-        window.modalStatePushed = false;
+    if (czyWidacPodglad || czyWidacFormularz) {
+        window.zamknijModal(); // Jeśli okno było otwarte - zamknij je
     }
 });
-
-// Dodatkowa poprawka do funkcji zamykania, żeby czyściła status
-const staraFunkcjaZamknij = window.zamknijModal;
-window.zamknijModal = function() {
-    staraFunkcjaZamknij();
-    window.modalStatePushed = false;
-}
