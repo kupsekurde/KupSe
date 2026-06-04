@@ -238,8 +238,7 @@ window.logujSpolecznosciowo = async (dostawca) => {
         provider: dostawca,
         options: {
             redirectTo: window.location.origin,
-            // Dodajemy jawne zapytanie o e-mail i profil publiczny
-            scopes: dostawca === 'facebook' ? 'email,public_profile' : 'email'
+            scopes: 'email'
         }
     });
     if (error) alert("Błąd logowania: " + error.message);
