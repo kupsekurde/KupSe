@@ -1046,17 +1046,37 @@ window.wznowOgloszenie = async (id) => {
     }
 };
 // --- KATEGORIE I RENDEROWANIE ---
-window.toggleSubcats = (kat) => {
+window.toggleSubcats = (kat, sub = null) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
-        p.style.display = 'none'; p.dataset.activeKat = ''; return;
-    }
+
+    // Pokaż panel, jeśli był ukryty
     p.style.display = 'flex';
-    p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
-    `).join('');
+    
+    const data = SUB_DATA[kat];
+
+    // SCENARIUSZ A: Kliknięto kategorię główną (np. Nieruchomości)
+    if (!sub) {
+        if (Array.isArray(data)) {
+            // Zwykła kategoria - od razu filtrujemy
+            p.innerHTML = data.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
+        } else {
+            // Skomplikowana kategoria - pokazujemy podkategorie (Mieszkania, Domy...)
+            p.innerHTML = Object.keys(data).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s} \u25b8</div>`).join('');
+        }
+    } 
+    // SCENARIUSZ B: Kliknięto podkategorię (np. Mieszkania)
+    else {
+        const podOpcje = SUB_DATA[kat][sub];
+        if (!podOpcje || podOpcje.length === 0) {
+            return window.otworzFiltry(kat, sub); // Brak opcji - filtrujemy od razu
+        }
+
+        // Pokazujemy opcje (Sprzedaż/Wynajem) + przycisk Wróć
+        let html = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#eee; font-weight:bold;">\u2190 Wróć</div>`;
+        html += podOpcje.map(opcja => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${opcja}')">${opcja}</div>`).join('');
+        p.innerHTML = html;
+    }
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
