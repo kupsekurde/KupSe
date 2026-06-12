@@ -1,3 +1,14 @@
+1 selected
+
+Skip to content
+Using Gmail with screen readers
+Enable desktop notifications for Gmail.
+   OK  No thanks
+Conversations
+0% of 15 GB used
+Terms · Privacy · Program Policies
+Last account activity: 0 minutes ago
+Currently being used in 3 other locations · Details
 window.updateCounter = (id, countId, max) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -45,6 +56,18 @@ window.renderujOgloszenia = (lista) => {
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    if (!p) return;
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
+    }
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
+};
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
     let n = e.split('@')[0]; 
@@ -56,17 +79,9 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 // --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
-// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
-    'Nieruchomości': {
-        'Mieszkania': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Domy': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Garaże': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Działki': [],
-        'Lokale': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Pozostałe': []
-    },
+    'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
     'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
     'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
     'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
@@ -77,7 +92,7 @@ const SUB_DATA = {
     'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
     'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
     'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
-    'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
+        'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
 const MOTO_DATA = {
@@ -1014,25 +1029,17 @@ window.wznowOgloszenie = async (id) => {
     }
 };
 // --- KATEGORIE I RENDEROWANIE ---
-window.toggleSubcats = (kat, sub = null) => {
+window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-    p.style.display = 'flex';
-    const data = SUB_DATA[kat];
-
-    if (!sub) {
-        if (Array.isArray(data)) {
-            p.innerHTML = data.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
-        } else {
-            p.innerHTML = Object.keys(data).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s} \u25b8</div>`).join('');
-        }
-    } else {
-        const podOpcje = SUB_DATA[kat][sub];
-        if (!podOpcje || podOpcje.length === 0) return window.otworzFiltry(kat, sub);
-        let html = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>`;
-        html += podOpcje.map(opcja => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${opcja}')">${opcja}</div>`).join('');
-        p.innerHTML = html;
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
 };
 
 window.filtrujPoPodkat = (kat, podkat) => {
@@ -1594,3 +1601,5 @@ window.dajLimitZdjec = () => {
     }
     return 5;
 };
+script (2).js
+Displaying script (2).js.
