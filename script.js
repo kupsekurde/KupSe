@@ -45,17 +45,37 @@ window.renderujOgloszenia = (lista) => {
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
-window.toggleSubcats = (kat) => {
+window.toggleSubcats = (kat, sub = null) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+
+    // Jeśli klikasz drugi raz w tę samą kategorię główną - zamknij panel
+    if (!sub && p.dataset.activeKat === kat && p.style.display === 'flex') {
         p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
-    p.style.display = 'flex';
+
+    p.style.display = 'flex'; 
     p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
-    `).join('');
+    const d = SUB_DATA[kat];
+
+    // ETAP 1: Kliknięto Kategorię Główną
+    if (!sub) {
+        if (Array.isArray(d)) {
+            // Zwykła kategoria (np. Motoryzacja)
+            p.innerHTML = d.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
+        } else {
+            // Kategoria z pod-poziomem (np. Nieruchomości) - dodajemy strzałkę ▸
+            p.innerHTML = Object.keys(d).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s}${d[s].length ? ' \u25b8' : ''}</div>`).join('');
+        }
+    } 
+    // ETAP 2: Kliknięto Podkategorię (np. Mieszkania)
+    else {
+        if (SUB_DATA[kat][sub].length === 0) return window.otworzFiltry(kat, sub);
+        
+        // Dodajemy przycisk "Wróć" i listę opcji (Sprzedaż/Wynajem)
+        p.innerHTML = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>` +
+            SUB_DATA[kat][sub].map(ss => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${ss}')">${ss}</div>`).join('');
+    }
 };
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
@@ -72,13 +92,13 @@ const baza = window.supabase.createClient(URL_S, KEY_S);
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
     'Nieruchomości': [
-        'Mieszkania - 1. Sprzedaż', 'Mieszkania - 2. Wynajem', 'Mieszkania - 3. Inne', 
-        'Domy - 1. Sprzedaż', 'Domy - 2. Wynajem', 'Domy - 3. Inne', 
-        'Garaże - 1. Sprzedaż', 'Garaże - 2. Wynajem', 'Garaże - 3. Inne', 
-        'Działki', 
-        'Lokale - 1. Sprzedaż', 'Lokale - 2. Wynajem', 'Lokale - 3. Inne', 
-        'Pozostałe'
-    ],
+        'Mieszkania': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Domy': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Garaże': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Działki': [],
+        'Lokale': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Pozostałe': []
+    },
     'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
     'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
     'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
