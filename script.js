@@ -46,7 +46,199 @@ window.renderujOgloszenia = (lista) => {
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
-window.toggle
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    if (!p) return;
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
+    }
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
+};
+const dajNazwe = (e) => { 
+    if(!e) return "Użytkownik";
+    let n = e.split('@')[0]; 
+    return n.charAt(0).toUpperCase() + n.slice(1); 
+};
+
+const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
+const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
+const baza = window.supabase.createClient(URL_S, KEY_S);
+
+// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
+const SUB_DATA = {
+    'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
+    'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
+    'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
+    'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
+    'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
+    'Rolnictwo': ['Ciągniki', 'Maszyny rolnicze', 'Zwierzęta hodowlane', 'Pasze i ziarno', 'Opony rolnicze', 'Pozostałe'],
+    'Zwierzęta': ['Psy', 'Koty', 'Ptaki', 'Akwarystyka', 'Akcesoria', 'Pozostałe'],
+    'Dzieci': ['Zabawki', 'Wózki i foteliki', 'Ubranka', 'Akcesoria dla niemowląt', 'Meble dziecięce', 'Pozostałe'],
+    'Sport': ['Rowery', 'Siłownia i fitness', 'Turystyka', 'Sporty wodne', 'Sporty zimowe', 'Pozostałe'],
+    'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
+    'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
+    'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
+        'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
+};
+
+const MOTO_DATA = {
+  "Abarth": ["500", "595", "695", "124 Spider", "Grande Punto", "Punto Evo", "Pozostałe"],
+  "Alfa Romeo": ["145", "146", "147", "155", "156", "159", "164", "166", "4C", "8C", "Brera", "Giulia", "Giulietta", "GT", "GTV", "MiTo", "Spider", "Stelvio", "Tonale", "Pozostałe"],
+  "Audi": ["80", "90", "100", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "Allroad", "e-tron", "Q2", "Q3", "Q4 e-tron", "Q5", "Q7", "Q8", "R8", "RS3", "RS4", "RS5", "RS6", "RS7", "S1", "S3", "S4", "S5", "S6", "S7", "S8", "SQ5", "SQ7", "SQ8", "TT", "TTS", "TT RS", "Pozostałe"],
+  "BMW": ["1M", "3GT", "5GT", "6GT", "i3", "i4", "i5", "i7", "i8", "IX", "IX1", "IX2", "IX3", "M2", "M3", "M4", "M5", "M8", "Seria 1", "Seria 2", "Seria 3", "Seria 4", "Seria 5", "Seria 6", "Seria 7", "Seria 8", "X1", "X2", "X3", "X3 M", "X4", "X5", "X5 M", "X6", "X6 M", "X7", "XM", "Z3", "Z4", "Pozostałe"],
+  "Chevrolet": ["Aveo", "Camaro", "Captiva", "Corvette", "Cruze", "Epica", "Kalos", "Lacetti", "Malibu", "Orlando", "Spark", "Tahoe", "Trax", "Pozostałe"],
+  "Citroen": ["AX", "Berlingo", "BX", "C1", "C2", "C3", "C3 Aircross", "C4", "C4 Cactus", "C4 Picasso", "C5", "C5 Aircross", "C6", "C8", "DS3", "DS4", "DS5", "Jumper", "Jumpy", "Saxo", "Xantia", "Xsara", "Pozostałe"],
+  "Cupra": ["Ateca", "Born", "Formentor", "Leon", "Tavascan", "Terramar", "Pozostałe"],
+  "Dacia": ["Dokker", "Duster", "Jogger", "Lodgy", "Logan", "Sandero", "Spring", "Pozostałe"],
+  "Daewoo": ["Espero", "Kalos", "Lanos", "Leganza", "Matiz", "Nexia", "Nubira", "Tacuma", "Tico", "Pozostałe"],
+  "Dodge": ["Caliber", "Challenger", "Charger", "Durango", "Journey", "Nitro", "RAM", "Viper", "Pozostałe"],
+  "DS Automobiles": ["DS 3", "DS 4", "DS 5", "DS 7", "DS 9", "Pozostałe"],
+  "Fiat": ["500", "500L", "500X", "126", "127", "Bravo", "Brava", "Cinquecento", "Croma", "Doblo", "Ducato", "Fiorino", "Freemont", "Grande Punto", "Linea", "Multipla", "Panda", "Punto", "Punto Evo", "Scudo", "Sedici", "Seicento", "Stilo", "Tipo", "Ulysse", "Pozostałe"],
+  "Ford": ["B-Max", "C-Max", "EcoSport", "Edge", "Escape", "Escort", "Explorer", "Fiesta", "Focus", "Fusion", "Galaxy", "Ka", "Kuga", "Maverick", "Mondeo", "Mustang", "Puma", "Ranger", "S-Max", "Tourneo", "Transit", "Pozostałe"],
+  "Honda": ["Accord", "CR-V", "Civic", "City", "FR-V", "HR-V", "Insight", "Jazz", "Legend", "Prelude", "S2000", "Pozostałe"],
+  "Hyundai": ["Accent", "Atos", "Bayon", "Coupe", "Elantra", "Getz", "H-1", "i10", "i20", "i30", "i40", "IONIQ", "ix20", "ix35", "Kona", "Matrix", "Santa Fe", "Sonata", "Terracan", "Tucson", "Veloster", "Pozostałe"],
+  "Infiniti": ["EX", "FX", "G", "M", "Q30", "Q50", "Q60", "Q70", "QX30", "QX50", "Pozostałe"],
+  "Isuzu": ["D-Max", "Trooper", "Pozostałe"],
+  "Jaguar": ["E-Pace", "F-Pace", "F-Type", "I-Pace", "S-Type", "XE", "XF", "XJ", "XK", "Pozostałe"],
+  "Jeep": ["Avenger", "Cherokee", "Commander", "Compass", "Gladiator", "Grand Cherokee", "Patriot", "Renegade", "Wrangler", "Pozostałe"],
+  "Kia": ["Carens", "Carnival", "Ceed", "Cerato", "EV6", "Magentis", "Niro", "Optima", "Picanto", "Proceed", "Rio", "Sorento", "Soul", "Sportage", "Stinger", "Stonic", "Venga", "XCeed", "Pozostałe"],
+  "Lamborghini": ["Aventador", "Gallardo", "Huracan", "Murcielago", "Revuelto", "Urus", "Pozostałe"],
+  "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Freelander", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar", "Pozostałe"],
+  "Lexus": ["CT", "ES", "GS", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "RZ", "UX", "Pozostałe"],
+  "Mazda": ["2", "3", "5", "6", "CX-3", "CX-5", "CX-7", "CX-9", "MX-5", "RX-8", "Pozostałe"],
+  "Mercedes-Benz": ["Klasa A", "Klasa B", "Klasa C", "Klasa CLA", "Klasa CLK", "Klasa CLS", "Klasa E", "Klasa EQB", "Klasa EQC", "Klasa EQE", "Klasa EQS", "Klasa G", "Klasa GLA", "Klasa GLB", "Klasa GLC", "Klasa GLE", "Klasa GLS", "Klasa M", "Klasa S", "SL", "SLK", "Sprinter", "Vito", "Pozostałe"],
+  "Mini": ["Clubman", "Countryman", "Cooper", "Coupe", "Paceman", "Roadster", "Pozostałe"],
+  "Mitsubishi": ["ASX", "Carisma", "Colt", "Eclipse Cross", "Galant", "Grandis", "L200", "Lancer", "Outlander", "Pajero", "Space Star", "Pozostałe"],
+  "Nissan": ["350Z", "370Z", "Almera", "GT-R", "Juke", "Leaf", "Micra", "Murano", "Navara", "Note", "Pathfinder", "Patrol", "Primera", "Pulsar", "Qashqai", "Terrano", "X-Trail", "Pozostałe"],
+  "Opel": ["Adam", "Agila", "Antara", "Astra", "Calibra", "Combo", "Corsa", "Crossland", "Frontera", "Grandland", "Insignia", "Meriva", "Mokka", "Omega", "Signum", "Tigra", "Vectra", "Vivaro", "Zafira", "Pozostałe"],
+  "Peugeot": ["1007", "106", "107", "108", "2008", "206", "207", "208", "3008", "301", "307", "308", "4007", "407", "408", "5008", "508", "607", "807", "Boxer", "Expert", "Partner", "RCZ", "Pozostałe"],
+  "Porsche": ["718 Boxster", "718 Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan", "Pozostałe"],
+  "Renault": ["Captur", "Clio", "Espace", "Fluence", "Grand Scenic", "Kadjar", "Kangoo", "Koleos", "Laguna", "Master", "Megane", "Modus", "Scenic", "Talisman", "Thalia", "Trafic", "Twingo", "Vel Satis", "Zoe", "Pozostałe"],
+  "Seat": ["Alhambra", "Altea", "Arona", "Ateca", "Cordoba", "Exeo", "Ibiza", "Leon", "Mii", "Tarraco", "Toledo", "Pozostałe"],
+  "Skoda": ["Citigo", "Fabia", "Favorit", "Felicia", "Kamiq", "Karoq", "Kodiaq", "Octavia", "Rapid", "Roomster", "Scala", "Superb", "Yeti", "Pozostałe"],
+  "Subaru": ["Forester", "Impreza", "Legacy", "Levorg", "Outback", "Tribeca", "WRX", "XV", "Pozostałe"],
+  "Suzuki": ["Across", "Alto", "Baleno", "Grand Vitara", "Ignis", "Jimny", "Kizashi", "Liana", "S-Cross", "Splash", "Swift", "SX4", "Vitara", "Pozostałe"],
+  "Tesla": ["Model 3", "Model S", "Model X", "Model Y", "Cybertruck", "Roadster", "Pozostałe"],
+  "Toyota": ["Auris", "Avensis", "Aygo", "bZ4X", "C-HR", "Camry", "Celica", "Corolla", "GR86", "Hilux", "Highlander", "Land Cruiser", "MR2", "Prius", "Proace", "RAV4", "Supra", "Verso", "Yaris", "Pozostałe"],
+  "Volkswagen": ["Amarok", "Arteon", "Beetle", "Bora", "Caddy", "California", "Caravelle", "CC", "Crafter", "EOS", "Fox", "Golf", "ID.3", "ID.4", "ID.5", "ID.7", "Jetta", "Multivan", "Passat", "Phaeton", "Polo", "Scirocco", "Sharan", "T-Cross", "T-Roc", "Taigo", "Tiguan", "Touareg", "Touran", "Transporter", "Up", "Pozostałe"],
+  "Volvo": ["C30", "C40", "S40", "S60", "S80", "S90", "V40", "V50", "V60", "V70", "V90", "XC40", "XC60", "XC70", "XC90", "Pozostałe"],
+  "Pozostałe": ["Pozostałe"]
+};
+
+const formatujDate = (d) => {
+    const dataObj = new Date(d);
+    const dzien = String(dataObj.getDate()).padStart(2, '0');
+    const miesiac = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const rok = dataObj.getFullYear();
+    const h = String(dataObj.getHours()).padStart(2, '0');
+    const m = String(dataObj.getMinutes()).padStart(2, '0');
+    return `${dzien}.${miesiac}.${rok} ${h}:${m}`;
+};
+
+let daneOgloszen = [];
+let mojeUlubione = [];
+let aktualneZdjecieIndex = 0;
+window.obecneOgloszenieId = null; 
+let aktualneFotki = [];
+let wynikiBazowe = [];
+let ostatnieWyniki = [];
+let ostatniTytul = "";
+const OGLOSZENIA_NA_STRONE = 12;
+
+window.szukaj = async () => {
+    const p1 = document.getElementById('szukajka-glowna');
+    const p2 = document.getElementById('miasto-input');
+    if (!p1 || !p2) return;
+
+    const tekst = p1.value.toLowerCase().trim();
+    const loc = p2.value.toLowerCase().trim();
+    
+    const bezOgonkow = (t) => t.toLowerCase()
+        .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
+        .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z');
+
+    const przefiltrowane = daneOgloszen.filter(o => {
+        const tytulNorm = bezOgonkow(o.tytul || "");
+        const lokNorm = bezOgonkow(o.lokalizacja || "");
+        return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
+    });
+
+    const kontener = document.getElementById('lista');
+    if (!kontener) return;
+
+    if (przefiltrowane.length === 0) {
+        kontener.innerHTML = "<p style='text-align:center; grid-column: 1/-1; padding: 40px;'>Brak wyników dla podanych kryteriów.</p>";
+    } else {
+        kontener.innerHTML = przefiltrowane.map(o => renderCardHTML(o)).join('');
+    }
+
+    const title = document.getElementById('grid-title');
+    if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
+};
+// --- LOGOWANIE I INTERFEJS ---
+window.loguj = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
+    const token = (window.turnstile) ? window.turnstile.getResponse() : "";
+
+    if (!token || token === "") {
+        return alert("BŁĄD: Kliknij w okienko weryfikacji 'Nie jestem robotem'!");
+    }
+
+    const { data, error } = await baza.auth.signInWithPassword({ 
+        email, 
+        password,
+        options: { captchaToken: token } 
+    });
+
+    if (error) {
+        let komunikat = error.message;
+        if (komunikat === "Invalid login credentials") {
+            komunikat = "Nieprawidłowe hasło lub login";
+        }
+        alert("Błąd: " + komunikat);
+        turnstile.reset(); 
+    } else {
+        location.reload();
+    }
+};
+
+// NOWA FUNKCJA DO LOGOWANIA PRZEZ GOOGLE I FB
+window.logujSpolecznosciowo = async (dostawca) => {
+    const { data, error } = await baza.auth.signInWithOAuth({
+        provider: dostawca,
+        options: {
+            redirectTo: window.location.origin,
+            scopes: 'email'
+        }
+    });
+    if (error) alert("Błąd logowania: " + error.message);
+};
+
+window.zarejestruj = async () => {
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-pass').value;
+    const zgoda = document.getElementById('reg-zgoda-regulamin').checked;
+
+    if (!email || !password) return alert("Wypełnij email i hasło!");
+    
+    // --- WALIDACJA HASŁA ---
+    const passRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passRegex.test(password)) {
+        return alert("Hasło nie spełnia wymogów:\n• min. 8 znaków\n• duża litera\n• liczba\n• znak specjalny");
+    }
+
+    if (!zgoda) return alert("Musisz zaakceptować regulamin!");
+
+        // Pobranie tokena w bezpieczny sposób
+        // Pobieramy dowód weryfikacji
+    const token = (window.turnstile) ? window.turnstile.getResponse() : "";
+
+    if (!token || token === "") {
         return alert("Musisz potwierdzić, że nie jesteś robotem!");
     }
 
