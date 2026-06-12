@@ -45,38 +45,6 @@ window.renderujOgloszenia = (lista) => {
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
-window.toggleSubcats = (kat, sub = null) => {
-    const p = document.getElementById('subcat-panel');
-    if (!p) return;
-
-    // Jeśli klikasz drugi raz w tę samą kategorię główną - zamknij panel
-    if (!sub && p.dataset.activeKat === kat && p.style.display === 'flex') {
-        p.style.display = 'none'; p.dataset.activeKat = ''; return;
-    }
-
-    p.style.display = 'flex'; 
-    p.dataset.activeKat = kat;
-    const d = SUB_DATA[kat];
-
-    // ETAP 1: Kliknięto Kategorię Główną
-    if (!sub) {
-        if (Array.isArray(d)) {
-            // Zwykła kategoria (np. Motoryzacja)
-            p.innerHTML = d.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
-        } else {
-            // Kategoria z pod-poziomem (np. Nieruchomości) - dodajemy strzałkę ▸
-            p.innerHTML = Object.keys(d).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s}${d[s].length ? ' \u25b8' : ''}</div>`).join('');
-        }
-    } 
-    // ETAP 2: Kliknięto Podkategorię (np. Mieszkania)
-    else {
-        if (SUB_DATA[kat][sub].length === 0) return window.otworzFiltry(kat, sub);
-        
-        // Dodajemy przycisk "Wróć" i listę opcji (Sprzedaż/Wynajem)
-        p.innerHTML = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>` +
-            SUB_DATA[kat][sub].map(ss => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${ss}')">${ss}</div>`).join('');
-    }
-};
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
     let n = e.split('@')[0]; 
@@ -91,7 +59,7 @@ const baza = window.supabase.createClient(URL_S, KEY_S);
 // --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
-    'Nieruchomości': [
+    'Nieruchomości': {
         'Mieszkania': ['Sprzedaż', 'Wynajem', 'Inne'],
         'Domy': ['Sprzedaż', 'Wynajem', 'Inne'],
         'Garaże': ['Sprzedaż', 'Wynajem', 'Inne'],
@@ -1049,31 +1017,19 @@ window.wznowOgloszenie = async (id) => {
 window.toggleSubcats = (kat, sub = null) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-
-    // Pokaż panel, jeśli był ukryty
     p.style.display = 'flex';
-    
     const data = SUB_DATA[kat];
 
-    // SCENARIUSZ A: Kliknięto kategorię główną (np. Nieruchomości)
     if (!sub) {
         if (Array.isArray(data)) {
-            // Zwykła kategoria - od razu filtrujemy
             p.innerHTML = data.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
         } else {
-            // Skomplikowana kategoria - pokazujemy podkategorie (Mieszkania, Domy...)
             p.innerHTML = Object.keys(data).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s} \u25b8</div>`).join('');
         }
-    } 
-    // SCENARIUSZ B: Kliknięto podkategorię (np. Mieszkania)
-    else {
+    } else {
         const podOpcje = SUB_DATA[kat][sub];
-        if (!podOpcje || podOpcje.length === 0) {
-            return window.otworzFiltry(kat, sub); // Brak opcji - filtrujemy od razu
-        }
-
-        // Pokazujemy opcje (Sprzedaż/Wynajem) + przycisk Wróć
-        let html = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#eee; font-weight:bold;">\u2190 Wróć</div>`;
+        if (!podOpcje || podOpcje.length === 0) return window.otworzFiltry(kat, sub);
+        let html = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>`;
         html += podOpcje.map(opcja => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${opcja}')">${opcja}</div>`).join('');
         p.innerHTML = html;
     }
