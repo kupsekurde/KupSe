@@ -87,18 +87,9 @@ const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
-// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
-// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
-    'Nieruchomości': [
-        'Mieszkania': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Domy': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Garaże': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Działki': [],
-        'Lokale': ['Sprzedaż', 'Wynajem', 'Inne'],
-        'Pozostałe': []
-    },
+    'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
     'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
     'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
     'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
