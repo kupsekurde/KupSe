@@ -1310,30 +1310,7 @@ async function sprawdzPowiadomieniaBezReloadu() {
         badge.innerText = count;
     }
 }
-// Nowa funkcja pobierająca, wyświetlająca i zwiększająca licznik odwiedzin w bazie Supabase
-async function obslugaLicznikaStrony() {
-    try {
-        // 1. Pobierz aktualny stan licznika z tabeli statystyki_strony dla rekordu id: 1
-        const { data, error } = await baza.from('statystyki_strony').select('liczba_odwiedzin').eq('id', 1).single();
-        
-        if (error) throw error;
 
-        // Zwiększamy liczbę o 1
-        const noweOdwiedziny = (data?.liczba_odwiedzin || 0) + 1;
-
-        // 2. Wstrzykujemy nową liczbę do kodu HTML (do elementu o id "global-counter")
-        const licznikElement = document.getElementById('global-counter');
-        if (licznikElement) {
-            licznikElement.innerText = noweOdwiedziny.toLocaleString(); // Formatowanie, np. 1 250 zamiast 1250
-        }
-
-        // 3. Aktualizujemy bazę danych nową wartością w tle (bez await, żeby nie spowalniać ładowania ogłoszeń)
-        baza.from('statystyki_strony').update({ liczba_odwiedzin: noweOdwiedziny }).eq('id', 1).then();
-
-    } catch (err) {
-        console.error("Błąd działania licznika globalnego strony:", err);
-    }
-}
 async function init() {
     try {
         // 1. Najpierw pobieramy ogłoszenia z bazy danych
