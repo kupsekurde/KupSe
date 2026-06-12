@@ -168,10 +168,12 @@ window.szukaj = async () => {
     });
 
     const kontener = document.getElementById('lista');
+    if (!kontener) return;
+
     if (przefiltrowane.length === 0) {
         kontener.innerHTML = "<p style='text-align:center; grid-column: 1/-1; padding: 40px;'>Brak wyników dla podanych kryteriów.</p>";
     } else {
-        window.renderujOgloszenia(przefiltrowane);
+        kontener.innerHTML = przefiltrowane.map(o => renderCardHTML(o)).join('');
     }
 
     const title = document.getElementById('grid-title');
@@ -1153,15 +1155,17 @@ window.zastosujFiltryBoczne = () => {
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
     const pelnaData = formatujDate(o.created_at);
-    // Jeśli nie ma zdjęć, użyj obrazka zastępczego
-    const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
+    // Bezpieczne sprawdzanie zdjęcia
+    const fotoUrl = (o.zdjecia && Array.isArray(o.zdjecia) && o.zdjecia.length > 0) 
+        ? o.zdjecia[0] 
+        : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
         <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
             <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-                                    <img src="${o.zdjecia[0]}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
+            <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
@@ -1172,7 +1176,6 @@ function renderCardHTML(o) {
             </div>
         </div>`;
 }
-
 // Ta funkcja naprawia Twoją szukajkę - odpowiada za wyświetlanie wyników wyszukiwania
 function renderTop12(lista) {
     const k = document.getElementById('lista');
@@ -1223,6 +1226,7 @@ window.zamknijModal = () => {
     window.history.pushState({}, '', czystyURL);
     
     window.obecneOgloszenieId = null;
+    window.czyOkienkoOtwarte = false;
     const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "1250px";
 };
