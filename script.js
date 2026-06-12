@@ -41,22 +41,41 @@ window.renderujOgloszenia = (lista) => {
     const k = document.getElementById('lista');
     if (!k) return;
     k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-    k.style.gap = '20px';
+    // Mapujemy listę, używając bezpiecznego renderowania
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
-window.toggleSubcats = (kat) => {
+window.toggleSubcats = (kat, sub = null) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+
+    // Jeśli klikasz drugi raz w tę samą kategorię główną - zamknij panel
+    if (!sub && p.dataset.activeKat === kat && p.style.display === 'flex') {
         p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
-    p.style.display = 'flex';
+
+    p.style.display = 'flex'; 
     p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
-    `).join('');
+    const d = SUB_DATA[kat];
+
+    // ETAP 1: Kliknięto Kategorię Główną
+    if (!sub) {
+        if (Array.isArray(d)) {
+            // Zwykła kategoria (np. Motoryzacja)
+            p.innerHTML = d.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
+        } else {
+            // Kategoria z pod-poziomem (np. Nieruchomości) - dodajemy strzałkę ▸
+            p.innerHTML = Object.keys(d).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s}${d[s].length ? ' \u25b8' : ''}</div>`).join('');
+        }
+    } 
+    // ETAP 2: Kliknięto Podkategorię (np. Mieszkania)
+    else {
+        if (SUB_DATA[kat][sub].length === 0) return window.otworzFiltry(kat, sub);
+        
+        // Dodajemy przycisk "Wróć" i listę opcji (Sprzedaż/Wynajem)
+        p.innerHTML = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>` +
+            SUB_DATA[kat][sub].map(ss => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${ss}')">${ss}</div>`).join('');
+    }
 };
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
@@ -69,9 +88,17 @@ const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
 // --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
+// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
-    'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
+    'Nieruchomości': [
+        'Mieszkania': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Domy': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Garaże': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Działki': [],
+        'Lokale': ['Sprzedaż', 'Wynajem', 'Inne'],
+        'Pozostałe': []
+    },
     'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
     'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
     'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
@@ -82,7 +109,7 @@ const SUB_DATA = {
     'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
     'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
     'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
-        'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
+    'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
 const MOTO_DATA = {
@@ -150,34 +177,60 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
+    console.log("Start szukania..."); // Log w konsoli
+
     const p1 = document.getElementById('szukajka-glowna');
     const p2 = document.getElementById('miasto-input');
-    if (!p1 || !p2) return;
+    
+    if (!p1 || !p2) {
+        console.error("BŁĄD: Nie znaleziono pól w HTML! Szukałem 'szukajka-glowna' i 'miasto-input'");
+        alert("Błąd techniczny: Nie znaleziono pól wyszukiwarki.");
+        return;
+    }
 
     const tekst = p1.value.toLowerCase().trim();
     const loc = p2.value.toLowerCase().trim();
     
+        console.log("Szukam frazy:", tekst, "w lokalizacji:", loc);
+
+    // Funkcja pomocnicza, która usuwa polskie ogonki
     const bezOgonkow = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
         .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z');
 
-    const przefiltrowane = daneOgloszen.filter(o => {
-        const tytulNorm = bezOgonkow(o.tytul || "");
-        const lokNorm = bezOgonkow(o.lokalizacja || "");
-        return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
-    });
+    try {
+        // Filtrujemy ogłoszenia lokalnie, żeby obsługiwać polskie znaki
+        const data = daneOgloszen.filter(o => {
+            const tytulNorm = bezOgonkow(o.tytul || "");
+            const lokNorm = bezOgonkow(o.lokalizacja || "");
+            return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
+        });
+        
+        // Udajemy błąd, jeśli nic nie ma (dla zachowania reszty logiki)
+        const error = null; 
 
-    const kontener = document.getElementById('lista');
-    if (!kontener) return;
+        if (error) {
+            console.error("Błąd z bazy Supabase:", error);
+            alert("Błąd bazy: " + error.message);
+            return;
+        }
 
-    if (przefiltrowane.length === 0) {
-        kontener.innerHTML = "<p style='text-align:center; grid-column: 1/-1; padding: 40px;'>Brak wyników dla podanych kryteriów.</p>";
-    } else {
-        kontener.innerHTML = przefiltrowane.map(o => renderCardHTML(o)).join('');
+        console.log("Znaleziono ogłoszeń:", data.length);
+
+        if (data.length === 0) {
+            document.getElementById('lista').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Brak wyników dla podanych kryteriów.</p>";
+        } else {
+            // Ważne: nazwa musi być taka sama jak ta, którą poprawiliśmy wcześniej!
+            window.renderujOgloszenia(data);
+        }
+
+        // Zmiana tytułu nad ogłoszeniami
+        const title = document.getElementById('grid-title');
+        if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
+
+    } catch (err) {
+        console.error("Nieoczekiwany błąd skryptu:", err);
     }
-
-    const title = document.getElementById('grid-title');
-    if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
 };
 // --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
@@ -993,7 +1046,18 @@ window.wznowOgloszenie = async (id) => {
     }
 };
 // --- KATEGORIE I RENDEROWANIE ---
-
+window.toggleSubcats = (kat) => {
+    const p = document.getElementById('subcat-panel');
+    if (!p) return;
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
+        p.style.display = 'none'; p.dataset.activeKat = ''; return;
+    }
+    p.style.display = 'flex';
+    p.dataset.activeKat = kat;
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
+};
 
 window.filtrujPoPodkat = (kat, podkat) => {
     const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
@@ -1144,17 +1208,15 @@ window.zastosujFiltryBoczne = () => {
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
     const pelnaData = formatujDate(o.created_at);
-    // Bezpieczne sprawdzanie zdjęcia
-    const fotoUrl = (o.zdjecia && Array.isArray(o.zdjecia) && o.zdjecia.length > 0) 
-        ? o.zdjecia[0] 
-        : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
+    // Jeśli nie ma zdjęć, użyj obrazka zastępczego
+    const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
         <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
             <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
+                                    <img src="${o.zdjecia[0]}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
@@ -1165,7 +1227,16 @@ function renderCardHTML(o) {
             </div>
         </div>`;
 }
+
 // Ta funkcja naprawia Twoją szukajkę - odpowiada za wyświetlanie wyników wyszukiwania
+window.renderujOgloszenia = (lista) => {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    k.style.display = 'grid';
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+    k.style.gap = '20px';
+    k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
+};
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
@@ -1207,17 +1278,26 @@ window.pokazOgloszeniaUzytkownika = (email) => {
 };
 
 window.zamknijModal = () => {
+    // 1. Ukrywamy wszystkie okna
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    
+    // 2. Przywracamy domyślny tytuł
     document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
+
+    // 3. Przywracamy przewijanie strony
     document.body.style.overflow = 'auto';
     
+    // --- NOWOŚĆ: Czyścimy adres URL (usuwamy ?id=...) ---
     const czystyURL = window.location.pathname;
     window.history.pushState({}, '', czystyURL);
     
     window.obecneOgloszenieId = null;
-    window.czyOkienkoOtwarte = false;
+
+    // 4. Resetujemy wygląd
     const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "1250px";
+    
+    window.czyOkienkoOtwarte = false;
 };
 
 window.zamknijIResetujModal = () => {
@@ -1538,5 +1618,3 @@ window.dajLimitZdjec = () => {
     }
     return 5;
 };
-script (2).js
-Displaying script (2).js.
