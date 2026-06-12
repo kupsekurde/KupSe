@@ -41,7 +41,8 @@ window.renderujOgloszenia = (lista) => {
     const k = document.getElementById('lista');
     if (!k) return;
     k.style.display = 'grid';
-    // Mapujemy listę, używając bezpiecznego renderowania
+    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+    k.style.gap = '20px';
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
@@ -149,60 +150,32 @@ let ostatniTytul = "";
 const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
-    console.log("Start szukania..."); // Log w konsoli
-
     const p1 = document.getElementById('szukajka-glowna');
     const p2 = document.getElementById('miasto-input');
-    
-    if (!p1 || !p2) {
-        console.error("BŁĄD: Nie znaleziono pól w HTML! Szukałem 'szukajka-glowna' i 'miasto-input'");
-        alert("Błąd techniczny: Nie znaleziono pól wyszukiwarki.");
-        return;
-    }
+    if (!p1 || !p2) return;
 
     const tekst = p1.value.toLowerCase().trim();
     const loc = p2.value.toLowerCase().trim();
     
-        console.log("Szukam frazy:", tekst, "w lokalizacji:", loc);
-
-    // Funkcja pomocnicza, która usuwa polskie ogonki
     const bezOgonkow = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
         .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z');
 
-    try {
-        // Filtrujemy ogłoszenia lokalnie, żeby obsługiwać polskie znaki
-        const data = daneOgloszen.filter(o => {
-            const tytulNorm = bezOgonkow(o.tytul || "");
-            const lokNorm = bezOgonkow(o.lokalizacja || "");
-            return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
-        });
-        
-        // Udajemy błąd, jeśli nic nie ma (dla zachowania reszty logiki)
-        const error = null; 
+    const przefiltrowane = daneOgloszen.filter(o => {
+        const tytulNorm = bezOgonkow(o.tytul || "");
+        const lokNorm = bezOgonkow(o.lokalizacja || "");
+        return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
+    });
 
-        if (error) {
-            console.error("Błąd z bazy Supabase:", error);
-            alert("Błąd bazy: " + error.message);
-            return;
-        }
-
-        console.log("Znaleziono ogłoszeń:", data.length);
-
-        if (data.length === 0) {
-            document.getElementById('lista').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Brak wyników dla podanych kryteriów.</p>";
-        } else {
-            // Ważne: nazwa musi być taka sama jak ta, którą poprawiliśmy wcześniej!
-            window.renderujOgloszenia(data);
-        }
-
-        // Zmiana tytułu nad ogłoszeniami
-        const title = document.getElementById('grid-title');
-        if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
-
-    } catch (err) {
-        console.error("Nieoczekiwany błąd skryptu:", err);
+    const kontener = document.getElementById('lista');
+    if (przefiltrowane.length === 0) {
+        kontener.innerHTML = "<p style='text-align:center; grid-column: 1/-1; padding: 40px;'>Brak wyników dla podanych kryteriów.</p>";
+    } else {
+        window.renderujOgloszenia(przefiltrowane);
     }
+
+    const title = document.getElementById('grid-title');
+    if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
 };
 // --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
@@ -1201,14 +1174,6 @@ function renderCardHTML(o) {
 }
 
 // Ta funkcja naprawia Twoją szukajkę - odpowiada za wyświetlanie wyników wyszukiwania
-window.renderujOgloszenia = (lista) => {
-    const k = document.getElementById('lista');
-    if (!k) return;
-    k.style.display = 'grid';
-    k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-    k.style.gap = '20px';
-    k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
-};
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
@@ -1250,26 +1215,16 @@ window.pokazOgloszeniaUzytkownika = (email) => {
 };
 
 window.zamknijModal = () => {
-    // 1. Ukrywamy wszystkie okna
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    
-    // 2. Przywracamy domyślny tytuł
     document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
-
-    // 3. Przywracamy przewijanie strony
     document.body.style.overflow = 'auto';
     
-    // --- NOWOŚĆ: Czyścimy adres URL (usuwamy ?id=...) ---
     const czystyURL = window.location.pathname;
     window.history.pushState({}, '', czystyURL);
     
     window.obecneOgloszenieId = null;
-
-    // 4. Resetujemy wygląd
     const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "1250px";
-    
-    window.czyOkienkoOtwarte = false;
 };
 
 window.zamknijIResetujModal = () => {
