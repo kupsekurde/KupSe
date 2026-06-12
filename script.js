@@ -993,18 +993,7 @@ window.wznowOgloszenie = async (id) => {
     }
 };
 // --- KATEGORIE I RENDEROWANIE ---
-window.toggleSubcats = (kat) => {
-    const p = document.getElementById('subcat-panel');
-    if (!p) return;
-    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
-        p.style.display = 'none'; p.dataset.activeKat = ''; return;
-    }
-    p.style.display = 'flex';
-    p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
-    `).join('');
-};
+
 
 window.filtrujPoPodkat = (kat, podkat) => {
     const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
