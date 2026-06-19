@@ -834,47 +834,38 @@ window.wyslijOgloszenie = async (e) => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
 
-    const inputPlik = document.getElementById('f-plik');
-    if (!inputPlik || inputPlik.files.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
+    // Używamy naszej tablicy plików zamiast bezpośrednio z inputa
+    if (!window.plikiDoDodania || window.plikiDoDodania.length === 0) return alert("Dodaj przynajmniej jedno zdjęcie!");
 
     btn.disabled = true;
     btn.innerText = "Wysyłanie...";
 
-        const zdjeciaUrls = [];
-    // Ustawiamy opcje: max 0.6MB i max 1200px szerokości/wysokości
+    const zdjeciaUrls = [];
     const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
-    for (const file of inputPlik.files) {
+    for (const file of window.plikiDoDodania) {
         try {
             let plikDoWyslania = file;
-            
-            // Sprawdzamy czy biblioteka kompresji jest dostępna
             if (typeof imageCompression !== 'undefined') {
                 try {
-                    // Próbujemy zmniejszyć zdjęcie
                     plikDoWyslania = await imageCompression(file, options);
-                } catch (e) {
-                    console.error("Kompresja nie udała się, wysyłam oryginał:", e);
-                }
+                } catch (e) { console.error("Błąd kompresji:", e); }
             }
 
             const nazwa = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
             await baza.storage.from('zdjecia').upload(nazwa, plikDoWyslania);
             const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(nazwa);
             zdjeciaUrls.push(publicUrl);
-        } catch (err) { 
-            console.error("Błąd przesyłania zdjęcia:", err); 
-        }
+        } catch (err) { console.error("Błąd przesyłania:", err); }
     }
 
-        const tytulVal = document.getElementById('f-tytul').value;
+    const tytulVal = document.getElementById('f-tytul').value;
     const opisVal = document.getElementById('f-opis').value;
     const noTel = document.getElementById('f-no-tel').checked;
     const telVal = document.getElementById('f-tel').value;
 
-    if(tytulVal.length < 10) { alert("Tytuł musi mieć min. 10 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
-    if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
-    if(!noTel && telVal.length !== 9) { alert("Podaj 9-cyfrowy numer lub zaznacz kontakt przez stronę."); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
+    if(tytulVal.length < 10) { alert("Tytuł za krótki!"); btn.disabled = false; return; }
+    if(opisVal.length < 50) { alert("Opis za krótki!"); btn.disabled = false; return; }
 
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
@@ -891,7 +882,6 @@ window.wyslijOgloszenie = async (e) => {
     if (error) {
         alert("Błąd: " + error.message);
         btn.disabled = false;
-        btn.innerText = "Spróbuj ponownie";
     } else {
         alert("Ogłoszenie dodane!");
         location.reload();
@@ -1391,6 +1381,8 @@ window.addEventListener('mousedown', (e) => {
         document.body.style.overflow = 'auto';
     }
 });
+window.plikiDoDodania = []; // Globalna tablica na nowe pliki
+
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -1411,35 +1403,70 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('f-podkat').value = o.podkategoria;
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
-    document.getElementById('f-tel').value = o.telefon || "";
+    document.getElementById('f-tel').value = o.telefon === 'brak' ? '' : o.telefon;
+    document.getElementById('f-no-tel').checked = (o.telefon === 'brak');
+    window.togglePhoneRequired();
     document.getElementById('f-opis').value = o.opis;
     
     const fotoBox = document.getElementById('foto-container');
-    const odswiezZdjecia = () => {
-        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
+
+    const odswiezZdjeciaEdycji = () => {
+        const limit = window.dajLimitZdjec();
+        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
-            h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
+            const czyGlowne = i === 0;
+            h += `<div style="position:relative; width:85px; height:85px; border:${czyGlowne ? '3px solid var(--primary)' : '1px solid #ddd'}; border-radius:10px; overflow:hidden; background:#f0f0f0;">
                     <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold;">X</button>
+                    ${czyGlowne ? '<span style="position:absolute; bottom:0; width:100%; background:var(--primary); color:white; font-size:9px; text-align:center; font-weight:bold;">GŁÓWNE</span>' : 
+                    `<button type="button" onclick="window.ustawGlowneEdycja(${i})" style="position:absolute; top:2px; left:2px; background:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;" title="Ustaw jako główne">⭐</button>`}
+                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:2px; right:2px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-weight:bold;">×</button>
                   </div>`;
         });
         h += `</div>`;
-        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
-                const limit = window.dajLimitZdjec();
-        h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.obslugaNowychPlikowEdycja(this)" style="font-size:12px;">`;
         fotoBox.innerHTML = h;
     };
-        window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
-    window.limitZdjec = (inp) => { 
-        const limit = window.dajLimitZdjec();
-        if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
-            alert(`W tej kategorii limit to ${limit} zdjęć!`); 
-            inp.value = ""; 
-        } 
+
+    window.ustawGlowneEdycja = (i) => {
+        const item = window.tempZdjeciaEdycja.splice(i, 1)[0];
+        window.tempZdjeciaEdycja.unshift(item);
+        odswiezZdjeciaEdycji();
     };
 
-    odswiezZdjecia();
+    window.usunFotoZEdycji = (i) => {
+        window.tempZdjeciaEdycja.splice(i, 1);
+        odswiezZdjeciaEdycji();
+    };
+
+    window.obslugaNowychPlikowEdycja = async (inp) => {
+        const limit = window.dajLimitZdjec();
+        const nowePliki = Array.from(inp.files);
+        if (window.tempZdjeciaEdycja.length + nowePliki.length > limit) {
+            alert(`Limit to ${limit} zdjęć!`);
+            inp.value = "";
+            return;
+        }
+        
+        const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
+        const btn = document.getElementById('btn-save');
+        btn.disabled = true; btn.innerText = "Przetwarzanie zdjęć...";
+
+        for (const f of nowePliki) {
+            try {
+                let plik = f;
+                if (typeof imageCompression !== 'undefined') plik = await imageCompression(f, opt);
+                const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
+                await baza.storage.from('zdjecia').upload(name, plik);
+                const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
+                window.tempZdjeciaEdycja.push(publicUrl);
+            } catch(e) { console.error(e); }
+        }
+        btn.disabled = false; btn.innerText = "Zapisz zmiany";
+        odswiezZdjeciaEdycji();
+    };
+
+    odswiezZdjeciaEdycji();
 
     const form = document.getElementById('form-dodaj');
     const btn = document.getElementById('btn-save');
@@ -1447,166 +1474,144 @@ window.edytujOgloszenie = (id) => {
     
     form.onsubmit = async (e) => {
         e.preventDefault();
-        btn.disabled = true;
-        btn.innerText = "Kompresja i zapis...";
-
-        const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
-                const noweUrls = [];
-        const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
-
-        for (const f of nowePliki) {
-            try {
-                let plikDoWyslania = f;
-
-                if (typeof imageCompression !== 'undefined') {
-                    try {
-                        plikDoWyslania = await imageCompression(f, opt);
-                    } catch (e) {
-                        console.error("Kompresja w edycji nie udała się:", e);
-                    }
-                }
-
-                const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-                await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
-                const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
-                noweUrls.push(publicUrl);
-            } catch(err) { 
-                console.error("Błąd zdjęcia w edycji:", err); 
-            }
-        }
+        btn.disabled = true; btn.innerText = "Zapisywanie...";
 
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value,
-            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
+            telefon: document.getElementById('f-no-tel').checked ? 'brak' : document.getElementById('f-tel').value,
+            zdjecia: window.tempZdjeciaEdycja
         }).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
-        else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
+        else { alert("Zaktualizowano!"); location.reload(); }
     };
 };
+
 window.otworzFormularzDodawania = () => {
+    window.plikiDoDodania = []; // Reset listy przy każdym otwarciu
     const mb = document.querySelector('#modal-form .modal-box');
     if(mb) mb.style.maxWidth = "600px";
     document.getElementById('modal-form').style.display = 'flex';
     document.getElementById('form-title').innerText = "Dodaj nowe ogłoszenie";
     document.getElementById('form-dodaj').reset();
 
-    // Resetowanie liczników i opcji telefonu
     window.updateCounter('f-tytul', 'count-tytul', 70);
     window.updateCounter('f-opis', 'count-opis', 8000);
-    document.getElementById('f-no-tel').checked = false;
     window.togglePhoneRequired();
-    
-    // Przywracamy standardowy wygląd pola zdjęć
-    document.getElementById('foto-container').innerHTML = `
-        <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
-        <input type="file" id="f-plik" accept="image/*" multiple required 
-               onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
-        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
-    `;
+    window.renderujPodgladDodawania();
 
     const btn = document.getElementById('btn-save');
-    btn.disabled = false;
-    btn.innerText = "Dodaj ogłoszenie";
+    btn.disabled = false; btn.innerText = "Dodaj ogłoszenie";
     document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
 };
-// Funkcja do rozwijania filtrów na telefonie
+
+window.renderujPodgladDodawania = () => {
+    const container = document.getElementById('foto-container');
+    const limit = window.dajLimitZdjec();
+    
+    let html = `<label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia (max ${limit}):</label>`;
+    html += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
+    
+    window.plikiDoDodania.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        const czyGlowne = i === 0;
+        html += `<div style="position:relative; width:80px; height:80px; border:${czyGlowne ? '3px solid var(--primary)' : '1px solid #ddd'}; border-radius:10px; overflow:hidden; background:#eee;">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                    ${czyGlowne ? '<span style="position:absolute; bottom:0; width:100%; background:var(--primary); color:white; font-size:9px; text-align:center; font-weight:bold;">GŁÓWNE</span>' : 
+                    `<button type="button" onclick="window.ustawGlowneNowe(${i})" style="position:absolute; top:2px; left:2px; background:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">⭐</button>`}
+                    <button type="button" onclick="window.usunPlikDoDodania(${i})" style="position:absolute; top:2px; right:2px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer;">×</button>
+                 </div>`;
+    });
+    
+    html += `</div>`;
+    if (window.plikiDoDodania.length < limit) {
+        html += `<input type="file" id="f-plik" accept="image/*" multiple onchange="window.obslugaPlikowDodaj(this)">`;
+    }
+    container.innerHTML = html + `<small style="display:block; margin-top:5px; color:gray;">Pierwsze zdjęcie będzie miniaturką ogłoszenia.</small>`;
+};
+
+window.obslugaPlikowDodaj = (input) => {
+    const limit = window.dajLimitZdjec();
+    const nowe = Array.from(input.files);
+    if (window.plikiDoDodania.length + nowe.length > limit) {
+        alert(`Maksymalnie ${limit} zdjęć!`);
+        input.value = "";
+        return;
+    }
+    window.plikiDoDodania = [...window.plikiDoDodania, ...nowe];
+    window.renderujPodgladDodawania();
+};
+
+window.ustawGlowneNowe = (i) => {
+    const p = window.plikiDoDodania.splice(i, 1)[0];
+    window.plikiDoDodania.unshift(p);
+    window.renderujPodgladDodawania();
+};
+
+window.usunPlikDoDodania = (i) => {
+    window.plikiDoDodania.splice(i, 1);
+    window.renderujPodgladDodawania();
+};
+
 window.toggleMobileFilters = () => {
     const filters = document.querySelector('.side-filters');
     const btn = document.getElementById('filter-toggle-btn');
     if (!filters) return;
-
     const obecnieUkryte = (filters.style.display === 'none' || filters.style.display === '');
     filters.style.display = obecnieUkryte ? 'block' : 'none';
-    
-    if (btn) {
-        btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
-    }
+    if (btn) btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
 };
-// Specjalny kod dla telefonów: Przycisk "Wstecz" zamyka ogłoszenie
+
 window.addEventListener('popstate', function(event) {
     const lb = document.getElementById('lightbox-box');
     const modalView = document.getElementById('modal-view');
     const modalForm = document.getElementById('modal-form');
-
-    // 1. Jeśli otwarte jest DUŻE ZDJĘCIE - zamknij tylko zdjęcie
-    if (lb && lb.style.display === 'flex') {
-        lb.style.display = 'none';
-        return; // Zatrzymujemy cofanie tutaj
-    }
-
-    // 2. Jeśli otwarte jest ogłoszenie lub formularz - zamknij je
-    const czyWidacPodglad = modalView && modalView.style.display === 'flex';
-    const czyWidacFormularz = modalForm && modalForm.style.display === 'flex';
-
-    if (czyWidacPodglad || czyWidacFormularz) {
+    if (lb && lb.style.display === 'flex') { lb.style.display = 'none'; return; }
+    if ((modalView && modalView.style.display === 'flex') || (modalForm && modalForm.style.display === 'flex')) {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         document.body.style.overflow = 'auto';
         document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
-        window.czyOkienkoOtwarte = false;
-        
-        // Czyścimy adres URL z ?id=...
-        const czystyURL = window.location.pathname;
-        window.history.replaceState({}, '', czystyURL);
+        window.history.replaceState({}, '', window.location.pathname);
     }
 });
 
-// Ta funkcja naprawia okienko bota - uruchamia je dokładnie w momencie kliknięcia "Zarejestruj się"
 window.pokazRejestracje = () => {
     document.getElementById('login-view').classList.add('hidden');
     document.getElementById('register-view').classList.remove('hidden');
-
     const renderujReg = () => {
         if (window.turnstile) {
             const container = document.getElementById('turnstile-container');
             if (container) {
                 container.innerHTML = ''; 
-                turnstile.render('#turnstile-container', {
-                    sitekey: '0x4AAAAAADVZBdOrbapzXNUP',
-                    theme: 'light',
-                });
+                turnstile.render('#turnstile-container', { sitekey: '0x4AAAAAADVZBdOrbapzXNUP', theme: 'light' });
             }
-        } else {
-            setTimeout(renderujReg, 500);
-        }
+        } else { setTimeout(renderujReg, 500); }
     };
     renderujReg();
 };
+
 window.odswiezModele = () => {
     const marka = document.getElementById('extra-marka').value;
     const modelSelect = document.getElementById('extra-model');
-    
     if (MOTO_DATA[marka]) {
-        const modele = MOTO_DATA[marka];
-        modelSelect.innerHTML = '<option value="">Wybierz model</option>' + 
-            modele.map(m => `<option value="${m}">${m}</option>`).join('');
-    } else {
-        modelSelect.innerHTML = '<option value="Pozostałe">Pozostałe</option>';
-    }
-};// Ta funkcja obsługuje listę modeli w okienku filtrów
+        modelSelect.innerHTML = '<option value="">Wybierz model</option>' + MOTO_DATA[marka].map(m => `<option value="${m}">${m}</option>`).join('');
+    } else { modelSelect.innerHTML = '<option value="Pozostałe">Pozostałe</option>'; }
+};
+
 window.odswiezModeleFiltry = () => {
     const marka = document.getElementById('sf-marka').value;
     const modelSelect = document.getElementById('sf-model');
-    
     if (MOTO_DATA[marka]) {
-        const modele = MOTO_DATA[marka];
-        modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>' + 
-            modele.map(m => `<option value="${m}">${m}</option>`).join('');
-    } else {
-        modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>';
-    }
+        modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>' + MOTO_DATA[marka].map(m => `<option value="${m}">${m}</option>`).join('');
+    } else { modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>'; }
 };
-// Ta funkcja sprawdza, jaki limit zdjęć powinien obowiązywać
+
 window.dajLimitZdjec = () => {
     const kat = document.getElementById('f-kat')?.value;
     const podkat = document.getElementById('f-podkat')?.value;
-    
-    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) {
-        return 7;
-    }
+    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) return 7;
     return 5;
 };
