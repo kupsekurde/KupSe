@@ -1340,25 +1340,35 @@ window.edytujOgloszenie = (id) => {
         let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
-            h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
+            const czyGlowne = i === 0;
+            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlowne ? '2px solid #22c55e' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
                     <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold;">X</button>
+                    ${czyGlowne ? `<div style="position:absolute; bottom:0; left:0; width:100%; background:#22c55e; color:white; font-size:9px; text-align:center; font-weight:bold; padding:2px 0;">GŁÓWNE ★</div>` : ''}
+                    <button type="button" onclick="event.stopPropagation(); window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold; border-radius:0 0 0 4px; z-index:10;">X</button>
                   </div>`;
         });
         h += `</div>`;
-        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px; margin-bottom:5px;">`;
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
     };
     
     window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
-    window.limitZdjec = (inp) => { 
-        const limit = window.dajLimitZdjec();
-        if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
-            alert(`W tej kategorii limit to ${limit} zdjęć!`); 
-            inp.value = ""; 
-        } 
-    };
+    
+window.ustawJakoGlowne = (i) => {
+    if (i === 0) return; // Już jest główne
+    const [wybraneZdjecie] = window.tempZdjeciaEdycja.splice(i, 1);
+    window.tempZdjeciaEdycja.unshift(wybraneZdjecie); // Przesuwa na indeks 0
+    odswiezZdjecia();
+};
+
+window.limitZdjec = (inp) => { 
+    const limit = window.dajLimitZdjec();
+    if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
+        alert(`W tej kategorii limit to ${limit} zdjęć!`); 
+        inp.value = ""; 
+    } 
+};
 
     odswiezZdjecia();
 
