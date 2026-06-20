@@ -45,37 +45,17 @@ window.renderujOgloszenia = (lista) => {
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
-window.toggleSubcats = (kat, sub = null) => {
+window.toggleSubcats = (kat) => {
     const p = document.getElementById('subcat-panel');
     if (!p) return;
-
-    // Jeśli klikasz drugi raz w tę samą kategorię główną - zamknij panel
-    if (!sub && p.dataset.activeKat === kat && p.style.display === 'flex') {
+    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
         p.style.display = 'none'; p.dataset.activeKat = ''; return;
     }
-
-    p.style.display = 'flex'; 
+    p.style.display = 'flex';
     p.dataset.activeKat = kat;
-    const d = SUB_DATA[kat];
-
-    // ETAP 1: Kliknięto Kategorię Główną
-    if (!sub) {
-        if (Array.isArray(d)) {
-            // Zwykła kategoria (np. Motoryzacja)
-            p.innerHTML = d.map(s => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>`).join('');
-        } else {
-            // Kategoria z pod-poziomem (np. Nieruchomości) - dodajemy strzałkę ▸
-            p.innerHTML = Object.keys(d).map(s => `<div class="sub-pill" onclick="window.toggleSubcats('${kat}', '${s}')">${s}${d[s].length ? ' \u25b8' : ''}</div>`).join('');
-        }
-    } 
-    // ETAP 2: Kliknięto Podkategorię (np. Mieszkania)
-    else {
-        if (SUB_DATA[kat][sub].length === 0) return window.otworzFiltry(kat, sub);
-        
-        // Dodajemy przycisk "Wróć" i listę opcji (Sprzedaż/Wynajem)
-        p.innerHTML = `<div class="sub-pill" onclick="window.toggleSubcats('${kat}')" style="background:#ddd; font-weight:bold;">\u2190 Wróć</div>` +
-            SUB_DATA[kat][sub].map(ss => `<div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${sub} - ${ss}')">${ss}</div>`).join('');
-    }
+    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
+        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
+    `).join('');
 };
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
@@ -87,6 +67,7 @@ const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
+// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
     'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
@@ -100,7 +81,7 @@ const SUB_DATA = {
     'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
     'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
     'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
-    'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
+        'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
 const MOTO_DATA = {
@@ -257,7 +238,8 @@ window.logujSpolecznosciowo = async (dostawca) => {
         provider: dostawca,
         options: {
             redirectTo: window.location.origin,
-            scopes: 'email'
+            // Dodajemy jawne zapytanie o e-mail i profil publiczny
+            scopes: dostawca === 'facebook' ? 'email,public_profile' : 'email'
         }
     });
     if (error) alert("Błąd logowania: " + error.message);
@@ -635,18 +617,7 @@ window.pokazSzczegoly = async (id) => {
             </div>
         </div>
 
-                <!-- PARAMETRY TECHNICZNE (Dla motoryzacji) -->
-        ${o.kategoria === 'Motoryzacja' ? `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;">
-            <div style="font-size: 12px; color: #666;">Rok produkcji:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Rok: (\d{4})/) ? o.opis.match(/Rok: (\d{4})/)[1] : '--'}</b></div>
-            <div style="font-size: 12px; color: #666;">Przebieg:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Przebieg: ([\d\s]+)/) ? o.opis.match(/Przebieg: ([\d\s]+)/)[1] : '--'} km</b></div>
-            <div style="font-size: 12px; color: #666;">Pojemność:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Pojemność: ([\d.,]+)/) ? o.opis.match(/Pojemność: ([\d.,]+)/)[1] : '--'}</b></div>
-            <div style="font-size: 12px; color: #666;">Moc:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Moc: (\d+)/) ? o.opis.match(/Moc: (\d+)/)[1] : '--'} KM</b></div>
-            <div style="font-size: 12px; color: #666;">Paliwo:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Paliwo: ([^\n]+)/) ? o.opis.match(/Paliwo: ([^\n]+)/)[1] : '--'}</b></div>
-            <div style="font-size: 12px; color: #666;">Skrzynia biegów:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Skrzynia: ([^\n]+)/) ? o.opis.match(/Skrzynia: ([^\n]+)/)[1] : '--'}</b></div>
-        </div>` : ''}
-
-        <!-- OPIS -->
+        <!-- OPIS (Zawsze na dole, na całą szerokość) -->
         <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top:10px;">
             <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Opis ogłoszenia</h3>
             <div style="background: #ffffff;">
@@ -768,15 +739,13 @@ window.otworzFiltry = (kat, podkat) => {
     window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 window.updateFormSubcats = (p = 'f-') => {
-    const katEl = document.getElementById(`${p}kat`);
+    const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
-    if (!katEl || !podkatSelect) return;
-
-    const kat = katEl.value;
-    const zapamietanaPodkat = podkatSelect.value; // Zapamiętujemy co było wybrane
+    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-        (SUB_DATA[kat] || []).map(x => `<option value="${x}" ${x === zapamietanaPodkat ? 'selected' : ''}>${x}</option>`).join('');
+    if (event && event.target && event.target.id === `${p}kat`) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    }
     
     if (!extraFields) return;
     extraFields.innerHTML = ''; 
@@ -889,9 +858,6 @@ window.wyslijOgloszenie = async (e) => {
     if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(!noTel && telVal.length !== 9) { alert("Podaj 9-cyfrowy numer lub zaznacz kontakt przez stronę."); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
 
-        const isMoto = document.getElementById('f-kat').value === 'Motoryzacja';
-    const motoInfo = isMoto ? `\n\nRok: ${document.getElementById('extra-rok').value}\nPrzebieg: ${document.getElementById('extra-przeglad')?.value || document.getElementById('extra-przebieg').value}\nPojemność: ${document.getElementById('extra-pojemnosc').value}\nMoc: ${document.getElementById('extra-moc').value}\nPaliwo: ${document.getElementById('extra-paliwo').value}\nSkrzynia: ${document.getElementById('extra-skrzynia').value}` : "";
-
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: tytulVal,
@@ -899,7 +865,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: opisVal + motoInfo,
+        opis: opisVal,
         zdjecia: zdjeciaUrls,
         telefon: noTel ? 'brak' : telVal
     }]);
@@ -1053,18 +1019,6 @@ window.wznowOgloszenie = async (id) => {
     }
 };
 // --- KATEGORIE I RENDEROWANIE ---
-window.toggleSubcats = (kat) => {
-    const p = document.getElementById('subcat-panel');
-    if (!p) return;
-    if (p.dataset.activeKat === kat && p.style.display === 'flex') {
-        p.style.display = 'none'; p.dataset.activeKat = ''; return;
-    }
-    p.style.display = 'flex';
-    p.dataset.activeKat = kat;
-    p.innerHTML = (SUB_DATA[kat] || []).map(s => `
-        <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
-    `).join('');
-};
 
 window.filtrujPoPodkat = (kat, podkat) => {
     const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
@@ -1219,11 +1173,13 @@ function renderCardHTML(o) {
     const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
-        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
-            <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
+        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative; display:flex; flex-direction:column;">
+            <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${id => o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-                                    <img src="${o.zdjecia[0]}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
+            <div style="width:100%; aspect-ratio: 4/3; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img src="${fotoUrl}" alt="${o.tytul}" loading="lazy" style="width:100%; height:100%; object-fit:contain;">
+            </div>
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
@@ -1326,7 +1282,6 @@ async function sprawdzPowiadomieniaBezReloadu() {
         badge.innerText = count;
     }
 }
-
 async function init() {
     try {
         // 1. Najpierw pobieramy ogłoszenia z bazy danych
@@ -1420,117 +1375,131 @@ window.edytujOgloszenie = (id) => {
     document.body.style.overflow = 'hidden';
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
-
-    // 1. Podstawowe pola
+    
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
     
-    // 2. Wygenerowanie podkategorii i pól technicznych
-    window.updateFormSubcats(); 
+    // Wymuszamy sztuczne zdarzenie, żeby updateFormSubcats wiedziało, która kategoria jest wybrana
+    const fakeEvent = { target: { id: 'f-kat' } };
+    window.updateFormSubcats(fakeEvent); 
+    
     document.getElementById('f-podkat').value = o.podkategoria;
-    window.updateFormSubcats(); // Wywołujemy drugi raz, żeby pojawiły się pola extra (marka, model itp.)
-
-    // 3. Wyciąganie danych technicznych z opisu (Regex)
-    if (o.kategoria === 'Motoryzacja') {
-        const rMatch = o.opis.match(/Rok: (\d+)/);
-        const pMatch = o.opis.match(/Przebieg: ([\d\s]+)/);
-        const pojMatch = o.opis.match(/Pojemność: ([^\n]+)/);
-        const mMatch = o.opis.match(/Moc: (\d+)/);
-        const palMatch = o.opis.match(/Paliwo: ([^\n]+)/);
-        const skMatch = o.opis.match(/Skrzynia: ([^\n]+)/);
-
-        // Próbujemy wyłuskać markę i model z tytułu lub opisu (zakładając standardowy format zapisu)
-        if (rMatch && document.getElementById('extra-rok')) document.getElementById('extra-rok').value = rMatch[1];
-        if (pMatch && document.getElementById('extra-przebieg')) document.getElementById('extra-przebieg').value = pMatch[1].trim();
-        if (pojMatch && document.getElementById('extra-pojemnosc')) document.getElementById('extra-pojemnosc').value = pojMatch[1].trim();
-        if (mMatch && document.getElementById('extra-moc')) document.getElementById('extra-moc').value = mMatch[1];
-        if (palMatch && document.getElementById('extra-paliwo')) document.getElementById('extra-paliwo').value = palMatch[1].trim();
-        if (skMatch && document.getElementById('extra-skrzynia')) document.getElementById('extra-skrzynia').value = skMatch[1].trim();
-        
-        // Czyścimy opis z doklejonych danych technicznych, żeby w polu opisu był tylko tekst użytkownika
-        let czystyOpis = o.opis.split('\n\nRok:')[0];
-        document.getElementById('f-opis').value = czystyOpis;
-    } else {
-        document.getElementById('f-opis').value = o.opis;
-    }
+    
+    // Ponownie wywołujemy dla podkategorii, aby wygenerować pola ekstra (marka, model)
+    window.updateFormSubcats();
 
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
-    document.getElementById('f-tel').value = (o.telefon === 'brak') ? '' : o.telefon;
-    document.getElementById('f-no-tel').checked = (o.telefon === 'brak');
-    window.togglePhoneRequired();
+    document.getElementById('f-tel').value = o.telefon && o.telefon !== 'brak' ? o.telefon : "";
+    document.getElementById('f-opis').value = o.opis;
 
-    // 4. Zdjęcia
+    // Pobieramy dane ekstra z opisu ogłoszenia lub bazy (jeśli zapisujesz je w opisie jako "Marka: Opel")
+    if (document.getElementById('extra-marka')) {
+        const markaMatch = o.opis.match(/Marka:\s*([^\n\r]+)/i);
+        const modelMatch = o.opis.match(/Model:\s*([^\n\r]+)/i);
+        const rokMatch = o.opis.match(/Rok:\s*(\d+)/i);
+        const przebiegMatch = o.opis.match(/Przebieg:\s*(\d+)/i);
+        const pojMatch = o.opis.match(/Pojemność:\s*([^\n\r]+)/i);
+        const mocMatch = o.opis.match(/Moc:\s*(\d+)/i);
+        const paliwoMatch = o.opis.match(/Paliwo:\s*([^\n\r]+)/i);
+        const skrzyniaMatch = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
+
+        if (markaMatch) {
+            document.getElementById('extra-marka').value = markaMatch[1].trim();
+            window.odswiezModele();
+            if (modelMatch) document.getElementById('extra-model').value = modelMatch[1].trim();
+        }
+        if (rokMatch) document.getElementById('extra-rok').value = rokMatch[1];
+        if (przebiegMatch) document.getElementById('extra-przebieg').value = przebiegMatch[1];
+        if (pojMatch) document.getElementById('extra-pojemnosc').value = pojMatch[1].trim();
+        if (mocMatch) document.getElementById('extra-moc').value = mocMatch[1];
+        if (paliwoMatch) document.getElementById('extra-paliwo').value = paliwoMatch[1].trim();
+        if (skrzyniaMatch) document.getElementById('extra-skrzynia').value = skrzyniaMatch[1].trim();
+    }
+    
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
-        const limit = window.dajLimitZdjec();
-        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
+        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
+        h += `<small style="display:block; margin-bottom:10px; color:var(--primary); font-weight:bold;">💡 Kliknij w zdjęcie, aby ustawić je jako GŁÓWNE (miniaturkę).</small>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
-            h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
-                    <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-                    <button type="button" onclick="window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold;">X</button>
+            const czyGlwne = i === 0;
+            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlwne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlwne ? '1' : '0.7'};">
+                    ${czyGlwne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
+                    <button type="button" onclick="event.stopPropagation(); window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold; border-radius:0 0 0 4px; z-index:10;">X</button>
                   </div>`;
         });
         h += `</div>`;
-        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple style="font-size:12px;">`;
-        h += `<small style="display:block; margin-top:5px; color:gray;">Pozostało wolnych miejsc: ${limit - window.tempZdjeciaEdycja.length}</small>`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
+        const limit = window.dajLimitZdjec();
+        h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
-
-        const inp = document.getElementById('f-plik-nowe');
-        if(inp) inp.onchange = function() {
-            if(this.files.length + window.tempZdjeciaEdycja.length > limit) {
-                alert(`Limit to ${limit} zdjęć!`);
-                this.value = '';
-            }
-        };
     };
-    
-    window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+
+    // Dodajemy nową funkcję pomocniczą do przestawiania zdjęć
+    window.ustawJakoGlowne = (index) => {
+        if (index === 0) return; // Już jest główne
+        const [foto] = window.tempZdjeciaEdycja.splice(index, 1);
+        window.tempZdjeciaEdycja.unshift(foto); // Przesuń na początek tablicy
+        odswiezZdjecia();
+    };
+        window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+    window.limitZdjec = (inp) => { 
+        const limit = window.dajLimitZdjec();
+        if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
+            alert(`W tej kategorii limit to ${limit} zdjęć!`); 
+            inp.value = ""; 
+        } 
+    };
+
     odswiezZdjecia();
 
     const form = document.getElementById('form-dodaj');
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
-    btn.disabled = false;
     
     form.onsubmit = async (e) => {
         e.preventDefault();
         btn.disabled = true;
-        btn.innerText = "Zapisywanie...";
+        btn.innerText = "Kompresja i zapis...";
 
         const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
-        const noweUrls = [];
+                const noweUrls = [];
         const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
         for (const f of nowePliki) {
             try {
+                let plikDoWyslania = f;
+
+                if (typeof imageCompression !== 'undefined') {
+                    try {
+                        plikDoWyslania = await imageCompression(f, opt);
+                    } catch (e) {
+                        console.error("Kompresja w edycji nie udała się:", e);
+                    }
+                }
+
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-                await baza.storage.from('zdjecia').upload(name, f); // Pominąłem kompresję dla szybkości, jeśli biblioteka nie siądzie
+                await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
                 const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
                 noweUrls.push(publicUrl);
-            } catch(err) { console.error(err); }
-        }
-
-        const isMoto = document.getElementById('f-kat').value === 'Motoryzacja';
-        let motoInfo = "";
-        if (isMoto) {
-            motoInfo = `\n\nRok: ${document.getElementById('extra-rok').value}\nPrzebieg: ${document.getElementById('extra-przebieg').value}\nPojemność: ${document.getElementById('extra-pojemnosc').value}\nMoc: ${document.getElementById('extra-moc').value}\nPaliwo: ${document.getElementById('extra-paliwo').value}\nSkrzynia: ${document.getElementById('extra-skrzynia').value}`;
+            } catch(err) { 
+                console.error("Błąd zdjęcia w edycji:", err); 
+            }
         }
 
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
-            kategoria: document.getElementById('f-kat').value,
-            podkategoria: document.getElementById('f-podkat').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
-            opis: document.getElementById('f-opis').value + motoInfo,
-            telefon: document.getElementById('f-no-tel').checked ? 'brak' : document.getElementById('f-tel').value,
+            opis: document.getElementById('f-opis').value,
+            telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
-        else { alert("Zaktualizowano!"); location.reload(); }
+        else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
 window.otworzFormularzDodawania = () => {
