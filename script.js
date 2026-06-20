@@ -635,7 +635,18 @@ window.pokazSzczegoly = async (id) => {
             </div>
         </div>
 
-        <!-- OPIS (Zawsze na dole, na całą szerokość) -->
+                <!-- PARAMETRY TECHNICZNE (Dla motoryzacji) -->
+        ${o.kategoria === 'Motoryzacja' ? `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;">
+            <div style="font-size: 12px; color: #666;">Rok produkcji:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Rok: (\d{4})/) ? o.opis.match(/Rok: (\d{4})/)[1] : '--'}</b></div>
+            <div style="font-size: 12px; color: #666;">Przebieg:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Przebieg: ([\d\s]+)/) ? o.opis.match(/Przebieg: ([\d\s]+)/)[1] : '--'} km</b></div>
+            <div style="font-size: 12px; color: #666;">Pojemność:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Pojemność: ([\d.,]+)/) ? o.opis.match(/Pojemność: ([\d.,]+)/)[1] : '--'}</b></div>
+            <div style="font-size: 12px; color: #666;">Moc:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Moc: (\d+)/) ? o.opis.match(/Moc: (\d+)/)[1] : '--'} KM</b></div>
+            <div style="font-size: 12px; color: #666;">Paliwo:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Paliwo: ([^\n]+)/) ? o.opis.match(/Paliwo: ([^\n]+)/)[1] : '--'}</b></div>
+            <div style="font-size: 12px; color: #666;">Skrzynia biegów:<br><b style="color: #111; font-size: 14px;">${o.opis.match(/Skrzynia: ([^\n]+)/) ? o.opis.match(/Skrzynia: ([^\n]+)/)[1] : '--'}</b></div>
+        </div>` : ''}
+
+        <!-- OPIS -->
         <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top:10px;">
             <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Opis ogłoszenia</h3>
             <div style="background: #ffffff;">
@@ -759,11 +770,11 @@ window.otworzFiltry = (kat, podkat) => {
 window.updateFormSubcats = (p = 'f-') => {
     const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
-    const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    if (event && event.target && event.target.id === `${p}kat`) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-    }
+    // Zawsze odświeżamy listę podkategorii dla wybranej kategorii
+    const obecnaPodkat = podkatSelect.value;
+    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
+        (SUB_DATA[kat] || []).map(x => `<option value="${x}" ${x === obecnaPodkat ? 'selected' : ''}>${x}</option>`).join('');
     
     if (!extraFields) return;
     extraFields.innerHTML = ''; 
@@ -1403,7 +1414,14 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
     document.body.style.overflow = 'hidden';
     
-    window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    indow.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+
+    // Funkcja do zmiany głównego zdjęcia
+    window.ustawJakoGlowne = (index) => {
+        const fotka = window.tempZdjeciaEdycja.splice(index, 1)[0];
+        window.tempZdjeciaEdycja.unshift(fotka);
+        odswiezZdjecia();
+    };
     
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
