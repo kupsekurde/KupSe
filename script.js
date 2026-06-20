@@ -1310,22 +1310,22 @@ window.edytujOgloszenie = (id) => {
     window.updateFormSubcats();
     
     // 5. Jeśli to była motoryzacja, przywracamy zapisane parametry z opisu do pól formularza
+    // 5. Jeśli to była motoryzacja, przywracamy zapisane parametry BEZPOŚREDNIO z kolumn bazy danych
     if (o.kategoria === 'Motoryzacja') {
         const markaSel = document.getElementById('extra-marka');
         if (markaSel) {
-            const zapisanaMarka = o.opis.match(/Marka:\s*([^\n]+)/)?.[1] || "";
-            markaSel.value = zapisanaMarka;
+            markaSel.value = o.marka || "";
             window.odswiezModele();
             
             const modelSel = document.getElementById('extra-model');
-            if (modelSel) modelSel.value = o.opis.match(/Model:\s*([^\n]+)/)?.[1] || "";
+            if (modelSel) modelSel.value = o.model || "";
         }
-        if (document.getElementById('extra-rok')) document.getElementById('extra-rok').value = o.opis.match(/Rok:\s*(\d+)/)?.[1] || "";
-        if (document.getElementById('extra-przebieg')) document.getElementById('extra-przebieg').value = o.opis.match(/Przebieg:\s*(\d+)/)?.[1] || "";
-        if (document.getElementById('extra-pojemnosc')) document.getElementById('extra-pojemnosc').value = o.opis.match(/Pojemność:\s*([^\n]+)/)?.[1] || "";
-        if (document.getElementById('extra-moc')) document.getElementById('extra-moc').value = o.opis.match(/Moc:\s*(\d+)/)?.[1] || "";
-        if (document.getElementById('extra-paliwo')) document.getElementById('extra-paliwo').value = o.opis.match(/Paliwo:\s*([^\n]+)/)?.[1] || "";
-        if (document.getElementById('extra-skrzynia')) document.getElementById('extra-skrzynia').value = o.opis.match(/Skrzynia:\s*([^\n]+)/)?.[1] || "";
+        if (document.getElementById('extra-rok')) document.getElementById('extra-rok').value = o.rok_produkcji || "";
+        if (document.getElementById('extra-przebieg')) document.getElementById('extra-przebieg').value = o.przebieg || "";
+        if (document.getElementById('extra-pojemnosc')) document.getElementById('extra-pojemnosc').value = o.pojemnosc || "";
+        if (document.getElementById('extra-moc')) document.getElementById('extra-moc').value = o.moc || "";
+        if (document.getElementById('extra-paliwo')) document.getElementById('extra-paliwo').value = o.paliwo || "";
+        if (document.getElementById('extra-skrzynia')) document.getElementById('extra-skrzynia').value = o.skrzynia_biegow || "";
     }
 
     document.getElementById('f-cena').value = o.cena;
@@ -1395,14 +1395,29 @@ window.edytujOgloszenie = (id) => {
             }
         }
 
-        const { error } = await baza.from('ogloszenia').update({
+        // Budujemy obiekt z podstawowymi danymi
+        const daneDoAktualizacji = {
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
             telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
-        }).eq('id', o.id);
+        };
+
+        // Jeśli edytujemy Motoryzację, dopisujemy wartości do nowych kolumn w bazie
+        if (document.getElementById('f-kat').value === 'Motoryzacja') {
+            daneDoAktualizacji.marka = document.getElementById('extra-marka')?.value || null;
+            daneDoAktualizacji.model = document.getElementById('extra-model')?.value || null;
+            daneDoAktualizacji.rok_produkcji = parseInt(document.getElementById('extra-rok')?.value) || null;
+            daneDoAktualizacji.przebieg = parseInt(document.getElementById('extra-przebieg')?.value) || null;
+            daneDoAktualizacji.pojemnosc = document.getElementById('extra-pojemnosc')?.value || null;
+            daneDoAktualizacji.moc = parseInt(document.getElementById('extra-moc')?.value) || null;
+            daneDoAktualizacji.paliwo = document.getElementById('extra-paliwo')?.value || null;
+            daneDoAktualizacji.skrzynia_biegow = document.getElementById('extra-skrzynia')?.value || null;
+        }
+
+        const { error } = await baza.from('ogloszenia').update(daneDoAktualizacji).eq('id', o.id);
 
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
