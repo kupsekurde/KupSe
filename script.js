@@ -1,13 +1,12 @@
-// --- USTALENIE LIMITU ZDJĘĆ (Przeniesione na górę, aby zapobiec błędom undefined) ---
-window.dajLimitZdjec = () => {
-    const kat = document.getElementById('f-kat')?.value;
-    const podkat = document.getElementById('f-podkat')?.value;
-    
-    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) {
-        return 7;
-    }
-    return 5;
+// --- KONFIGURACJA BEZPIECZEŃSTWA SUPABASE ---
+// UWAGA: Zmień te klucze w panelu Supabase, jeśli zostały upublicznione!
+// Upewnij się, że masz włączone RLS (Row Level Security) w Supabase.
+const SUPABASE_CONFIG = {
+    URL: 'https://zeymooitrdcbgrrpzhed.supabase.co',
+    KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo'
 };
+
+const baza = window.supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
 
 window.updateCounter = (id, countId, max) => {
     const el = document.getElementById(id);
@@ -68,10 +67,6 @@ const dajNazwe = (e) => {
     let n = e.split('@')[0]; 
     return n.charAt(0).toUpperCase() + n.slice(1); 
 };
-
-const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
-const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
-const baza = window.supabase.createClient(URL_S, KEY_S);
 
 // --- DANE KATEGORII ---
 const SUB_DATA = {
@@ -152,6 +147,7 @@ let aktualneFotki = [];
 let wynikiBazowe = [];
 let ostatnieWyniki = [];
 let ostatniTytul = "";
+const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
     console.log("Start szukania...");
@@ -160,13 +156,16 @@ window.szukaj = async () => {
     const p2 = document.getElementById('miasto-input');
     
     if (!p1 || !p2) {
-        console.error("BŁĄD: Nie znaleziono pól w HTML!");
+        console.error("BŁĄD: Nie znaleziono pól w HTML! Szukałem 'szukajka-glowna' i 'miasto-input'");
+        alert("Błąd techniczny: Nie znaleziono pól wyszukiwarki.");
         return;
     }
 
     const tekst = p1.value.toLowerCase().trim();
     const loc = p2.value.toLowerCase().trim();
     
+    console.log("Szukam frazy:", tekst, "w lokalizacji:", loc);
+
     const bezOgonkow = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
         .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z');
@@ -177,6 +176,8 @@ window.szukaj = async () => {
             const lokNorm = bezOgonkow(o.lokalizacja || "");
             return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
         });
+        
+        console.log("Znaleziono ogłoszeń:", data.length);
 
         if (data.length === 0) {
             document.getElementById('lista').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Brak wyników dla podanych kryteriów.</p>";
@@ -214,7 +215,7 @@ window.loguj = async () => {
             komunikat = "Nieprawidłowe hasło lub login";
         }
         alert("Błąd: " + komunikat);
-        if(window.turnstile) turnstile.reset(); 
+        turnstile.reset(); 
     } else {
         location.reload();
     }
@@ -258,7 +259,7 @@ window.zarejestruj = async () => {
     });
     if (error) {
         alert("Błąd: " + error.message);
-        if(window.turnstile) turnstile.reset();
+        turnstile.reset();
     } else {
         alert("Konto utworzone! Sprawdź e-mail, aby aktywować konto.");
         location.reload();
@@ -320,6 +321,35 @@ async function sprawdzUzytkownika() {
         renderujLogin();
     }
 }
+
+// --- ULUBIONE ---
+window.pokazUlubione = () => {
+    const okno = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    const mb = document.querySelector('.modal-box');
+    
+    if(mb) mb.style.maxWidth = "600px";
+    
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(Number(o.id)));
+
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="text-align:center; margin-bottom:20px;">Twoje Ulubione ❤️</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            ${ulubioneLista.map(o => `
+                <div onclick="window.pokazSzczegoly(${o.id})" style="cursor:pointer; border:1px solid #eee; border-radius:12px; overflow:hidden; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:120px; object-fit:cover;">
+                    <div style="padding:10px;">
+                        <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.cena} zł</div>
+                        <div style="font-size:12px; height:32px; overflow:hidden; margin-top:5px;">${o.tytul}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        ${ulubioneLista.length === 0 ? '<p style="text-align:center; color:gray; margin-top:30px; grid-column: 1/3;">Nie masz jeszcze ulubionych ogłoszeń.</p>' : ''}`;
+    
+    okno.style.display = 'flex';
+};
 
 // --- WIADOMOŚCI ---
 window.pokazSkrzynke = async () => {
@@ -413,7 +443,7 @@ window.wyslijZChatu = async (odbiorca) => {
         przeczytane: false 
     }]);
     
-    document.getElementById('chat-input').value = '';
+    document.getElementById('chat-input').value = ''; 
     window.otworzChat(odbiorca);
 };
 
@@ -435,10 +465,7 @@ window.zamknijModal = () => {
     window.obecneOgloszenieId = null;
     const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "1250px";
-};
-
-window.zamknijIResetujModal = () => {
-    window.zamknijModal();
+    window.czyOkienkoOtwarte = false;
 };
 
 window.toggleUserMenu = (e) => { 
@@ -498,6 +525,8 @@ window.pokazSzczegoly = async (id) => {
             @media (max-width: 768px) {
                 .main-split { display: flex; flex-direction: column; gap: 20px; }
                 .main-foto-box { height: 250px !important; }
+                .info-column { gap: 10px; }
+                .action-buttons { flex-wrap: wrap; }
                 .modal-box { padding: 15px !important; }
             }
         </style>
@@ -506,7 +535,7 @@ window.pokazSzczegoly = async (id) => {
             <div>
                 ${btnWstecz}
                 <div style="font-size:11px; color:#777; margin-top:8px; font-weight:600; text-transform:uppercase;">
-                    ${o.kategoria} <span style="color:#ccc; margin:0 5px;">—</span> ${o.podkategoria} ${o.wojewodztwo ? `<span style="color:#ccc; margin:0 5px;">—</span> Woj. ${o.wojewodztwo}` : ''}
+                    ${o.kategoria} <span style="color:#ccc; margin:0 5px;">—</span> ${o.podkategoria}
                 </div>
             </div>
             <button class="close-btn" onclick="window.zamknijModal()" style="position:static; background:#f5f5f5; border:none; width:35px; height:35px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:22px; color:#333;">&times;</button>
@@ -523,12 +552,12 @@ window.pokazSzczegoly = async (id) => {
             </div>
 
             <div class="info-column" style="display:flex; flex-direction:column;">
-                <div style="font-size:11px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
+                <div style="font-size:13px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
                 <h2 style="font-size:24px; margin:10px 0; color:var(--text); line-height:1.2;">${o.tytul}</h2>
                 <h1 style="color:var(--primary); font-size:32px; margin:5px 0;">${o.cena} zł</h1>
                 
                 <div style="margin-top:15px; font-size:15px; color:#444; display:flex; flex-direction:column; gap:12px;">
-                    <span style="display:flex; align-items:center;">📍 Lokalizacja: <b style="margin-left:8px;">${o.lokalizacja} ${o.wojewodztwo ? `(${o.wojewodztwo})` : ''}</b></span>
+                    <span style="display:flex; align-items:center;">📍 Lokalizacja: <b style="margin-left:8px;">${o.lokalizacja}</b></span>
                     <span style="display:flex; align-items:center;">📞 Telefon: ${telefonWidok}</span>
                 </div>
                 <div class="action-buttons" style="display:flex; gap:8px; align-items:center; margin-top:25px;">
@@ -589,6 +618,7 @@ window.otworzFullFoto = () => {
         document.body.appendChild(lb);
     }
     window.isZoomed = false; 
+
     window.history.pushState({view: 'lightbox'}, '');
 
     lb.innerHTML = `
@@ -669,32 +699,20 @@ window.otworzFiltry = (kat, podkat) => {
 };
 
 window.updateFormSubcats = (p = 'f-') => {
-    const katSelect = document.getElementById(`${p}kat`);
-    if (!katSelect) return;
-    
-    const kat = katSelect.value;
+    const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
     const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    // Zapamiętujemy aktualnie wybraną podkategorię (jeśli jakaś była, np. przy edycji)
-    const poprzedniaPodkat = podkatSelect ? podkatSelect.value : '';
-
-    // Aktualizujemy listę podkategorii tylko, jeśli zmieniła się kategoria główna
-    if (podkatSelect) {
-        // Jeśli pole było puste lub resetujemy, budujemy listę na nowo
-        if (!poprzedniaPodkat || Array.from(podkatSelect.options).length <= 1) {
-            podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-                (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-        }
+    if (typeof event !== 'undefined' && event && event.target && event.target.id === `${p}kat`) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
     if (!extraFields) return;
     extraFields.innerHTML = ''; 
 
-    const wybranaPodkat = podkatSelect ? podkatSelect.value : '';
+    const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
-    // Generowanie pól dodatkowych dla Motoryzacji
     if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
         const markiOptions = Object.keys(MOTO_DATA).map(m => `<option value="${m}">${m}</option>`).join('');
         extraFields.innerHTML = `
@@ -732,7 +750,6 @@ window.updateFormSubcats = (p = 'f-') => {
             </div>`;
     }
     
-    // Aktualizacja limitu zdjęć w locie
     const limit = window.dajLimitZdjec();
     const infoTekst = document.querySelector('#foto-container small');
     const inputPlik = document.getElementById('f-plik') || document.getElementById('f-plik-nowe');
@@ -769,6 +786,7 @@ window.wyslijOgloszenie = async (e) => {
     for (const file of inputPlik.files) {
         try {
             let plikDoWyslania = file;
+            
             if (typeof imageCompression !== 'undefined') {
                 try {
                     plikDoWyslania = await imageCompression(file, options);
@@ -790,7 +808,6 @@ window.wyslijOgloszenie = async (e) => {
     const opisVal = document.getElementById('f-opis').value;
     const noTel = document.getElementById('f-no-tel').checked;
     const telVal = document.getElementById('f-tel').value;
-    const wojVal = document.getElementById('f-woj').value; // DODANE WOJEWÓDZTWO
 
     if(tytulVal.length < 10) { alert("Tytuł musi mieć min. 10 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
@@ -803,7 +820,6 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        wojewodztwo: wojVal, // ZAPIS WOJEWÓDZTWA DO BAZY
         opis: opisVal,
         zdjecia: zdjeciaUrls,
         telefon: noTel ? 'brak' : telVal
@@ -835,7 +851,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     }
 
     const teraz = new Date();
-    const limit = 1000 * 60 * 60 * 24 * 30; // 30 dni
+    const limit = 1000 * 60 * 60 * 24 * 30; 
 
     const moje = (mojeDane || []).filter(o => 
         o.user_email && 
@@ -876,6 +892,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                 
                 const godzina = String(dataKoniec.getHours()).padStart(2, '0');
                 const minuta = String(dataKoniec.getMinutes()).padStart(2, '0');
+                
                 const formatKoniec = isNaN(dataKoniec) ? "---" : `${String(dataKoniec.getDate()).padStart(2,'0')}.${String(dataKoniec.getMonth()+1).padStart(2,'0')}.${dataKoniec.getFullYear()} ${godzina}:${minuta}`;
                 const foto = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjecia';
 
@@ -886,6 +903,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                         <div>
                             <b style="font-size:14px; color:var(--primary);">${o.cena} zł</b>
                             <div style="font-size:12px; font-weight:600; margin-top:4px; height:32px; overflow:hidden;">${o.tytul}</div>
+                            
                             ${tab === 'aktywne' ? `
                                 <div style="margin-top:10px; font-size:10px; background:#f0f9ff; padding:6px; border-radius:8px; border:1px solid #e0f2fe;">
                                     ⏳ Pozostało: <b>${dniZostalo > 0 ? dniZostalo : 0} dni</b><br>
@@ -897,6 +915,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                                 </div>
                             `}
                         </div>
+
                         <div style="display:flex; gap:5px; margin-top:12px;">
                             ${tab === 'aktywne' ? `
                                 <button onclick="window.edytujOgloszenie(${o.id})" style="flex:1; padding:7px; font-size:11px; cursor:pointer; border-radius:8px; border:1px solid #ddd; background:#fff;">Edytuj</button>
@@ -908,7 +927,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                     </div>
                 </div>`;
             }).join('')}
-            ${wyswietlane.length === 0 ? '<p style="text-align:center; color:gray; grid-column:1/-1; padding:40px;">Brak ogłoszeń.</p>' : ''}
+            ${wyswietlane.length === 0 ? '<p style="text-align:center; color:gray; grid-column:1/-1; padding:40px;">Brak ogłoszeń w tej kategorii.</p>' : ''}
         </div>`;
     
     document.getElementById('modal-view').style.display = 'flex';
@@ -937,6 +956,7 @@ window.usunOgloszenie = async (id) => {
 
 window.wznowOgloszenie = async (id) => {
     if (!confirm("Czy chcesz wznowić to ogłoszenie? Zostanie ono przedłużone o kolejne 30 dni od dzisiaj.")) return;
+    
     const nowaData = new Date().toISOString();
     const { error } = await baza.from('ogloszenia').update({ created_at: nowaData }).eq('id', id);
     
@@ -946,6 +966,12 @@ window.wznowOgloszenie = async (id) => {
         alert("Ogłoszenie zostało wznowione!");
         location.reload();
     }
+};
+
+// --- RENDEROWANIE I KATEGORIE ---
+window.filtrujPoPodkat = (kat, podkat) => {
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 
 // --- PAGINACJA WYNIKÓW ---
@@ -974,6 +1000,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         <div id="results-layout" style="display:flex; gap:20px;">
             <div class="side-filters" style="display:none; width:260px; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; height: fit-content; flex-shrink:0;">
                 <h4 style="margin:0 0 15px 0;">Parametry</h4>
+                
                 <input type="text" id="side-szukaj" placeholder="Czego szukasz?" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
 
                 ${czyMoto ? `
@@ -1009,6 +1036,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                     <input type="number" id="side-cena-min" placeholder="Cena od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Cena do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
+
                 <select id="side-stan" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="">Stan (Wszystkie)</option><option value="Nowy">Nowy</option><option value="Używany">Używany</option><option value="Uszkodzony">Uszkodzony</option>
                 </select>
@@ -1016,6 +1044,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <select id="side-sort" style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="newest">Najnowsze</option><option value="oldest">Najstarsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option>
                 </select>
+
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj</button>
             </div>
             <div style="flex:1;">
@@ -1035,7 +1064,7 @@ window.zastosujFiltryBoczne = () => {
     const cMax = parseFloat(document.getElementById('side-cena-max')?.value) || 99999999;
     const stan = document.getElementById('side-stan')?.value || "";
     const lok = document.getElementById('side-lok')?.value.toLowerCase().trim() || "";
-    const sort = document.getElementById('side-sort').value;
+    const sort = document.getElementById('side-sort')?.value || "newest";
 
     const uproscTekst = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
@@ -1047,10 +1076,12 @@ window.zastosujFiltryBoczne = () => {
     const model = document.getElementById('sf-model')?.value.toLowerCase() || "";
     const rMin = parseInt(document.getElementById('sf-rok-min')?.value) || 0;
     const rMax = parseInt(document.getElementById('sf-rok-max')?.value) || 9999;
+    const pMax = parseInt(document.getElementById('sf-przebieg-max')?.value) || 9999999;
     const paliwo = document.getElementById('sf-paliwo')?.value || "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
         const tytulOpisUproszczony = uproscTekst(o.tytul + " " + o.opis);
+        
         const tekstOk = fraza === "" || tytulOpisUproszczony.includes(szukanaFrazaUproszczona);
         const cenaOk = o.cena >= cMin && o.cena <= cMax;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
@@ -1066,6 +1097,7 @@ window.zastosujFiltryBoczne = () => {
             const rok = rokMatch ? parseInt(rokMatch[1]) : 0;
             if(rok > 0 && (rok < rMin || rok > rMax)) motoOk = false;
         }
+
         return tekstOk && cenaOk && lokOk && stanOk && motoOk;
     });
 
@@ -1115,10 +1147,13 @@ window.renderujOgloszenia = (lista) => {
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
+    
     const top12 = lista.slice(0, 12);
+    
     k.style.display = 'grid';
     k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
     k.style.gap = '20px';
+    
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
@@ -1138,15 +1173,30 @@ window.toggleUlubione = async (e, id) => {
     await sprawdzUzytkownika(); 
 };
 
-window.pokazUlubione = () => {
-    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(o.id));
-    window.pokazWynikiModal("Twoje Ulubione", ulubioneLista);
-};
-
 window.pokazOgloszeniaUzytkownika = (email) => {
     const wyniki = daneOgloszen.filter(o => o.user_email === email);
     window.pokazWynikiModal(`Ogłoszenia użytkownika: ${dajNazwe(email)}`, wyniki);
 };
+
+window.zamknijIResetujModal = () => {
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "1250px"; 
+    window.zamknijModal();
+};
+
+async function sprawdzPowiadomieniaBezReloadu() {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+    const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+    const unikalniNadawcy = nData ? [...new Set(nData.map(m => m.nadawca))] : [];
+    const count = unikalniNadawcy.length;
+    
+    const badge = document.getElementById('msg-badge');
+    if (badge) {
+        badge.style.display = count > 0 ? 'flex' : 'none';
+        badge.innerText = count;
+    }
+}
 
 async function init() {
     try {
@@ -1167,7 +1217,7 @@ async function init() {
         await sprawdzUzytkownika();
 
         const parametry = new URLSearchParams(window.location.search);
-        const ogloszenieZLinku = parametry.get('ogloszenie'); 
+        const ogloszenieZLinku = parametry.get('ogloszenie');
         
         if (ogloszenieZLinku) {
             const czesci = ogloszenieZLinku.split('-');
@@ -1194,20 +1244,21 @@ async function init() {
 
 init();
 
-// --- ZAMYKANIE OKIEN KLIKNIĘCIEM POZA NIMI ---
 window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
-    const modalView = document.getElementById('modal-view'); 
-    const modalForm = document.getElementById('modal-form'); 
+    const modalView = document.getElementById('modal-view');
+    const modalForm = document.getElementById('modal-form');
 
     if (dropMenu && dropMenu.style.display === 'block') {
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
             dropMenu.style.display = 'none';
         }
     }
+
     if (e.target === modalView) {
-        window.zamknijModal(); 
+        window.zamknijIResetujModal();
     }
+
     if (e.target === modalForm) {
         modalForm.style.display = 'none';
         document.body.style.overflow = 'auto';
@@ -1234,15 +1285,13 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('f-podkat').value = o.podkategoria;
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
-    if(document.getElementById('f-woj') && o.wojewodztwo) {
-        document.getElementById('f-woj').value = o.wojewodztwo;
-    }
-    document.getElementById('f-tel').value = (o.telefon === 'brak') ? "" : o.telefon;
+    document.getElementById('f-tel').value = o.telefon || "";
     document.getElementById('f-opis').value = o.opis;
     
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
-        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
+        const limit = window.dajLimitZdjec();
+        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
             h += `<div style="position:relative; width:80px; height:80px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
@@ -1252,7 +1301,6 @@ window.edytujOgloszenie = (id) => {
         });
         h += `</div>`;
         h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
-        const limit = window.dajLimitZdjec();
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
     };
@@ -1284,6 +1332,7 @@ window.edytujOgloszenie = (id) => {
         for (const f of nowePliki) {
             try {
                 let plikDoWyslania = f;
+
                 if (typeof imageCompression !== 'undefined') {
                     try {
                         plikDoWyslania = await imageCompression(f, opt);
@@ -1291,8 +1340,9 @@ window.edytujOgloszenie = (id) => {
                         console.error("Kompresja w edycji nie udała się:", e);
                     }
                 }
+
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-                await baza.storage.from('zdziecia').upload(name, plikDoWyslania);
+                await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
                 const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
                 noweUrls.push(publicUrl);
             } catch(err) { 
@@ -1304,9 +1354,8 @@ window.edytujOgloszenie = (id) => {
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
-            wojewodztwo: document.getElementById('f-woj').value, // AKTUALIZACJA WOJEWÓDZTWA W EDYCJI
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value || 'brak',
+            telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
 
@@ -1327,11 +1376,12 @@ window.otworzFormularzDodawania = () => {
     document.getElementById('f-no-tel').checked = false;
     window.togglePhoneRequired();
     
+    const limitMax = window.dajLimitZdjec();
     document.getElementById('foto-container').innerHTML = `
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
         <input type="file" id="f-plik" accept="image/*" multiple required 
-               onchange="if(this.files.length > 5) { alert('Maksymalnie 5 zdjęć!'); this.value = ''; }">
-        <small style="color:red; position:absolute; top:15px; right:15px;">Max 5 zdjec</small>
+               onchange="const max = window.dajLimitZdjec(); if(this.files.length > max) { alert('Maksymalnie ' + max + ' zdjęć!'); this.value = ''; }">
+        <small style="color:gray; display:block; margin-top:5px;">Limit zdjęć dostosuje się automatycznie po wyborze kategorii (max ${limitMax}).</small>
     `;
 
     const btn = document.getElementById('btn-save');
@@ -1370,6 +1420,8 @@ window.addEventListener('popstate', function(event) {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         document.body.style.overflow = 'auto';
         document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
+        window.czyOkienkoOtwarte = false;
+        
         const czystyURL = window.location.pathname;
         window.history.replaceState({}, '', czystyURL);
     }
@@ -1420,4 +1472,14 @@ window.odswiezModeleFiltry = () => {
     } else {
         modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>';
     }
+};
+
+window.dajLimitZdjec = () => {
+    const kat = document.getElementById('f-kat')?.value;
+    const podkat = document.getElementById('f-podkat')?.value;
+    
+    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) {
+        return 7;
+    }
+    return 5;
 };
