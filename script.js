@@ -596,10 +596,10 @@ window.pokazSzczegoly = async (id) => {
         <div class="main-split">
             <div class="foto-column">
                 <div class="main-foto-box" style="background:#000; border-radius:15px; height:400px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;">
+                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain; cursor: zoom-in;" onclick="window.otworzFullFoto()">
                 </div>
                 <div style="display:flex; gap:8px; margin-top:12px; overflow-x:auto;">
-                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
+                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
                 </div>
             </div>
 
