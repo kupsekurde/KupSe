@@ -1,14 +1,3 @@
-// --- USTALENIE LIMITU ZDJĘĆ (Przeniesione na górę, aby zapobiec błędom undefined) ---
-window.dajLimitZdjec = () => {
-    const kat = document.getElementById('f-kat')?.value;
-    const podkat = document.getElementById('f-podkat')?.value;
-    
-    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) {
-        return 7;
-    }
-    return 5;
-};
-
 window.updateCounter = (id, countId, max) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -31,7 +20,6 @@ window.togglePhoneRequired = () => {
         telInput.style.opacity = '1';
     }
 };
-
 // Ta funkcja zamienia "Suzuki Grand Vitara!" na "suzuki-grand-vitara"
 const zrobLadnyTytul = (t) => {
     return t.toLowerCase()
@@ -42,12 +30,19 @@ const zrobLadnyTytul = (t) => {
         .replace(/\s+/g, '-')       // zamienia spacje na minusy
         .trim();
 };
-
 // FUNKCJA BEZPIECZEŃSTWA: Czyści tekst z groźnych znaków < > itp.
 const bezpiecznyTekst = (t) => {
     const div = document.createElement('div');
     div.textContent = t;
     return div.innerHTML;
+};
+
+window.renderujOgloszenia = (lista) => {
+    const k = document.getElementById('lista');
+    if (!k) return;
+    k.style.display = 'grid';
+    // Mapujemy listę, używając bezpiecznego renderowania
+    k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
 
 window.toggleSubcats = (kat) => {
@@ -62,7 +57,6 @@ window.toggleSubcats = (kat) => {
         <div class="sub-pill" onclick="window.otworzFiltry('${kat}', '${s}')">${s}</div>
     `).join('');
 };
-
 const dajNazwe = (e) => { 
     if(!e) return "Użytkownik";
     let n = e.split('@')[0]; 
@@ -73,7 +67,7 @@ const URL_S = 'https://zeymooitrdcbgrrpzhed.supabase.co';
 const KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleW1vb2l0cmRjYmdycnB6aGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDA4MzgsImV4cCI6MjA5MTM3NjgzOH0.dwTF_sCtvkcN5v6fb2vHoThplzgc42ZY-pVx2LySkYo';
 const baza = window.supabase.createClient(URL_S, KEY_S);
 
-// --- DANE KATEGORII ---
+// --- DANE KATEGORII (TEGO BRAKOWAŁO) ---
 const SUB_DATA = {
     'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
     'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
@@ -87,7 +81,7 @@ const SUB_DATA = {
     'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
     'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
     'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
-    'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
+        'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
 };
 
 const MOTO_DATA = {
@@ -152,38 +146,57 @@ let aktualneFotki = [];
 let wynikiBazowe = [];
 let ostatnieWyniki = [];
 let ostatniTytul = "";
+const OGLOSZENIA_NA_STRONE = 12;
 
 window.szukaj = async () => {
-    console.log("Start szukania...");
+    console.log("Start szukania..."); // Log w konsoli
 
     const p1 = document.getElementById('szukajka-glowna');
     const p2 = document.getElementById('miasto-input');
     
     if (!p1 || !p2) {
-        console.error("BŁĄD: Nie znaleziono pól w HTML!");
+        console.error("BŁĄD: Nie znaleziono pól w HTML! Szukałem 'szukajka-glowna' i 'miasto-input'");
+        alert("Błąd techniczny: Nie znaleziono pól wyszukiwarki.");
         return;
     }
 
     const tekst = p1.value.toLowerCase().trim();
     const loc = p2.value.toLowerCase().trim();
     
+        console.log("Szukam frazy:", tekst, "w lokalizacji:", loc);
+
+    // Funkcja pomocnicza, która usuwa polskie ogonki
     const bezOgonkow = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
         .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z');
 
     try {
+        // Filtrujemy ogłoszenia lokalnie, żeby obsługiwać polskie znaki
         const data = daneOgloszen.filter(o => {
             const tytulNorm = bezOgonkow(o.tytul || "");
             const lokNorm = bezOgonkow(o.lokalizacja || "");
             return tytulNorm.includes(bezOgonkow(tekst)) && lokNorm.includes(bezOgonkow(loc));
         });
+        
+        // Udajemy błąd, jeśli nic nie ma (dla zachowania reszty logiki)
+        const error = null; 
+
+        if (error) {
+            console.error("Błąd z bazy Supabase:", error);
+            alert("Błąd bazy: " + error.message);
+            return;
+        }
+
+        console.log("Znaleziono ogłoszeń:", data.length);
 
         if (data.length === 0) {
             document.getElementById('lista').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Brak wyników dla podanych kryteriów.</p>";
         } else {
+            // Ważne: nazwa musi być taka sama jak ta, którą poprawiliśmy wcześniej!
             window.renderujOgloszenia(data);
         }
 
+        // Zmiana tytułu nad ogłoszeniami
         const title = document.getElementById('grid-title');
         if (title) title.innerText = (tekst || loc) ? "Wyniki wyszukiwania" : "Najnowsze ogłoszenia";
 
@@ -191,7 +204,6 @@ window.szukaj = async () => {
         console.error("Nieoczekiwany błąd skryptu:", err);
     }
 };
-
 // --- LOGOWANIE I INTERFEJS ---
 window.loguj = async () => {
     const email = document.getElementById('email').value;
@@ -214,17 +226,19 @@ window.loguj = async () => {
             komunikat = "Nieprawidłowe hasło lub login";
         }
         alert("Błąd: " + komunikat);
-        if(window.turnstile) turnstile.reset(); 
+        turnstile.reset(); 
     } else {
         location.reload();
     }
 };
 
+// NOWA FUNKCJA DO LOGOWANIA PRZEZ GOOGLE I FB
 window.logujSpolecznosciowo = async (dostawca) => {
     const { data, error } = await baza.auth.signInWithOAuth({
         provider: dostawca,
         options: {
             redirectTo: window.location.origin,
+            // Dodajemy jawne zapytanie o e-mail i profil publiczny
             scopes: dostawca === 'facebook' ? 'email,public_profile' : 'email'
         }
     });
@@ -238,6 +252,7 @@ window.zarejestruj = async () => {
 
     if (!email || !password) return alert("Wypełnij email i hasło!");
     
+    // --- WALIDACJA HASŁA ---
     const passRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
     if (!passRegex.test(password)) {
         return alert("Hasło nie spełnia wymogów:\n• min. 8 znaków\n• duża litera\n• liczba\n• znak specjalny");
@@ -245,21 +260,28 @@ window.zarejestruj = async () => {
 
     if (!zgoda) return alert("Musisz zaakceptować regulamin!");
 
+        // Pobranie tokena w bezpieczny sposób
+        // Pobieramy dowód weryfikacji
     const token = (window.turnstile) ? window.turnstile.getResponse() : "";
 
     if (!token || token === "") {
         return alert("Musisz potwierdzić, że nie jesteś robotem!");
     }
 
+if (!token) {
+    return alert("Kliknij captcha jeszcze raz.");
+}
+
     const { data, error } = await baza.auth.signUp({ 
         email, 
         password,
-        options: { captchaToken: token }
+        options: { captchaToken: token } // Tu przekazujemy token do bazy
     });
     if (error) {
         alert("Błąd: " + error.message);
-        if(window.turnstile) turnstile.reset();
-    } else {
+        turnstile.reset(); // Resetuje okienko, żeby bot nie mógł próbować w pętli
+    }
+    else {
         alert("Konto utworzone! Sprawdź e-mail, aby aktywować konto.");
         location.reload();
     }
@@ -284,8 +306,8 @@ async function sprawdzUzytkownika() {
                 <div style="position:relative;">
                     <button onclick="window.toggleUserMenu(event)" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:800; font-size:13px; display:flex; align-items:center; gap:5px; position:relative;">
                         Moje Konto ▼
-                        ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold;">${msgCount}</span>` : ''}
-                    </button>
+                                                ${msgCount > 0 ? `<span id="msg-badge" style="position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; border:2px solid white; font-weight:bold;">${msgCount}</span>` : ''}
+                                        </button>
                     <div id="drop-menu" style="display:none; position:absolute; top:110%; left:0; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-radius:15px; padding:5px; z-index:2001; min-width:210px; border:1px solid #eee;">
                         <div onclick="window.pokazMojeOgloszenia()" style="padding:12px 15px; cursor:pointer; border-bottom:1px solid #f5f5f5; font-size:14px; text-align:left; display:flex; align-items:center; gap:10px;"><span>📝</span> Moje ogłoszenia</div>
                         <div onclick="window.pokazSkrzynke()" style="padding:12px 15px; cursor:pointer; border-bottom:1px solid #f5f5f5; font-size:14px; text-align:left; display:flex; align-items:center; gap:10px;">
@@ -304,6 +326,8 @@ async function sprawdzUzytkownika() {
         if (authBox) authBox.style.display = 'block';
         nav.innerHTML = `<button onclick="document.getElementById('auth-box').scrollIntoView({behavior:'smooth'})" class="btn-account">Zaloguj się</button>`;
         
+        // Funkcja która czeka aż Captcha będzie gotowa
+                // Uparta funkcja, która będzie próbować co pół sekundy, aż do skutku
         const renderujLogin = () => {
             if (window.turnstile) {
                 const box = document.getElementById('bot-login');
@@ -320,14 +344,42 @@ async function sprawdzUzytkownika() {
         renderujLogin();
     }
 }
+// --- ULUBIONE (NAPRAWIONE I MNIEJSZE) ---
+window.pokazUlubione = () => {
+    const okno = document.getElementById('modal-view');
+    const content = document.getElementById('view-content');
+    const mb = document.querySelector('.modal-box');
+    
+    if(mb) mb.style.maxWidth = "600px";
+    
+    // Filtrujemy dane (upewniamy się, że id to liczba)
+    const ulubioneLista = daneOgloszen.filter(o => mojeUlubione.includes(Number(o.id)));
 
-// --- WIADOMOŚCI ---
+    content.innerHTML = `
+        <button class="close-btn" onclick="window.zamknijModal()">&times;</button>
+        <h2 style="text-align:center; margin-bottom:20px;">Twoje Ulubione ❤️</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            ${ulubioneLista.map(o => `
+                <div onclick="window.pokazSzczegoly(${o.id})" style="cursor:pointer; border:1px solid #eee; border-radius:12px; overflow:hidden; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <img src="${o.zdjecia[0]}" style="width:100%; height:120px; object-fit:cover;">
+                    <div style="padding:10px;">
+                        <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.cena} zł</div>
+                        <div style="font-size:12px; height:32px; overflow:hidden; margin-top:5px;">${o.tytul}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        ${ulubioneLista.length === 0 ? '<p style="text-align:center; color:gray; margin-top:30px; grid-column: 1/3;">Nie masz jeszcze ulubionych ogłoszeń.</p>' : ''}`;
+    
+    okno.style.display = 'flex';
+};
+// --- WIADOMOŚCI (POGRUBIENIE, USUWANIE, IMIONA) ---
 window.pokazSkrzynke = async () => {
     const { data: { user } } = await baza.auth.getUser();
     const { data: msgs } = await baza.from('wiadomosci').select('*').or(`nadawca.eq.${user.email},odbiorca.eq.${user.email}`).order('created_at', { ascending: false });
     const rozmowcy = [...new Set(msgs.map(m => m.nadawca === user.email ? m.odbiorca : m.nadawca))];
     
-    const mb = document.querySelector('.modal-box');
+        const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "350px"; 
 
     let html = `<button class="close-btn" onclick="window.wrocDoOgloszeniaLubZamknij()">&times;</button>
@@ -358,23 +410,23 @@ window.usunRozmowe = async (zKim) => {
 window.otworzChat = async (zKim) => {
     const { data: { user } } = await baza.auth.getUser();
     await baza.from('wiadomosci').update({ przeczytane: true }).eq('odbiorca', user.email).eq('nadawca', zKim);
-    await sprawdzUzytkownika(); 
+    await sprawdzUzytkownika(); // TO ODŚWIEŻA LICZNIK NATYCHMIAST
     const { data: msg } = await baza.from('wiadomosci').select('*').or(`and(nadawca.eq.${user.email},odbiorca.eq.${zKim}),and(nadawca.eq.${zKim},odbiorca.eq.${user.email})`).order('created_at', { ascending: true });
     
-    const mb = document.querySelector('.modal-box');
+        const mb = document.querySelector('.modal-box');
     if(mb) mb.style.maxWidth = "350px";
 
-    document.getElementById('view-content').innerHTML = `
+        document.getElementById('view-content').innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
             <div style="display:flex; align-items:center; gap:10px;">
                 <button onclick="window.pokazSkrzynke()" style="background:none; border:none; font-size:20px; cursor:pointer;">←</button>
                 <h4 style="margin:0;">${dajNazwe(zKim)}</h4>
             </div>
-            <button class="close-btn" onclick="window.wrocDoOgloszeniaLubZamknij()" style="position:static; font-size:25px;">&times;</button>
+                        <button class="close-btn" onclick="window.wrocDoOgloszeniaLubZamknij()" style="position:static; font-size:25px;">&times;</button>
         </div>
         <div id="chat-window" style="height:350px; overflow-y:auto; background:#ffffff; padding:10px; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
             ${msg.map(m => {
-                const moja = m.nadawca === user.email;
+                                const moja = m.nadawca === user.email;
                 const d = new Date(m.created_at);
                 const g = String(d.getHours()).padStart(2, '0');
                 const min = String(d.getMinutes()).padStart(2, '0');
@@ -404,6 +456,7 @@ window.wyslijZChatu = async (odbiorca) => {
     const surowaTresc = document.getElementById('chat-input').value.trim();
     if (!surowaTresc) return;
 
+    // BEZPIECZEŃSTWO: Czyścimy treść wiadomości przed wysłaniem do bazy
     const czystaTresc = bezpiecznyTekst(surowaTresc);
 
     await baza.from('wiadomosci').insert([{ 
@@ -413,10 +466,9 @@ window.wyslijZChatu = async (odbiorca) => {
         przeczytane: false 
     }]);
     
-    document.getElementById('chat-input').value = '';
+    document.getElementById('chat-input').value = ''; // Czyścimy pole po wysłaniu
     window.otworzChat(odbiorca);
 };
-
 window.wrocDoOgloszeniaLubZamknij = () => {
     if (window.obecneOgloszenieId) {
         window.pokazSzczegoly(window.obecneOgloszenieId);
@@ -424,23 +476,14 @@ window.wrocDoOgloszeniaLubZamknij = () => {
         window.zamknijModal();
     }
 };
-
 // --- FUNKCJE SYSTEMOWE ---
 window.zamknijModal = () => {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
-    document.body.style.overflow = 'auto'; 
-    const czystyURL = window.location.pathname;
-    window.history.pushState({}, '', czystyURL);
-    window.obecneOgloszenieId = null;
     const mb = document.querySelector('.modal-box');
-    if(mb) mb.style.maxWidth = "1250px";
+    if(mb) mb.style.maxWidth = "1250px"; 
+    document.getElementById('modal-view').style.display = 'none';
+    // Ta linia poniżej naprawia problem ze znikającym suwakiem:
+    document.body.style.overflow = 'auto'; 
 };
-
-window.zamknijIResetujModal = () => {
-    window.zamknijModal();
-};
-
 window.toggleUserMenu = (e) => { 
     e.stopPropagation(); 
     const m = document.getElementById('drop-menu'); 
@@ -449,19 +492,23 @@ window.toggleUserMenu = (e) => {
 
 window.wyloguj = async () => { await baza.auth.signOut(); location.reload(); };
 
+
 // --- SZCZEGÓŁY OGŁOSZENIA ---
 window.pokazSzczegoly = async (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
 
+    // Zwiększamy licznik odwiedzin lokalnie i w bazie Supabase
     o.wyswietlenia = (o.wyswietlenia || 0) + 1;
     baza.from('ogloszenia').update({ wyswietlenia: o.wyswietlenia }).eq('id', id).then();
     
     window.obecneOgloszenieId = id; 
     window.aktualneZdjecieIndex = 0; 
 
+    // --- NOWOŚĆ: Budujemy ładny link ---
     const ladnyTytul = zrobLadnyTytul(o.tytul);
     const nowyURL = new URL(window.location);
+    // Adres będzie wyglądał tak: ?ogloszenie=nissan-qashqai-123
     nowyURL.searchParams.set('ogloszenie', `${ladnyTytul}-${o.id}`);
     window.history.pushState({id: o.id}, '', nowyURL);
 
@@ -473,12 +520,13 @@ window.pokazSzczegoly = async (id) => {
         user = session.data?.session?.user || null;
     }
 
-    window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
-    const telCzysty = (o.telefon && o.telefon !== 'brak') ? String(o.telefon) : '';
+                window.aktualneFotki = Array.isArray(o.zdjecia) ? o.zdjecia : [o.zdjecia];
+    // Naprawione: Zamieniamy numer na tekst przed formatowaniem, żeby uniknąć błędu
+            const telCzysty = (o.telefon && o.telefon !== 'brak') ? String(o.telefon) : '';
     const telFormat = telCzysty ? telCzysty.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : '';
     
     let telefonWidok = "";
-    if (!telCzysty) {
+        if (!telCzysty) {
         telefonWidok = `<b style="margin-left:8px; color:gray;">Nie podano</b>`;
     } else {
         telefonWidok = user ? `
@@ -488,80 +536,95 @@ window.pokazSzczegoly = async (id) => {
             </button>` : `<span style="color:red; font-size:11px; margin-left:8px;">[Zaloguj się]</span>`;
     }
     
+    const przyciskChatu = (user && user.email !== o.user_email) 
+        ? `<button onclick="event.stopPropagation(); window.otworzChat('${o.user_email}')" style="flex:1; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">✉ Wyślij wiadomość</button>`
+        : `<p style="font-size:11px; color:gray; text-align:center; width:100%;">Zaloguj się, aby napisać</p>`;
+
     const btnWstecz = ostatnieWyniki.length > 0 
         ? `<button onclick="window.pokazWynikiModal(ostatniTytul, ostatnieWyniki)" style="background:#f5f5f5; border:none; padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:6px; font-size:13px; color:#111; transition: 0.2s;">⬅ Powrót</button>` 
         : "";
 
+    // Definiujemy wygląd boksów z parametrami technicznymi
+    let parametryHTML = '';
+    if (o.kategoria === 'Motoryzacja') {
+        parametryHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px solid #eee;">
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Rok produkcji</span>
+                    <strong style="font-size: 14px; color: #333;">${o.rok_produkcji || '—'}</strong>
+                </div>
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Przebieg</span>
+                    <strong style="font-size: 14px; color: #333;">${o.przebieg ? o.przebieg + ' km' : '—'}</strong>
+                </div>
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Pojemność</span>
+                    <strong style="font-size: 14px; color: #333;">${o.pojemnosc || '—'}</strong>
+                </div>
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Moc</span>
+                    <strong style="font-size: 14px; color: #333;">${o.moc ? o.moc + ' KM' : '—'}</strong>
+                </div>
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Paliwo</span>
+                    <strong style="font-size: 14px; color: #333;">${o.paliwo || '—'}</strong>
+                </div>
+                <div style="background: white; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0;">
+                    <span style="display: block; font-size: 11px; color: #888;">Skrzynia biegów</span>
+                    <strong style="font-size: 14px; color: #333;">${o.skrzynia_biegow || '—'}</strong>
+                </div>
+            </div>
+        `;
+    }
+
     document.getElementById('view-content').innerHTML = `
         <style>
             .main-split { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-            @media (max-width: 768px) {
-                .main-split { display: flex; flex-direction: column; gap: 20px; }
-                .main-foto-box { height: 250px !important; }
-                .modal-box { padding: 15px !important; }
-            }
+            @media (max-width: 768px) { .main-split { display: flex; flex-direction: column; gap: 20px; } }
         </style>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;">
             <div>
                 ${btnWstecz}
                 <div style="font-size:11px; color:#777; margin-top:8px; font-weight:600; text-transform:uppercase;">
-                    ${o.kategoria} <span style="color:#ccc; margin:0 5px;">—</span> ${o.podkategoria} ${o.wojewodztwo ? `<span style="color:#ccc; margin:0 5px;">—</span> Woj. ${o.wojewodztwo}` : ''}
+                    ${o.kategoria} <span style="color:#ccc; margin:0 5px;">—</span> ${o.podkategoria}
                 </div>
             </div>
-            <button class="close-btn" onclick="window.zamknijModal()" style="position:static; background:#f5f5f5; border:none; width:35px; height:35px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:22px; color:#333;">&times;</button>
+            <button class="close-btn" onclick="window.zamknijModal()" style="background:#f5f5f5; border:none; width:35px; height:35px; border-radius:50%; cursor:pointer; font-size:22px;">&times;</button>
         </div>
 
         <div class="main-split">
             <div class="foto-column">
-                <div class="main-foto-box" style="background:#000; border-radius:15px; height:400px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
-                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;" onclick="window.otworzFullFoto()">
+                <div class="main-foto-box" style="background:#000; border-radius:15px; height:400px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                    <img id="mainFoto" src="${window.aktualneFotki[0]}" style="max-width:100%; max-height:100%; object-fit: contain;">
                 </div>
-                <div style="display:flex; gap:8px; margin-top:12px; overflow-x:auto; padding-bottom:5px;">
-                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" class="mini-foto" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'}; flex-shrink:0;">`).join('')}
+                <div style="display:flex; gap:8px; margin-top:12px; overflow-x:auto;">
+                    ${window.aktualneFotki.map((img, i) => `<img src="${img}" onclick="window.zmienGlowneZdjecie(${i})" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i===0?'var(--primary)':'transparent'};">`).join('')}
                 </div>
             </div>
 
             <div class="info-column" style="display:flex; flex-direction:column;">
                 <div style="font-size:11px; color:gray;">Dodano: ${formatujDate(o.created_at)}</div>
-                <h2 style="font-size:24px; margin:10px 0; color:var(--text); line-height:1.2;">${o.tytul}</h2>
+                <h2 style="font-size:24px; margin:10px 0; color:var(--text);">${o.tytul}</h2>
                 <h1 style="color:var(--primary); font-size:32px; margin:5px 0;">${o.cena} zł</h1>
                 
-                <div style="margin-top:15px; font-size:15px; color:#444; display:flex; flex-direction:column; gap:12px;">
-                    <span style="display:flex; align-items:center;">📍 Lokalizacja: <b style="margin-left:8px;">${o.lokalizacja} ${o.wojewodztwo ? `(${o.wojewodztwo})` : ''}</b></span>
-                    <span style="display:flex; align-items:center;">📞 Telefon: ${telefonWidok}</span>
-                </div>
-                <div class="action-buttons" style="display:flex; gap:8px; align-items:center; margin-top:25px;">
-                    ${(user && user.email !== o.user_email) ? 
-                        `<button onclick="event.stopPropagation(); window.otworzChat('${o.user_email}')" style="padding:12px 20px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:8px;">✉ Wyślij wiadomość</button>` : 
-                        `<span style="font-size:12px; color:gray;">${user ? '' : 'Zaloguj się, aby napisać'}</span>`
-                    }
-                    <button onclick="window.udostepnijOgloszenie(event, ${o.id})" style="width:44px; height:44px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">🔗</button>
-                    <button onclick="window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="width:44px; height:44px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">
-                        ${mojeUlubione.includes(o.id) ? '❤️' : '🤍'}
-                    </button>
-                </div>
-
-                <div style="margin-top:20px; padding:15px; background:#fbfbfb; border-radius:12px; border:1px solid #f0f0f0;">
-                    <div style="font-size:13px; color:#555; display:flex; align-items:center; gap:6px;">
-                        👤 Sprzedający: <b style="color:var(--text);">${dajNazwe(o.user_email)}</b>
-                    </div>
-                    <a href="javascript:void(0)" onclick="window.pokazOgloszeniaUzytkownika('${o.user_email}')" style="color:var(--primary); text-decoration:none; font-weight:bold; font-size:12px; display:block; margin-top:8px;">
-                        (Wszystkie ogłoszenia użytkownika)
-                    </a>
+                <div style="margin-top:15px; font-size:15px; display:flex; flex-direction:column; gap:12px;">
+                    <span>📍 Lokalizacja: <b>${o.lokalizacja}</b></span>
+                    <span>📞 Telefon: ${telefonWidok}</span>
                 </div>
             </div>
         </div>
 
-        <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top:10px;">
+        ${parametryHTML}
+
+        <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top:20px;">
             <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Opis ogłoszenia</h3>
-            <div style="background: #ffffff;">
-                <p style="white-space:pre-line; font-size:15px; line-height:1.7; color:#333; margin:0;">${o.opis}</p>
-            </div>
-            <div style="margin-top: 30px; font-size: 11px; color: #aaa; text-align: right; border-top: 1px solid #f9f9f9; padding-top: 10px;">
-                👁️ Wyświetlenia strony: <b>${o.wyswietlenia}</b>
+            <p style="white-space:pre-line; font-size:15px; line-height:1.7; color:#333; margin:0;">${o.opis}</p>
+            <div style="margin-top: 30px; font-size: 11px; color: #aaa; text-align: right;">
+                👁️ Wyświetlenia: <b>${o.wyswietlenia}</b>
             </div>
         </div>`;
+    
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };
@@ -573,13 +636,13 @@ window.zmienGlowneZdjecie = (idx) => {
         mainImg.src = window.aktualneFotki[idx];
     }
     
+    // Podświetlanie aktywnej miniaturki
     const wszystkieMini = document.querySelectorAll('.mini-foto');
     wszystkieMini.forEach((foto, i) => {
         foto.style.border = (i === idx) ? '3px solid var(--primary)' : '2px solid transparent';
         foto.style.opacity = (i === idx) ? '1' : '0.6';
     });
 };
-
 window.otworzFullFoto = () => {
     let lb = document.getElementById('lightbox-box');
     if (!lb) {
@@ -589,6 +652,8 @@ window.otworzFullFoto = () => {
         document.body.appendChild(lb);
     }
     window.isZoomed = false; 
+
+    // DODAJEMY TO: Informujemy przeglądarkę, że otworzyliśmy zdjęcie
     window.history.pushState({view: 'lightbox'}, '');
 
     lb.innerHTML = `
@@ -607,9 +672,11 @@ window.otworzFullFoto = () => {
     lb.style.display = 'flex';
 };
 
+// DODAJEMY TĘ FUNKCJĘ:
 window.zamknijLightbox = () => {
     const lb = document.getElementById('lightbox-box');
     if (lb && lb.style.display === 'flex') {
+        // Nie zamykamy okna ręcznie, pozwalamy systemowi "wrócić" do ogłoszenia
         window.history.back();
     }
 };
@@ -645,17 +712,19 @@ window.navFullFoto = (kierunek) => {
     if (window.aktualneZdjecieIndex < 0) window.aktualneZdjecieIndex = window.aktualneFotki.length - 1;
     if (img) img.src = window.aktualneFotki[window.aktualneZdjecieIndex];
 };
-
 window.udostepnijOgloszenie = (e, id) => {
     if(e) e.stopPropagation();
+    // Tworzymy link prowadzący prosto do tego ogłoszenia
     const link = window.location.origin + window.location.pathname + '?id=' + id;
     
+    // Jeśli używasz telefonu, otworzy się systemowe menu udostępniania
     if (navigator.share) {
         navigator.share({
             title: 'Zobacz to ogłoszenie!',
             url: link
         }).catch(() => {});
     } else {
+        // Jeśli używasz komputera, link po prostu skopiuje się do schowka
         navigator.clipboard.writeText(link).then(() => {
             alert("Link do ogłoszenia został skopiowany do schowka!");
         });
@@ -667,35 +736,22 @@ window.otworzFiltry = (kat, podkat) => {
     const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
     window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
-
 window.updateFormSubcats = (p = 'f-') => {
-    const katSelect = document.getElementById(`${p}kat`);
-    if (!katSelect) return;
-    
-    const kat = katSelect.value;
+    const kat = document.getElementById(`${p}kat`).value;
     const podkatSelect = document.getElementById(`${p}podkat`);
     const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    // Zapamiętujemy aktualnie wybraną podkategorię (jeśli jakaś była, np. przy edycji)
-    const poprzedniaPodkat = podkatSelect ? podkatSelect.value : '';
-
-    // Aktualizujemy listę podkategorii tylko, jeśli zmieniła się kategoria główna
-    if (podkatSelect) {
-        // Jeśli pole było puste lub resetujemy, budujemy listę na nowo
-        if (!poprzedniaPodkat || Array.from(podkatSelect.options).length <= 1) {
-            podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-                (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
-        }
+    if (event && event.target && event.target.id === `${p}kat`) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
     }
     
     if (!extraFields) return;
     extraFields.innerHTML = ''; 
 
-    const wybranaPodkat = podkatSelect ? podkatSelect.value : '';
+    const wybranaPodkat = podkatSelect.value;
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
-    // Generowanie pól dodatkowych dla Motoryzacji
-    if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
+        if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
         const markiOptions = Object.keys(MOTO_DATA).map(m => `<option value="${m}">${m}</option>`).join('');
         extraFields.innerHTML = `
             <div style="display:grid; gap:10px; margin-bottom:10px;">
@@ -729,15 +785,16 @@ window.updateFormSubcats = (p = 'f-') => {
                         <option value="Manualna">Manualna</option>
                     </select>
                 </div>
+                         </div>
             </div>`;
     }
     
-    // Aktualizacja limitu zdjęć w locie
+    // AKTUALIZACJA LIMITU ZDJĘĆ
     const limit = window.dajLimitZdjec();
     const infoTekst = document.querySelector('#foto-container small');
     const inputPlik = document.getElementById('f-plik') || document.getElementById('f-plik-nowe');
     
-    if (infoTekst) infoTekst.innerText = `Maksymalnie ${limit} zdjęć`;
+        if (infoTekst) infoTekst.innerText = `Maksymalnie ${limit} zdjęć`;
     if (inputPlik) {
         inputPlik.onchange = function() {
             const obecne = window.tempZdjeciaEdycja ? window.tempZdjeciaEdycja.length : 0;
@@ -769,6 +826,7 @@ window.wyslijOgloszenie = async (e) => {
     for (const file of inputPlik.files) {
         try {
             let plikDoWyslania = file;
+            
             if (typeof imageCompression !== 'undefined') {
                 try {
                     plikDoWyslania = await imageCompression(file, options);
@@ -790,24 +848,44 @@ window.wyslijOgloszenie = async (e) => {
     const opisVal = document.getElementById('f-opis').value;
     const noTel = document.getElementById('f-no-tel').checked;
     const telVal = document.getElementById('f-tel').value;
-    const wojVal = document.getElementById('f-woj').value; // DODANE WOJEWÓDZTWO
 
     if(tytulVal.length < 10) { alert("Tytuł musi mieć min. 10 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(!noTel && telVal.length !== 9) { alert("Podaj 9-cyfrowy numer lub zaznacz kontakt przez stronę."); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
 
-    const { error } = await baza.from('ogloszenia').insert([{
+    // --- PRZYGOTOWANIE OBIEKTU DO INSERTU ---
+    const kategoriaVal = document.getElementById('f-kat').value;
+    const podkategoriaVal = document.getElementById('f-podkat').value;
+    const wojewodztwoVal = document.getElementById('f-woj').value;
+
+    const insertData = {
         user_email: user.email,
         tytul: tytulVal,
-        kategoria: document.getElementById('f-kat').value,
-        podkategoria: document.getElementById('f-podkat').value,
+        kategoria: kategoriaVal,
+        podkategoria: podkategoriaVal,
+        wojewodztwo: wojewodztwoVal,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        wojewodztwo: wojVal, // ZAPIS WOJEWÓDZTWA DO BAZY
         opis: opisVal,
         zdjecia: zdjeciaUrls,
         telefon: noTel ? 'brak' : telVal
-    }]);
+    };
+
+    // Jeśli to pojazd z dodatkowymi polami, pobieramy je dynamicznie
+    const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
+    if (kategoriaVal === 'Motoryzacja' && typyPojazdow.includes(podkategoriaVal)) {
+        insertData.marka = document.getElementById('extra-marka')?.value || null;
+        insertData.model = document.getElementById('extra-model')?.value || null;
+        insertData.rok_produkcji = parseInt(document.getElementById('extra-rok')?.value) || null;
+        insertData.przebieg = parseInt(document.getElementById('extra-przebieg')?.value) || null;
+        insertData.pojemnosc = document.getElementById('extra-pojemnosc')?.value || null;
+        insertData.moc = parseInt(document.getElementById('extra-moc')?.value) || null;
+        insertData.paliwo = document.getElementById('extra-paliwo')?.value || null;
+        insertData.skrzynia_biegow = document.getElementById('extra-skrzynia')?.value || null;
+    }
+
+    // --- ZAPIS DO BAZY ---
+    const { error } = await baza.from('ogloszenia').insert([insertData]);
 
     if (error) {
         alert("Błąd: " + error.message);
@@ -824,6 +902,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const { data: { user } } = await baza.auth.getUser();
     if (!user) return;
 
+    // Pobieramy najświeższe dane prosto z bazy, żeby mieć pewność, że nic nie umknęło
     const { data: mojeDane, error } = await baza.from('ogloszenia')
         .select('*')
         .ilike('user_email', user.email.trim())
@@ -837,6 +916,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
     const teraz = new Date();
     const limit = 1000 * 60 * 60 * 24 * 30; // 30 dni
 
+    // Bezpieczne filtrowanie (odporne na null i wielkość liter)
     const moje = (mojeDane || []).filter(o => 
         o.user_email && 
         o.user_email.toLowerCase().trim() === user.email.toLowerCase().trim()
@@ -870,13 +950,17 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
         </div>
         <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:15px;">
             ${wyswietlane.map(o => {
-                const dataStart = new Date(o.created_at);
+                                const dataStart = new Date(o.created_at);
                 const dataKoniec = new Date(dataStart.getTime() + limit);
                 const dniZostalo = Math.ceil((dataKoniec - teraz) / (1000 * 60 * 60 * 24));
                 
+                // Tutaj dodajemy wyciąganie godziny i minuty:
                 const godzina = String(dataKoniec.getHours()).padStart(2, '0');
                 const minuta = String(dataKoniec.getMinutes()).padStart(2, '0');
+                
                 const formatKoniec = isNaN(dataKoniec) ? "---" : `${String(dataKoniec.getDate()).padStart(2,'0')}.${String(dataKoniec.getMonth()+1).padStart(2,'0')}.${dataKoniec.getFullYear()} ${godzina}:${minuta}`;
+                
+                // Zabezpieczenie zdjęcia
                 const foto = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjecia';
 
                 return `
@@ -886,6 +970,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                         <div>
                             <b style="font-size:14px; color:var(--primary);">${o.cena} zł</b>
                             <div style="font-size:12px; font-weight:600; margin-top:4px; height:32px; overflow:hidden;">${o.tytul}</div>
+                            
                             ${tab === 'aktywne' ? `
                                 <div style="margin-top:10px; font-size:10px; background:#f0f9ff; padding:6px; border-radius:8px; border:1px solid #e0f2fe;">
                                     ⏳ Pozostało: <b>${dniZostalo > 0 ? dniZostalo : 0} dni</b><br>
@@ -897,6 +982,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                                 </div>
                             `}
                         </div>
+
                         <div style="display:flex; gap:5px; margin-top:12px;">
                             ${tab === 'aktywne' ? `
                                 <button onclick="window.edytujOgloszenie(${o.id})" style="flex:1; padding:7px; font-size:11px; cursor:pointer; border-radius:8px; border:1px solid #ddd; background:#fff;">Edytuj</button>
@@ -908,7 +994,7 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                     </div>
                 </div>`;
             }).join('')}
-            ${wyswietlane.length === 0 ? '<p style="text-align:center; color:gray; grid-column:1/-1; padding:40px;">Brak ogłoszeń.</p>' : ''}
+            ${wyswietlane.length === 0 ? '<p style="text-align:center; color:gray; grid-column:1/-1; padding:40px;">Brak ogłoszeń w tej kategorii.</p>' : ''}
         </div>`;
     
     document.getElementById('modal-view').style.display = 'flex';
@@ -934,10 +1020,12 @@ window.usunOgloszenie = async (id) => {
         alert("Błąd: " + err.message);
     }
 };
-
 window.wznowOgloszenie = async (id) => {
     if (!confirm("Czy chcesz wznowić to ogłoszenie? Zostanie ono przedłużone o kolejne 30 dni od dzisiaj.")) return;
+    
+    // Ustawiamy nową datę na teraz
     const nowaData = new Date().toISOString();
+    
     const { error } = await baza.from('ogloszenia').update({ created_at: nowaData }).eq('id', id);
     
     if (error) {
@@ -946,6 +1034,13 @@ window.wznowOgloszenie = async (id) => {
         alert("Ogłoszenie zostało wznowione!");
         location.reload();
     }
+};
+// --- KATEGORIE I RENDEROWANIE ---
+
+
+window.filtrujPoPodkat = (kat, podkat) => {
+    const wyniki = daneOgloszen.filter(o => o.kategoria === kat && o.podkategoria === podkat);
+    window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 
 // --- PAGINACJA WYNIKÓW ---
@@ -958,6 +1053,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     const porcja = wyniki.slice(start, start + OGLOSZENIA_NA_STRONE);
     const sumaStron = Math.ceil(wyniki.length / OGLOSZENIA_NA_STRONE);
 
+    // Sprawdzamy czy to jedna z 5 kategorii moto
     const motoPodkaty = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Pozostałe'];
     const czyMoto = tytul.includes('Motoryzacja') && motoPodkaty.some(p => tytul.includes(p));
 
@@ -974,9 +1070,10 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
         <div id="results-layout" style="display:flex; gap:20px;">
             <div class="side-filters" style="display:none; width:260px; background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee; height: fit-content; flex-shrink:0;">
                 <h4 style="margin:0 0 15px 0;">Parametry</h4>
+                
                 <input type="text" id="side-szukaj" placeholder="Czego szukasz?" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
 
-                ${czyMoto ? `
+                                ${czyMoto ? `
                     <select id="sf-marka" onchange="window.odswiezModeleFiltry()" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
                         <option value="">Marka (Wszystkie)</option>
                         ${Object.keys(MOTO_DATA).map(m => `<option value="${m}">${m}</option>`).join('')}
@@ -1009,6 +1106,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                     <input type="number" id="side-cena-min" placeholder="Cena od" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                     <input type="number" id="side-cena-max" placeholder="Cena do" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
                 </div>
+
                 <select id="side-stan" style="width:100%; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="">Stan (Wszystkie)</option><option value="Nowy">Nowy</option><option value="Używany">Używany</option><option value="Uszkodzony">Uszkodzony</option>
                 </select>
@@ -1016,6 +1114,7 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
                 <select id="side-sort" style="width:100%; margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid #ddd;">
                     <option value="newest">Najnowsze</option><option value="oldest">Najstarsze</option><option value="price-asc">Najtańsze</option><option value="price-desc">Najdroższe</option>
                 </select>
+
                 <button onclick="window.zastosujFiltryBoczne()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:800;">Zastosuj</button>
             </div>
             <div style="flex:1;">
@@ -1028,7 +1127,6 @@ window.pokazWynikiModal = (tytul, wyniki, strona = 1) => {
     document.getElementById('modal-view').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };
-
 window.zastosujFiltryBoczne = () => {
     const fraza = document.getElementById('side-szukaj')?.value.toLowerCase().trim() || "";
     const cMin = parseFloat(document.getElementById('side-cena-min')?.value) || 0;
@@ -1037,20 +1135,24 @@ window.zastosujFiltryBoczne = () => {
     const lok = document.getElementById('side-lok')?.value.toLowerCase().trim() || "";
     const sort = document.getElementById('side-sort').value;
 
+        // Funkcja, która usuwa polskie znaki, spacje i myślniki
     const uproscTekst = (t) => t.toLowerCase()
         .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
         .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z')
         .replace(/[\s-]/g, '');
     const szukanaFrazaUproszczona = uproscTekst(fraza);
 
+    // Pola Moto
     const marka = document.getElementById('sf-marka')?.value.toLowerCase() || "";
     const model = document.getElementById('sf-model')?.value.toLowerCase() || "";
     const rMin = parseInt(document.getElementById('sf-rok-min')?.value) || 0;
     const rMax = parseInt(document.getElementById('sf-rok-max')?.value) || 9999;
+    const pMax = parseInt(document.getElementById('sf-przebieg-max')?.value) || 9999999;
     const paliwo = document.getElementById('sf-paliwo')?.value || "";
 
     let przefiltrowane = wynikiBazowe.filter(o => {
         const tytulOpisUproszczony = uproscTekst(o.tytul + " " + o.opis);
+        
         const tekstOk = fraza === "" || tytulOpisUproszczony.includes(szukanaFrazaUproszczona);
         const cenaOk = o.cena >= cMin && o.cena <= cMax;
         const lokOk = lok === "" || o.lokalizacja.toLowerCase().includes(lok);
@@ -1066,6 +1168,7 @@ window.zastosujFiltryBoczne = () => {
             const rok = rokMatch ? parseInt(rokMatch[1]) : 0;
             if(rok > 0 && (rok < rMin || rok > rMax)) motoOk = false;
         }
+
         return tekstOk && cenaOk && lokOk && stanOk && motoOk;
     });
 
@@ -1084,6 +1187,7 @@ window.zastosujFiltryBoczne = () => {
 function renderCardHTML(o) {
     const isFav = mojeUlubione.includes(o.id);
     const pelnaData = formatujDate(o.created_at);
+    // Jeśli nie ma zdjęć, użyj obrazka zastępczego
     const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
@@ -1091,7 +1195,7 @@ function renderCardHTML(o) {
             <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
+                                    <img src="${o.zdjecia[0]}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
             <div style="padding:12px;">
                 <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
                 <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
@@ -1103,6 +1207,7 @@ function renderCardHTML(o) {
         </div>`;
 }
 
+// Ta funkcja naprawia Twoją szukajkę - odpowiada za wyświetlanie wyników wyszukiwania
 window.renderujOgloszenia = (lista) => {
     const k = document.getElementById('lista');
     if (!k) return;
@@ -1111,14 +1216,17 @@ window.renderujOgloszenia = (lista) => {
     k.style.gap = '20px';
     k.innerHTML = lista.map(o => renderCardHTML(o)).join('');
 };
-
 function renderTop12(lista) {
     const k = document.getElementById('lista');
     if (!k) return;
+    
+    // Bierzemy po prostu 12 najnowszych bez względu na datę
     const top12 = lista.slice(0, 12);
+    
     k.style.display = 'grid';
     k.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
     k.style.gap = '20px';
+    
     k.innerHTML = top12.map(o => renderCardHTML(o)).join('');
 }
 
@@ -1148,33 +1256,85 @@ window.pokazOgloszeniaUzytkownika = (email) => {
     window.pokazWynikiModal(`Ogłoszenia użytkownika: ${dajNazwe(email)}`, wyniki);
 };
 
+window.zamknijModal = () => {
+    // 1. Ukrywamy wszystkie okna
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    
+    // 2. Przywracamy domyślny tytuł
+    document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
+
+    // 3. Przywracamy przewijanie strony
+    document.body.style.overflow = 'auto';
+    
+    // --- NOWOŚĆ: Czyścimy adres URL (usuwamy ?id=...) ---
+    const czystyURL = window.location.pathname;
+    window.history.pushState({}, '', czystyURL);
+    
+    window.obecneOgloszenieId = null;
+
+    // 4. Resetujemy wygląd
+    const mb = document.querySelector('.modal-box');
+    if(mb) mb.style.maxWidth = "1250px";
+    
+    window.czyOkienkoOtwarte = false;
+};
+
+window.zamknijIResetujModal = () => {
+    const modalBox = document.querySelector('.modal-box');
+    if(modalBox) modalBox.style.maxWidth = "1250px"; 
+    window.zamknijModal();
+};
+
+async function sprawdzPowiadomieniaBezReloadu() {
+    const { data: { user } } = await baza.auth.getUser();
+    if (!user) return;
+    const { data: nData } = await baza.from('wiadomosci').select('nadawca').eq('odbiorca', user.email).eq('przeczytane', false);
+    const unikalniNadawcy = nData ? [...new Set(nData.map(m => m.nadawca))] : [];
+    const count = unikalniNadawcy.length;
+    
+    const badge = document.getElementById('msg-badge');
+    if (badge) {
+        badge.style.display = count > 0 ? 'flex' : 'none';
+        badge.innerText = count;
+    }
+}
 async function init() {
     try {
+        // 1. Najpierw pobieramy ogłoszenia z bazy danych
         const { data, error } = await baza.from('ogloszenia').select('*').order('created_at', { ascending: false });
         if (error) throw error;
 
+        // --- TUTAJ DODAJEMY FILTR DATY ---
+        // Sprawdzamy, czy ogłoszenie nie jest starsze niż 30 dni
         const teraz = new Date();
-        const limit30Dni = 1000 * 60 * 60 * 24 * 30;
+        const limit30Dni = 1000 * 60 * 60 * 24 * 30; // To są dokładnie 30 dni
 
         daneOgloszen = (data || []).filter(o => {
             const dataOgloszenia = new Date(o.created_at);
+            // Jeśli od wystawienia minęło MNIEJ niż 30 dni, to ogłoszenie zostaje na liście
             return (teraz - dataOgloszenia) < limit30Dni;
         });
+        // ---------------------------------
 
+        // Wyświetlamy tylko te przefiltrowane (aktywne) ogłoszenia
         renderTop12(daneOgloszen);
         
+        // 2. TERAZ sprawdzamy logowanie (to musi być przed otwarciem ogłoszenia!)
         const { data: { user } } = await baza.auth.getUser();
         await sprawdzUzytkownika();
 
-        const parametry = new URLSearchParams(window.location.search);
-        const ogloszenieZLinku = parametry.get('ogloszenie'); 
+        // 3. Dopiero gdy wiemy kim jest użytkownik, sprawdzamy czy w linku jest ID ogłoszenia
+                const parametry = new URLSearchParams(window.location.search);
+        const ogloszenieZLinku = parametry.get('ogloszenie'); // np. "suzuki-123"
         
         if (ogloszenieZLinku) {
+            // Wyciągamy samą końcówkę (ID), czyli to co po ostatnim minusie
             const czesci = ogloszenieZLinku.split('-');
             const realneID = czesci[czesci.length - 1];
             window.pokazSzczegoly(Number(realneID));
         }
         
+        // 4. Uruchamiamy powiadomienia na żywo
         if (user) {
             baza.channel('zmiany-wiadomosci')
                 .on('postgres_changes', { 
@@ -1192,28 +1352,32 @@ async function init() {
     }
 }
 
+// Uruchomienie wszystkiego
 init();
-
-// --- ZAMYKANIE OKIEN KLIKNIĘCIEM POZA NIMI ---
+// --- POPRAWIONE ZAMYKANIE OKIEN KLIKNIĘCIEM POZA NIMI ---
 window.addEventListener('mousedown', (e) => {
     const dropMenu = document.getElementById('drop-menu');
-    const modalView = document.getElementById('modal-view'); 
-    const modalForm = document.getElementById('modal-form'); 
+    const modalView = document.getElementById('modal-view'); // Twoje ID dla podglądu
+    const modalForm = document.getElementById('modal-form'); // Twoje ID dla dodawania
 
+    // 1. Zamykanie menu "Moje Konto"
     if (dropMenu && dropMenu.style.display === 'block') {
         if (!dropMenu.contains(e.target) && !e.target.closest('button')) {
             dropMenu.style.display = 'none';
         }
     }
+
+    // 2. Zamykanie okna podglądu (ogłoszenia, wiadomości, ulubione)
     if (e.target === modalView) {
-        window.zamknijModal(); 
+        window.zamknijIResetujModal(); // Używamy Twojej istniejącej funkcji
     }
+
+    // 3. Zamykanie okna dodawania ogłoszenia
     if (e.target === modalForm) {
         modalForm.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
 });
-
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if (!o) return;
@@ -1234,10 +1398,7 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('f-podkat').value = o.podkategoria;
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
-    if(document.getElementById('f-woj') && o.wojewodztwo) {
-        document.getElementById('f-woj').value = o.wojewodztwo;
-    }
-    document.getElementById('f-tel').value = (o.telefon === 'brak') ? "" : o.telefon;
+    document.getElementById('f-tel').value = o.telefon || "";
     document.getElementById('f-opis').value = o.opis;
     
     const fotoBox = document.getElementById('foto-container');
@@ -1252,12 +1413,11 @@ window.edytujOgloszenie = (id) => {
         });
         h += `</div>`;
         h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
-        const limit = window.dajLimitZdjec();
+                const limit = window.dajLimitZdjec();
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
     };
-    
-    window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+        window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
     window.limitZdjec = (inp) => { 
         const limit = window.dajLimitZdjec();
         if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
@@ -1278,12 +1438,13 @@ window.edytujOgloszenie = (id) => {
         btn.innerText = "Kompresja i zapis...";
 
         const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
-        const noweUrls = [];
+                const noweUrls = [];
         const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
         for (const f of nowePliki) {
             try {
                 let plikDoWyslania = f;
+
                 if (typeof imageCompression !== 'undefined') {
                     try {
                         plikDoWyslania = await imageCompression(f, opt);
@@ -1291,8 +1452,9 @@ window.edytujOgloszenie = (id) => {
                         console.error("Kompresja w edycji nie udała się:", e);
                     }
                 }
+
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
-                await baza.storage.from('zdziecia').upload(name, plikDoWyslania);
+                await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
                 const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
                 noweUrls.push(publicUrl);
             } catch(err) { 
@@ -1304,9 +1466,8 @@ window.edytujOgloszenie = (id) => {
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
-            wojewodztwo: document.getElementById('f-woj').value, // AKTUALIZACJA WOJEWÓDZTWA W EDYCJI
             opis: document.getElementById('f-opis').value,
-            telefon: document.getElementById('f-tel').value || 'brak',
+            telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
 
@@ -1314,7 +1475,6 @@ window.edytujOgloszenie = (id) => {
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
-
 window.otworzFormularzDodawania = () => {
     const mb = document.querySelector('#modal-form .modal-box');
     if(mb) mb.style.maxWidth = "600px";
@@ -1322,11 +1482,13 @@ window.otworzFormularzDodawania = () => {
     document.getElementById('form-title').innerText = "Dodaj nowe ogłoszenie";
     document.getElementById('form-dodaj').reset();
 
+    // Resetowanie liczników i opcji telefonu
     window.updateCounter('f-tytul', 'count-tytul', 70);
     window.updateCounter('f-opis', 'count-opis', 8000);
     document.getElementById('f-no-tel').checked = false;
     window.togglePhoneRequired();
     
+    // Przywracamy standardowy wygląd pola zdjęć
     document.getElementById('foto-container').innerHTML = `
         <label style="display:block; margin-bottom:5px; font-weight:bold;">Zdjęcia:</label>
         <input type="file" id="f-plik" accept="image/*" multiple required 
@@ -1339,7 +1501,7 @@ window.otworzFormularzDodawania = () => {
     btn.innerText = "Dodaj ogłoszenie";
     document.getElementById('form-dodaj').onsubmit = window.wyslijOgloszenie;
 };
-
+// Funkcja do rozwijania filtrów na telefonie
 window.toggleMobileFilters = () => {
     const filters = document.querySelector('.side-filters');
     const btn = document.getElementById('filter-toggle-btn');
@@ -1352,17 +1514,19 @@ window.toggleMobileFilters = () => {
         btn.innerHTML = obecnieUkryte ? '✖ Zamknij filtry' : '🔍 Filtruj i Sortuj Wyniki';
     }
 };
-
+// Specjalny kod dla telefonów: Przycisk "Wstecz" zamyka ogłoszenie
 window.addEventListener('popstate', function(event) {
     const lb = document.getElementById('lightbox-box');
     const modalView = document.getElementById('modal-view');
     const modalForm = document.getElementById('modal-form');
 
+    // 1. Jeśli otwarte jest DUŻE ZDJĘCIE - zamknij tylko zdjęcie
     if (lb && lb.style.display === 'flex') {
         lb.style.display = 'none';
-        return; 
+        return; // Zatrzymujemy cofanie tutaj
     }
 
+    // 2. Jeśli otwarte jest ogłoszenie lub formularz - zamknij je
     const czyWidacPodglad = modalView && modalView.style.display === 'flex';
     const czyWidacFormularz = modalForm && modalForm.style.display === 'flex';
 
@@ -1370,11 +1534,15 @@ window.addEventListener('popstate', function(event) {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         document.body.style.overflow = 'auto';
         document.title = "KupSe24 - Twój Portal Ogłoszeniowy";
+        window.czyOkienkoOtwarte = false;
+        
+        // Czyścimy adres URL z ?id=...
         const czystyURL = window.location.pathname;
         window.history.replaceState({}, '', czystyURL);
     }
 });
 
+// Ta funkcja naprawia okienko bota - uruchamia je dokładnie w momencie kliknięcia "Zarejestruj się"
 window.pokazRejestracje = () => {
     document.getElementById('login-view').classList.add('hidden');
     document.getElementById('register-view').classList.remove('hidden');
@@ -1395,7 +1563,6 @@ window.pokazRejestracje = () => {
     };
     renderujReg();
 };
-
 window.odswiezModele = () => {
     const marka = document.getElementById('extra-marka').value;
     const modelSelect = document.getElementById('extra-model');
@@ -1407,8 +1574,7 @@ window.odswiezModele = () => {
     } else {
         modelSelect.innerHTML = '<option value="Pozostałe">Pozostałe</option>';
     }
-};
-
+};// Ta funkcja obsługuje listę modeli w okienku filtrów
 window.odswiezModeleFiltry = () => {
     const marka = document.getElementById('sf-marka').value;
     const modelSelect = document.getElementById('sf-model');
@@ -1420,4 +1586,14 @@ window.odswiezModeleFiltry = () => {
     } else {
         modelSelect.innerHTML = '<option value="">Model (Wszystkie)</option>';
     }
+};
+// Ta funkcja sprawdza, jaki limit zdjęć powinien obowiązywać
+window.dajLimitZdjec = () => {
+    const kat = document.getElementById('f-kat')?.value;
+    const podkat = document.getElementById('f-podkat')?.value;
+    
+    if (kat === 'Nieruchomości' || (kat === 'Motoryzacja' && podkat === 'Samochody osobowe')) {
+        return 7;
+    }
+    return 5;
 };
