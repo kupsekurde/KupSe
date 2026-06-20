@@ -1138,7 +1138,7 @@ function renderCardHTML(o) {
             <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <div style="wi<div style="width:100%; height:170px; background:#ffffff; display:flex; align-items:center; justify-content:center; overflow:hidden;">dth:100%; height:170px; background:#1e1e1f; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <div style="width:100%; height:170px; background:#ffffff; display:flex; align-items:center; justify-content:center; overflow:hidden;">
                 <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="170" loading="lazy" style="max-width:100%; max-height:100%; object-fit:contain;">
             </div>
             <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
