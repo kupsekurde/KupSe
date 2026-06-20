@@ -468,25 +468,25 @@
     </div>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <select id="f-kat" onchange="window.updateFormSubcats()" required>
-            <option value="">Kategoria</option>
-            <option value="Motoryzacja">Motoryzacja</option>
-            <option value="Nieruchomości">Nieruchomości</option>
-            <option value="Elektronika">Elektronika</option>
-            <option value="Ogród">Ogród</option>
-            <option value="Moda">Moda</option>
-            <option value="Rolnictwo">Rolnictwo</option>
-            <option value="Zwierzęta">Zwierzęta</option>
-            <option value="Dzieci">Dzieci</option>
-            <option value="Sport">Sport</option>
-            <option value="Nauka">Nauka</option>
-            <option value="Usługi">Usługi</option>
-            <option value="Inne">Inne</option>
-        </select>
-        <select id="f-podkat" onchange="window.updateFormSubcats()" required>
-            <option value="">Podkategoria</option>
-        </select>
-    </div>
+    <select id="f-kat" onchange="window.updateFormSubcats('f-')" required>
+        <option value="">Kategoria</option>
+        <option value="Motoryzacja">Motoryzacja</option>
+        <option value="Nieruchomości">Nieruchomości</option>
+        <option value="Elektronika">Elektronika</option>
+        <option value="Ogród">Ogród</option>
+        <option value="Moda">Moda</option>
+        <option value="Rolnictwo">Rolnictwo</option>
+        <option value="Zwierzęta">Zwierzęta</option>
+        <option value="Dzieci">Dzieci</option>
+        <option value="Sport">Sport</option>
+        <option value="Nauka">Nauka</option>
+        <option value="Usługi">Usługi</option>
+        <option value="Inne">Inne</option>
+    </select>
+    <select id="f-podkat" onchange="window.updateFormSubcats('f-')" required>
+        <option value="">Podkategoria</option>
+    </select>
+</div>
 
     <div id="extra-fields"></div>
 
