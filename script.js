@@ -1134,17 +1134,21 @@ function renderCardHTML(o) {
     const fotoUrl = (o.zdjecia && o.zdjecia.length > 0) ? o.zdjecia[0] : 'https://via.placeholder.com/300x200?text=Brak+zdjęcia';
     
     return `
-        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative;">
+        <div class="ad-card" onclick="window.pokazSzczegoly(${o.id})" style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; position:relative; display:flex; flex-direction:column; height:100%;">
             <div onclick="event.stopPropagation(); window.toggleUlubione(event, ${o.id})" class="fav-btn-${o.id}" style="position:absolute; top:10px; right:10px; z-index:100; background:rgba(255,255,255,0.9); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">
                 ${isFav ? '❤️' : '🤍'}
             </div>
-            <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="150" loading="lazy" style="width:100%; height:150px; object-fit:cover; aspect-ratio: 16/9;">
-            <div style="padding:12px;">
-                <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
-                <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600;">${o.tytul}</div>
+            <div style="width:100%; height:170px; background:#1e1e1f; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img src="${fotoUrl}" alt="${o.tytul}" width="250" height="170" loading="lazy" style="max-width:100%; max-height:100%; object-fit:contain;">
+            </div>
+            <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <b style="font-size:16px; color:var(--primary);">${o.cena} zł</b>
+                    <div style="font-size:13px; margin-top:4px; height:34px; overflow:hidden; color:#333; font-weight:600; line-height:1.3;">${o.tytul}</div>
+                </div>
                 <div style="font-size:11px; color:gray; margin-top:8px; display:flex; justify-content:space-between; align-items: center;">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%;">📍 ${o.lokalizacja}</span>
-                    <span style="font-size:10px; opacity:0.8; text-align: right;">${pelnaData}</span>
+                    <span style="font-size:10px; opacity:0.8; text-align: right;">${pelnaData.split(' ')[0]}</span>
                 </div>
             </div>
         </div>`;
