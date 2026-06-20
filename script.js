@@ -1404,75 +1404,80 @@ window.edytujOgloszenie = (id) => {
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
+    // Wpisujemy podstawowe dane bezpośrednio
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
-    
-    // Wymuszamy sztuczne zdarzenie, żeby updateFormSubcats wiedziało, która kategoria jest wybrana
-    const fakeEvent = { target: { id: 'f-kat' } };
-    window.updateFormSubcats(fakeEvent); 
-    
-    document.getElementById('f-podkat').value = o.podkategoria;
-    
-    // Ponownie wywołujemy dla podkategorii, aby wygenerować pola ekstra (marka, model)
-    window.updateFormSubcats();
+
+    // Ręcznie generujemy podkategorie dla wybranej kategorii
+    const podkatSelect = document.getElementById('f-podkat');
+    if (podkatSelect) {
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        podkatSelect.value = o.podkategoria;
+    }
+
+    // Wywołujemy aktualizację pól dodatkowych bez przekazywania błędnego eventu
+    window.updateFormSubcats(); 
 
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
     document.getElementById('f-tel').value = o.telefon && o.telefon !== 'brak' ? o.telefon : "";
     document.getElementById('f-opis').value = o.opis;
 
-    // Pobieramy dane ekstra z opisu ogłoszenia lub bazy (jeśli zapisujesz je w opisie jako "Marka: Opel")
-    if (document.getElementById('extra-marka')) {
-        const markaMatch = o.opis.match(/Marka:\s*([^\n\r]+)/i);
-        const modelMatch = o.opis.match(/Model:\s*([^\n\r]+)/i);
-        const rokMatch = o.opis.match(/Rok:\s*(\d+)/i);
-        const przebiegMatch = o.opis.match(/Przebieg:\s*(\d+)/i);
-        const pojMatch = o.opis.match(/Pojemność:\s*([^\n\r]+)/i);
-        const mocMatch = o.opis.match(/Moc:\s*(\d+)/i);
-        const paliwoMatch = o.opis.match(/Paliwo:\s*([^\n\r]+)/i);
-        const skrzyniaMatch = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
+    // Próba uzupełnienia pól mechanicznych z opisu tekstowego
+    setTimeout(() => {
+        if (document.getElementById('extra-marka')) {
+            const mMarka = o.opis.match(/Marka:\s*([^\n\r]+)/i);
+            const mModel = o.opis.match(/Model:\s*([^\n\r]+)/i);
+            const mRok = o.opis.match(/Rok:\s*(\d+)/i);
+            const mPrzebieg = o.opis.match(/Przebieg:\s*(\d+)/i);
+            const mPoj = o.opis.match(/Pojemność:\s*([^\n\r]+)/i);
+            const mMoc = o.opis.match(/Moc:\s*(\d+)/i);
+            const mPaliwo = o.opis.match(/Paliwo:\s*([^\n\r]+)/i);
+            const mSkrzynia = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
 
-        if (markaMatch) {
-            document.getElementById('extra-marka').value = markaMatch[1].trim();
-            window.odswiezModele();
-            if (modelMatch) document.getElementById('extra-model').value = modelMatch[1].trim();
+            if (mMarka) {
+                document.getElementById('extra-marka').value = mMarka[1].trim();
+                window.odswiezModele();
+                if (mModel) document.getElementById('extra-model').value = mModel[1].trim();
+            }
+            if (mRok) document.getElementById('extra-rok').value = mRok[1];
+            if (mPrzebieg) document.getElementById('extra-przebieg').value = mPrzebieg[1];
+            if (mPoj) document.getElementById('extra-pojemnosc').value = mPoj[1].trim();
+            if (mMoc) document.getElementById('extra-moc').value = mMoc[1];
+            if (mPaliwo) document.getElementById('extra-paliwo').value = mPaliwo[1].trim();
+            if (mSkrzynia) document.getElementById('extra-skrzynia').value = mSkrzynia[1].trim();
         }
-        if (rokMatch) document.getElementById('extra-rok').value = rokMatch[1];
-        if (przebiegMatch) document.getElementById('extra-przebieg').value = przebiegMatch[1];
-        if (pojMatch) document.getElementById('extra-pojemnosc').value = pojMatch[1].trim();
-        if (mocMatch) document.getElementById('extra-moc').value = mocMatch[1];
-        if (paliwoMatch) document.getElementById('extra-paliwo').value = paliwoMatch[1].trim();
-        if (skrzyniaMatch) document.getElementById('extra-skrzynia').value = skrzyniaMatch[1].trim();
-    }
-    
+    }, 50);
+
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
-        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max 5):</label>`;
+        const limit = window.dajLimitZdjec();
+        let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
         h += `<small style="display:block; margin-bottom:10px; color:var(--primary); font-weight:bold;">💡 Kliknij w zdjęcie, aby ustawić je jako GŁÓWNE (miniaturkę).</small>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
-            const czyGlwne = i === 0;
-            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlwne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
-                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlwne ? '1' : '0.7'};">
-                    ${czyGlwne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
+            const czyGlowne = i === 0;
+            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlowne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlowne ? '1' : '0.7'};">
+                    ${czyGlowne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
                     <button type="button" onclick="event.stopPropagation(); window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold; border-radius:0 0 0 4px; z-index:10;">X</button>
                   </div>`;
         });
         h += `</div>`;
         h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
-        const limit = window.dajLimitZdjec();
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
     };
 
-    // Dodajemy nową funkcję pomocniczą do przestawiania zdjęć
     window.ustawJakoGlowne = (index) => {
-        if (index === 0) return; // Już jest główne
+        if (index === 0) return;
         const [foto] = window.tempZdjeciaEdycja.splice(index, 1);
-        window.tempZdjeciaEdycja.unshift(foto); // Przesuń na początek tablicy
+        window.tempZdjeciaEdycja.unshift(foto);
         odswiezZdjecia();
     };
-        window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+
+    window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
+    
     window.limitZdjec = (inp) => { 
         const limit = window.dajLimitZdjec();
         if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
@@ -1493,13 +1498,12 @@ window.edytujOgloszenie = (id) => {
         btn.innerText = "Kompresja i zapis...";
 
         const nowePliki = Array.from(document.getElementById('f-plik-nowe')?.files || []);
-                const noweUrls = [];
+        const noweUrls = [];
         const opt = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: false };
 
         for (const f of nowePliki) {
             try {
                 let plikDoWyslania = f;
-
                 if (typeof imageCompression !== 'undefined') {
                     try {
                         plikDoWyslania = await imageCompression(f, opt);
@@ -1507,7 +1511,6 @@ window.edytujOgloszenie = (id) => {
                         console.error("Kompresja w edycji nie udała się:", e);
                     }
                 }
-
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
                 await baza.storage.from('zdjecia').upload(name, plikDoWyslania);
                 const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
