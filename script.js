@@ -1403,24 +1403,33 @@ window.przygotujEdycje = (o) => {
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
-    // Wypełnienie podstawowych pól tekstowych
+    // 1. Wypełnienie podstawowych pól z index.html (zgodnie z ID z formularza)
     document.getElementById('f-tytul').value = o.tytul || "";
     document.getElementById('f-kat').value = o.kategoria || "";
 
-    // Budujemy listę podkategorii bez odwoływania się do globalnego SUB_DATA (w razie awarii zasięgu zmiennych)
+    // 2. Wymuszenie załadowania listy podkategorii do selecta
     const podkatSelect = document.getElementById('f-podkat');
     if (podkatSelect) {
         const lokalneSubcats = {
             'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
             'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
-            'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe']
+            'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe'],
+            'Ogród': ['Narzędzia', 'Rośliny', 'Meble ogrodowe', 'Grille', 'Nawadnianie', 'Pozostałe'],
+            'Moda': ['Ubrania damskie', 'Ubrania męskie', 'Buty', 'Dodatki', 'Biżuteria', 'Pozostałe'],
+            'Rolnictwo': ['Ciągniki', 'Maszyny rolnicze', 'Zwierzęta hodowlane', 'Pasze i ziarno', 'Opony rolnicze', 'Pozostałe'],
+            'Zwierzęta': ['Psy', 'Koty', 'Ptaki', 'Akwarystyka', 'Akcesoria', 'Pozostałe'],
+            'Dzieci': ['Zabawki', 'Wózki i foteliki', 'Ubranka', 'Akcesoria dla niemowląt', 'Meble dziecięce', 'Pozostałe'],
+            'Sport': ['Rowery', 'Siłownia i fitness', 'Turystyka', 'Sporty wodne', 'Sporty zimowe', 'Pozostałe'],
+            'Nauka': ['Książki i podręczniki', 'Instrumenty muzyczne', 'Korepetycje', 'Artykuły biurowe', 'Kursy i szkolenia', 'Pozostałe'],
+            'Usługi': ['Budowlane', 'Transport i przeprowadzki', 'Naprawa elektroniki', 'Uroda i zdrowie', 'Finanse i prawo', 'Pozostałe'],
+            'Praca': ['Budowa / Remonty', 'Kierowca / Logistyka', 'Gastronomia', 'Praca biurowa', 'Sprzedaż / Handel', 'Pozostałe'],
+            'Inne': ['Kolekcje', 'Antyki', 'Bilety', 'Oddam za darmo', 'Zamienię', 'Pozostałe']
         };
-        const lista Opcji = lokalneSubcats[o.kategoria] || [o.podkategoria];
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + listaOpcji.map(x => `<option value="${x}">${x}</option>`).join('');
-        podkatSelect.value = o.podkategoria;
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (lokalneSubcats[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        podkatSelect.value = o.podkategoria || "";
     }
 
-    // Odpalenie widżetów formularza
+    // 3. Budujemy pola dodatkowe (marka, model itd.) wewnątrz #extra-fields
     window.updateFormSubcats(); 
 
     document.getElementById('f-cena').value = o.cena || 0;
@@ -1428,8 +1437,9 @@ window.przygotujEdycje = (o) => {
     document.getElementById('f-tel').value = o.telefon && o.telefon !== 'brak' ? o.telefon : "";
     document.getElementById('f-opis').value = o.opis || "";
 
-    // Renderowanie pól parametrów dla Motoryzacji
-    if (document.getElementById('extra-marka') && o.opis) {
+    // 4. Bezpieczne szukanie pól mechanicznych (teraz szukamy ich dopiero, gdy wiemy że istnieją)
+    const markaInput = document.getElementById('extra-marka');
+    if (markaInput && o.opis) {
         const mMarka = o.opis.match(/Marka:\s*([^\n\r]+)/i);
         const mModel = o.opis.match(/Model:\s*([^\n\r]+)/i);
         const mRok = o.opis.match(/Rok:\s*(\d+)/i);
@@ -1440,18 +1450,20 @@ window.przygotujEdycje = (o) => {
         const mSkrzynia = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
 
         if (mMarka) {
-            document.getElementById('extra-marka').value = mMarka[1].trim();
+            markaInput.value = mMarka[1].trim();
             window.odswiezModele();
-            if (mModel) document.getElementById('extra-model').value = mModel[1].trim();
+            const modelInput = document.getElementById('extra-model');
+            if (modelInput && mModel) modelInput.value = mModel[1].trim();
         }
-        if (mRok) document.getElementById('extra-rok').value = mRok[1];
-        if (mPrzebieg) document.getElementById('extra-przebieg').value = mPrzebieg[1];
-        if (mPoj) document.getElementById('extra-pojemnosc').value = mPoj[1].trim();
-        if (mMoc) document.getElementById('extra-moc').value = mMoc[1];
-        if (mPaliwo) document.getElementById('extra-paliwo').value = mPaliwo[1].trim();
-        if (mSkrzynia) document.getElementById('extra-skrzynia').value = mSkrzynia[1].trim();
+        if (mRok && document.getElementById('extra-rok')) document.getElementById('extra-rok').value = mRok[1];
+        if (mPrzebieg && document.getElementById('extra-przebieg')) document.getElementById('extra-przebieg').value = mPrzebieg[1];
+        if (mPoj && document.getElementById('extra-pojemnosc')) document.getElementById('extra-pojemnosc').value = mPoj[1].trim();
+        if (mMoc && document.getElementById('extra-moc')) document.getElementById('extra-moc').value = mMoc[1];
+        if (mPaliwo && document.getElementById('extra-paliwo')) document.getElementById('extra-paliwo').value = mPaliwo[1].trim();
+        if (mSkrzynia && document.getElementById('extra-skrzynia')) document.getElementById('extra-skrzynia').value = mSkrzynia[1].trim();
     }
     
+    // 5. Zarządzanie zdjęciami z dynamicznym limitem (7 dla Samochodów, 5 dla reszty)
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
         const limit = (o.kategoria === 'Nieruchomości' || (o.kategoria === 'Motoryzacja' && o.podkategoria === 'Samochody osobowe')) ? 7 : 5;
@@ -1490,6 +1502,7 @@ window.przygotujEdycje = (o) => {
 
     odswiezZdjecia();
 
+    // 6. Obsługa zapisu formularza
     const form = document.getElementById('form-dodaj');
     const btn = document.getElementById('btn-save');
     btn.innerText = "Zapisz zmiany";
@@ -1560,7 +1573,7 @@ window.przygotujEdycje = (o) => {
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
 };
-// Kompatybilność wsteczna, gdyby inny skrypt wywoływał stare okno
+
 window.edytujOgloszenie = (id) => {
     const o = daneOgloszen.find(x => x.id === id);
     if(o) window.przygotujEdycje(o);
