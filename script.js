@@ -586,12 +586,12 @@ window.pokazSzczegoly = async (id) => {
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 20px;">
             <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Szczegóły pojazdu</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
-                <div>📅 Rok produkcji: <b>${o.opis.match(/Rok:\s*(\d+)/)?.[1] || 'Brak danych'}</b></div>
-                <div>🛣️ Przebieg: <b>${o.opis.match(/Przebieg:\s*([\d\s]+)/)?.[1] || 'Brak danych'} km</b></div>
-                <div>🧪 Pojemność: <b>${o.opis.match(/Pojemność:\s*([\d.,]+)/)?.[1] || 'Brak danych'}</b></div>
-                <div>🐎 Moc: <b>${o.opis.match(/Moc:\s*(\d+)/)?.[1] || 'Brak danych'} KM</b></div>
-                <div>⛽ Paliwo: <b>${o.opis.match(/(Benzyna|LPG|Diesel|Hybryda|Elektryczny)/)?.[0] || 'Brak danych'}</b></div>
-                <div>⚙️ Skrzynia biegów: <b>${o.opis.match(/(Automatyczna|Manualna)/)?.[0] || 'Brak danych'}</b></div>
+                <div> Rok produkcji: <b>${o.opis.match(/Rok:\s*(\d+)/)?.[1] || 'Brak danych'}</b></div>
+                <div> Przebieg: <b>${o.opis.match(/Przebieg:\s*([\d\s]+)/)?.[1] || 'Brak danych'} km</b></div>
+                <div> Pojemność: <b>${o.opis.match(/Pojemność:\s*([\d.,]+)/)?.[1] || 'Brak danych'}</b></div>
+                <div> Moc: <b>${o.opis.match(/Moc:\s*(\d+)/)?.[1] || 'Brak danych'} KM</b></div>
+                <div> Paliwo: <b>${o.opis.match(/(Benzyna|LPG|Diesel|Hybryda|Elektryczny)/)?.[0] || 'Brak danych'}</b></div>
+                <div> Skrzynia biegów: <b>${o.opis.match(/(Automatyczna|Manualna)/)?.[0] || 'Brak danych'}</b></div>
             </div>
         </div>
         ` : ''}
