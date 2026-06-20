@@ -768,13 +768,15 @@ window.otworzFiltry = (kat, podkat) => {
     window.pokazWynikiModal(`${kat} > ${podkat}`, wyniki);
 };
 window.updateFormSubcats = (p = 'f-') => {
-    const kat = document.getElementById(`${p}kat`).value;
+    const katEl = document.getElementById(`${p}kat`);
     const podkatSelect = document.getElementById(`${p}podkat`);
+    if (!katEl || !podkatSelect) return;
+
+    const kat = katEl.value;
+    const zapamietanaPodkat = podkatSelect.value; // Zapamiętujemy co było wybrane
     
-    // Zawsze odświeżamy listę podkategorii dla wybranej kategorii
-    const obecnaPodkat = podkatSelect.value;
     podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-        (SUB_DATA[kat] || []).map(x => `<option value="${x}" ${x === obecnaPodkat ? 'selected' : ''}>${x}</option>`).join('');
+        (SUB_DATA[kat] || []).map(x => `<option value="${x}" ${x === zapamietanaPodkat ? 'selected' : ''}>${x}</option>`).join('');
     
     if (!extraFields) return;
     extraFields.innerHTML = ''; 
@@ -1414,22 +1416,22 @@ window.edytujOgloszenie = (id) => {
     
     document.getElementById('modal-view').style.display = 'none';
     document.getElementById('modal-form').style.display = 'flex';
-    document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
+        document.getElementById('form-title').innerText = "Edytuj ogłoszenie";
     document.body.style.overflow = 'hidden';
     
-    indow.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
+    // NAPRAWIONE: window zamiast indow
+    window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
 
-    // Funkcja do zmiany głównego zdjęcia
-    window.ustawJakoGlowne = (index) => {
-        const fotka = window.tempZdjeciaEdycja.splice(index, 1)[0];
-        window.tempZdjeciaEdycja.unshift(fotka);
-        odswiezZdjecia();
-    };
-    
+    // Wypełnianie danych
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
+    
+    // Odświeżamy listę podkategorii ZANIM przypiszemy wartość
     window.updateFormSubcats(); 
     document.getElementById('f-podkat').value = o.podkategoria;
+    
+    // Ponowne wywołanie, żeby pokazać pola motoryzacji jeśli to auto
+    window.updateFormSubcats(); 
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
     document.getElementById('f-tel').value = o.telefon || "";
