@@ -671,13 +671,21 @@ window.otworzFiltry = (kat, podkat) => {
 window.updateFormSubcats = (p = 'f-') => {
     const katSelect = document.getElementById(`${p}kat`);
     if (!katSelect) return;
+    
     const kat = katSelect.value;
     const podkatSelect = document.getElementById(`${p}podkat`);
     const extraFields = document.getElementById(p === 'e-' ? 'extra-fields-edit' : 'extra-fields');
     
-    // Zabezpieczenie przed błędem braku obiektu event
+    // Zapamiętujemy aktualnie wybraną podkategorię (jeśli jakaś była, np. przy edycji)
+    const poprzedniaPodkat = podkatSelect ? podkatSelect.value : '';
+
+    // Aktualizujemy listę podkategorii tylko, jeśli zmieniła się kategoria główna
     if (podkatSelect) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        // Jeśli pole było puste lub resetujemy, budujemy listę na nowo
+        if (!poprzedniaPodkat || Array.from(podkatSelect.options).length <= 1) {
+            podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
+                (SUB_DATA[kat] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        }
     }
     
     if (!extraFields) return;
@@ -686,6 +694,7 @@ window.updateFormSubcats = (p = 'f-') => {
     const wybranaPodkat = podkatSelect ? podkatSelect.value : '';
     const typyPojazdow = ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery'];
 
+    // Generowanie pól dodatkowych dla Motoryzacji
     if (kat === 'Motoryzacja' && typyPojazdow.includes(wybranaPodkat)) {
         const markiOptions = Object.keys(MOTO_DATA).map(m => `<option value="${m}">${m}</option>`).join('');
         extraFields.innerHTML = `
@@ -723,6 +732,7 @@ window.updateFormSubcats = (p = 'f-') => {
             </div>`;
     }
     
+    // Aktualizacja limitu zdjęć w locie
     const limit = window.dajLimitZdjec();
     const infoTekst = document.querySelector('#foto-container small');
     const inputPlik = document.getElementById('f-plik') || document.getElementById('f-plik-nowe');
