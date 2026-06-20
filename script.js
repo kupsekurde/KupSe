@@ -1404,18 +1404,20 @@ window.edytujOgloszenie = (id) => {
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
-    // Wpisujemy podstawowe dane bezpośrednio
+    // 1. Wpisujemy podstawowe dane wejściowe
     document.getElementById('f-tytul').value = o.tytul;
     document.getElementById('f-kat').value = o.kategoria;
 
-    // Ręcznie generujemy podkategorie dla wybranej kategorii
+    // 2. SZTYWNE wstrzyknięcie podkategorii do pola select
     const podkatSelect = document.getElementById('f-podkat');
     if (podkatSelect) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
+            (SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
         podkatSelect.value = o.podkategoria;
     }
 
-    // Wywołujemy aktualizację pól dodatkowych bez przekazywania błędnego eventu
+    // 3. Wywołujemy updateFormSubcats() - teraz pole podkategorii już istnieje, 
+    // więc funkcja poprawnie rozpozna "Samochody osobowe" i ustawi limit na 7 oraz wyrenderuje dodatkowe pola!
     window.updateFormSubcats(); 
 
     document.getElementById('f-cena').value = o.cena;
@@ -1423,43 +1425,41 @@ window.edytujOgloszenie = (id) => {
     document.getElementById('f-tel').value = o.telefon && o.telefon !== 'brak' ? o.telefon : "";
     document.getElementById('f-opis').value = o.opis;
 
-    // Próba uzupełnienia pól mechanicznych z opisu tekstowego
-    setTimeout(() => {
-        if (document.getElementById('extra-marka')) {
-            const mMarka = o.opis.match(/Marka:\s*([^\n\r]+)/i);
-            const mModel = o.opis.match(/Model:\s*([^\n\r]+)/i);
-            const mRok = o.opis.match(/Rok:\s*(\d+)/i);
-            const mPrzebieg = o.opis.match(/Przebieg:\s*(\d+)/i);
-            const mPoj = o.opis.match(/Pojemność:\s*([^\n\r]+)/i);
-            const mMoc = o.opis.match(/Moc:\s*(\d+)/i);
-            const mPaliwo = o.opis.match(/Paliwo:\s*([^\n\r]+)/i);
-            const mSkrzynia = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
+    // 4. Wypełnianie pól dodatkowych motoryzacji (marka, model itd.)
+    if (document.getElementById('extra-marka')) {
+        const mMarka = o.opis.match(/Marka:\s*([^\n\r]+)/i);
+        const mModel = o.opis.match(/Model:\s*([^\n\r]+)/i);
+        const mRok = o.opis.match(/Rok:\s*(\d+)/i);
+        const mPrzebieg = o.opis.match(/Przebieg:\s*(\d+)/i);
+        const mPoj = o.opis.match(/Pojemność:\s*([^\n\r]+)/i);
+        const mMoc = o.opis.match(/Moc:\s*(\d+)/i);
+        const mPaliwo = o.opis.match(/Paliwo:\s*([^\n\r]+)/i);
+        const mSkrzynia = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i);
 
-            if (mMarka) {
-                document.getElementById('extra-marka').value = mMarka[1].trim();
-                window.odswiezModele();
-                if (mModel) document.getElementById('extra-model').value = mModel[1].trim();
-            }
-            if (mRok) document.getElementById('extra-rok').value = mRok[1];
-            if (mPrzebieg) document.getElementById('extra-przebieg').value = mPrzebieg[1];
-            if (mPoj) document.getElementById('extra-pojemnosc').value = mPoj[1].trim();
-            if (mMoc) document.getElementById('extra-moc').value = mMoc[1];
-            if (mPaliwo) document.getElementById('extra-paliwo').value = mPaliwo[1].trim();
-            if (mSkrzynia) document.getElementById('extra-skrzynia').value = mSkrzynia[1].trim();
+        if (mMarka) {
+            document.getElementById('extra-marka').value = mMarka[1].trim();
+            window.odswiezModele();
+            if (mModel) document.getElementById('extra-model').value = mModel[1].trim();
         }
-    }, 50);
-
+        if (mRok) document.getElementById('extra-rok').value = mRok[1];
+        if (mPrzebieg) document.getElementById('extra-przebieg').value = mPrzebieg[1];
+        if (mPoj) document.getElementById('extra-pojemnosc').value = mPoj[1].trim();
+        if (mMoc) document.getElementById('extra-moc').value = mMoc[1];
+        if (mPaliwo) document.getElementById('extra-paliwo').value = mPaliwo[1].trim();
+        if (mSkrzynia) document.getElementById('extra-skrzynia').value = mSkrzynia[1].trim();
+    }
+    
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
-        const limit = window.dajLimitZdjec();
+        const limit = window.dajLimitZdjec(); // Pobiera aktualny dynamiczny limit (np. 7)
         let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
         h += `<small style="display:block; margin-bottom:10px; color:var(--primary); font-weight:bold;">💡 Kliknij w zdjęcie, aby ustawić je jako GŁÓWNE (miniaturkę).</small>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
-            const czyGlowne = i === 0;
-            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlowne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
-                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlowne ? '1' : '0.7'};">
-                    ${czyGlowne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
+            const czyGlwne = i === 0;
+            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlwne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlwne ? '1' : '0.7'};">
+                    ${czyGlwne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
                     <button type="button" onclick="event.stopPropagation(); window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold; border-radius:0 0 0 4px; z-index:10;">X</button>
                   </div>`;
         });
@@ -1520,11 +1520,39 @@ window.edytujOgloszenie = (id) => {
             }
         }
 
+        // Przy zapisie generujemy zaktualizowany blok parametrów, jeśli to motoryzacja
+        let zaktualizowanyOpis = document.getElementById('f-opis').value;
+        if (document.getElementById('extra-marka')) {
+            const marka = document.getElementById('extra-marka').value;
+            const model = document.getElementById('extra-model').value;
+            const rok = document.getElementById('extra-rok').value;
+            const przebieg = document.getElementById('extra-przebieg').value;
+            const pojemnosc = document.getElementById('extra-pojemnosc').value;
+            const moc = document.getElementById('extra-moc').value;
+            const paliwo = document.getElementById('extra-paliwo').value;
+            const skrzynia = document.getElementById('extra-skrzynia').value;
+
+            // Czyścimy stare wpisy parametrów, żeby się nie dublowały w opisie
+            zaktualizowanyOpis = zaktualizowanyOpis
+                .replace(/Marka:\s*[^\n\r]+/gi, '')
+                .replace(/Model:\s*[^\n\r]+/gi, '')
+                .replace(/Rok:\s*\d+/gi, '')
+                .replace(/Przebieg:\s*\d+/gi, '')
+                .replace(/Pojemność:\s*[^\n\r]+/gi, '')
+                .replace(/Moc:\s*\d+/gi, '')
+                .replace(/Paliwo:\s*[^\n\r]+/gi, '')
+                .replace(/Skrzynia:\s*[^\n\r]+/gi, '')
+                .trim();
+
+            // Doklejamy nowe parametry na końcu opisu
+            zaktualizowanyOpis += `\n\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPrzebieg: ${przebieg}\nPojemność: ${pojemnosc}\nMoc: ${moc}\nPaliwo: ${paliwo}\nSkrzynia: ${skrzynia}`;
+        }
+
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
-            opis: document.getElementById('f-opis').value,
+            opis: zaktualizowanyOpis,
             telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
