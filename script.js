@@ -1294,9 +1294,40 @@ window.edytujOgloszenie = (id) => {
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
     document.getElementById('f-tytul').value = o.tytul;
-    document.getElementById('f-kat').value = o.kategoria;
-    window.updateFormSubcats(); 
-    document.getElementById('f-podkat').value = o.podkategoria;
+    
+    // 1. Ustawiamy główną kategorię
+    const katSelect = document.getElementById('f-kat');
+    katSelect.value = o.kategoria;
+    
+    // 2. Wymuszamy zbudowanie listy podkategorii w HTML
+    const podkatSelect = document.getElementById('f-podkat');
+    podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + (SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+    
+    // 3. Teraz bezpiecznie ustawiamy zapisaną podkategorię
+    podkatSelect.value = o.podkategoria;
+    
+    // 4. Aktualizujemy dodatkowe pola (np. dla motoryzacji), jeśli istnieją
+    window.updateFormSubcats();
+    
+    // 5. Jeśli to była motoryzacja, przywracamy zapisane parametry z opisu do pól formularza
+    if (o.kategoria === 'Motoryzacja') {
+        const markaSel = document.getElementById('extra-marka');
+        if (markaSel) {
+            const zapisanaMarka = o.opis.match(/Marka:\s*([^\n]+)/)?.[1] || "";
+            markaSel.value = zapisanaMarka;
+            window.odswiezModele();
+            
+            const modelSel = document.getElementById('extra-model');
+            if (modelSel) modelSel.value = o.opis.match(/Model:\s*([^\n]+)/)?.[1] || "";
+        }
+        if (document.getElementById('extra-rok')) document.getElementById('extra-rok').value = o.opis.match(/Rok:\s*(\d+)/)?.[1] || "";
+        if (document.getElementById('extra-przebieg')) document.getElementById('extra-przebieg').value = o.opis.match(/Przebieg:\s*(\d+)/)?.[1] || "";
+        if (document.getElementById('extra-pojemnosc')) document.getElementById('extra-pojemnosc').value = o.opis.match(/Pojemność:\s*([^\n]+)/)?.[1] || "";
+        if (document.getElementById('extra-moc')) document.getElementById('extra-moc').value = o.opis.match(/Moc:\s*(\d+)/)?.[1] || "";
+        if (document.getElementById('extra-paliwo')) document.getElementById('extra-paliwo').value = o.opis.match(/Paliwo:\s*([^\n]+)/)?.[1] || "";
+        if (document.getElementById('extra-skrzynia')) document.getElementById('extra-skrzynia').value = o.opis.match(/Skrzynia:\s*([^\n]+)/)?.[1] || "";
+    }
+
     document.getElementById('f-cena').value = o.cena;
     document.getElementById('f-lok').value = o.lokalizacja;
     document.getElementById('f-tel').value = o.telefon || "";
