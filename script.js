@@ -995,9 +995,9 @@ window.pokazMojeOgloszenia = async (tab = 'aktywne') => {
                         </div>
 
                         <div style="display:flex; gap:5px; margin-top:12px;">
-                            ${tab === 'aktywne' ? `
-                                <button onclick="window.edytujOgloszenie(${o.id})" style="flex:1; padding:7px; font-size:11px; cursor:pointer; border-radius:8px; border:1px solid #ddd; background:#fff;">Edytuj</button>
-                            ` : `
+    ${tab === 'aktywne' ? `
+        <button onclick="window.przygotujEdycje(${JSON.stringify(o).replace(/"/g, '&quot;')})" style="flex:1; padding:7px; font-size:11px; cursor:pointer; border-radius:8px; border:1px solid #ddd; background:#fff;">Edytuj</button>
+    ` : `
                                 <button onclick="window.wznowOgloszenie(${o.id})" style="flex:1; padding:7px; font-size:11px; cursor:pointer; border-radius:8px; border:none; background:#111; color:#fff; font-weight:bold;">Wznów</button>
                             `}
                             <button onclick="window.usunOgloszenie(${o.id})" style="padding:7px; color:red; border:none; background:none; cursor:pointer; font-size:18px;">🗑️</button>
@@ -1390,8 +1390,7 @@ window.addEventListener('mousedown', (e) => {
         document.body.style.overflow = 'auto';
     }
 });
-window.edytujOgloszenie = (id) => {
-    const o = daneOgloszen.find(x => x.id === id);
+window.przygotujEdycje = (o) => {
     if (!o) return;
     
     const mb = document.querySelector('#modal-form .modal-box');
@@ -1404,29 +1403,33 @@ window.edytujOgloszenie = (id) => {
     
     window.tempZdjeciaEdycja = Array.isArray(o.zdjecia) ? [...o.zdjecia] : [o.zdjecia];
     
-    // 1. Wpisujemy podstawowe dane wejściowe
-    document.getElementById('f-tytul').value = o.tytul;
-    document.getElementById('f-kat').value = o.kategoria;
+    // Wypełnienie podstawowych pól tekstowych
+    document.getElementById('f-tytul').value = o.tytul || "";
+    document.getElementById('f-kat').value = o.kategoria || "";
 
-    // 2. SZTYWNE wstrzyknięcie podkategorii do pola select
+    // Budujemy listę podkategorii bez odwoływania się do globalnego SUB_DATA (w razie awarii zasięgu zmiennych)
     const podkatSelect = document.getElementById('f-podkat');
     if (podkatSelect) {
-        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + 
-            (SUB_DATA[o.kategoria] || []).map(x => `<option value="${x}">${x}</option>`).join('');
+        const lokalneSubcats = {
+            'Motoryzacja': ['Samochody osobowe', 'Dostawcze', 'Motocykle', 'Skutery', 'Części samochodowe', 'Pozostałe'],
+            'Nieruchomości': ['Mieszkania', 'Domy', 'Garaże', 'Działki', 'Lokale', 'Pozostałe'],
+            'Elektronika': ['Telefony', 'Laptopy i komputery', 'Konsole i gry', 'Telewizory', 'Audio', 'Pozostałe']
+        };
+        const lista Opcji = lokalneSubcats[o.kategoria] || [o.podkategoria];
+        podkatSelect.innerHTML = '<option value="">Podkategoria</option>' + listaOpcji.map(x => `<option value="${x}">${x}</option>`).join('');
         podkatSelect.value = o.podkategoria;
     }
 
-    // 3. Wywołujemy updateFormSubcats() - teraz pole podkategorii już istnieje, 
-    // więc funkcja poprawnie rozpozna "Samochody osobowe" i ustawi limit na 7 oraz wyrenderuje dodatkowe pola!
+    // Odpalenie widżetów formularza
     window.updateFormSubcats(); 
 
-    document.getElementById('f-cena').value = o.cena;
-    document.getElementById('f-lok').value = o.lokalizacja;
+    document.getElementById('f-cena').value = o.cena || 0;
+    document.getElementById('f-lok').value = o.lokalizacja || "";
     document.getElementById('f-tel').value = o.telefon && o.telefon !== 'brak' ? o.telefon : "";
-    document.getElementById('f-opis').value = o.opis;
+    document.getElementById('f-opis').value = o.opis || "";
 
-    // 4. Wypełnianie pól dodatkowych motoryzacji (marka, model itd.)
-    if (document.getElementById('extra-marka')) {
+    // Renderowanie pól parametrów dla Motoryzacji
+    if (document.getElementById('extra-marka') && o.opis) {
         const mMarka = o.opis.match(/Marka:\s*([^\n\r]+)/i);
         const mModel = o.opis.match(/Model:\s*([^\n\r]+)/i);
         const mRok = o.opis.match(/Rok:\s*(\d+)/i);
@@ -1451,25 +1454,25 @@ window.edytujOgloszenie = (id) => {
     
     const fotoBox = document.getElementById('foto-container');
     const odswiezZdjecia = () => {
-        const limit = window.dajLimitZdjec(); // Pobiera aktualny dynamiczny limit (np. 7)
+        const limit = (o.kategoria === 'Nieruchomości' || (o.kategoria === 'Motoryzacja' && o.podkategoria === 'Samochody osobowe')) ? 7 : 5;
         let h = `<label style="display:block; margin-bottom:10px; font-weight:bold;">Zarządzaj zdjęciami (max ${limit}):</label>`;
-        h += `<small style="display:block; margin-bottom:10px; color:var(--primary); font-weight:bold;">💡 Kliknij w zdjęcie, aby ustawić je jako GŁÓWNE (miniaturkę).</small>`;
+        h += `<small style="display:block; margin-bottom:10px; color:var(--primary); font-weight:bold;">💡 Kliknij w zdjęcie, aby ustawić je jako GŁÓWNE.</small>`;
         h += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">`;
         window.tempZdjeciaEdycja.forEach((url, i) => {
             const czyGlwne = i === 0;
-            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlwne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowne(${i})">
+            h += `<div style="position:relative; width:80px; height:80px; border:${czyGlwne ? '3px solid green' : '1px solid #ddd'}; border-radius:8px; overflow:hidden; cursor:pointer;" onclick="window.ustawJakoGlowneEdycja(${i})">
                     <img src="${url}" style="width:100%; height:100%; object-fit:cover; opacity:${czyGlwne ? '1' : '0.7'};">
                     ${czyGlwne ? `<span style="position:absolute; bottom:0; left:0; right:0; background:green; color:white; font-size:9px; text-align:center; font-weight:bold; padding:1px 0;">GŁÓWNE</span>` : ''}
                     <button type="button" onclick="event.stopPropagation(); window.usunFotoZEdycji(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; padding:0 5px; font-weight:bold; border-radius:0 0 0 4px; z-index:10;">X</button>
                   </div>`;
         });
         h += `</div>`;
-        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjec(this)" style="font-size:12px;">`;
+        h += `<input type="file" id="f-plik-nowe" accept="image/*" multiple onchange="window.limitZdjecEdycja(this, ${limit})" style="font-size:12px;">`;
         h += `<small style="display:block; margin-top:5px; color:gray;">Możesz dodać jeszcze ${limit - window.tempZdjeciaEdycja.length} zdjęć (limit: ${limit}).</small>`;
         fotoBox.innerHTML = h;
     };
 
-    window.ustawJakoGlowne = (index) => {
+    window.ustawJakoGlowneEdycja = (index) => {
         if (index === 0) return;
         const [foto] = window.tempZdjeciaEdycja.splice(index, 1);
         window.tempZdjeciaEdycja.unshift(foto);
@@ -1478,10 +1481,9 @@ window.edytujOgloszenie = (id) => {
 
     window.usunFotoZEdycji = (i) => { window.tempZdjeciaEdycja.splice(i, 1); odswiezZdjecia(); };
     
-    window.limitZdjec = (inp) => { 
-        const limit = window.dajLimitZdjec();
-        if(inp.files.length + window.tempZdjeciaEdycja.length > limit) { 
-            alert(`W tej kategorii limit to ${limit} zdjęć!`); 
+    window.limitZdjecEdycja = (inp, maxLimit) => { 
+        if(inp.files.length + window.tempZdjeciaEdycja.length > maxLimit) { 
+            alert(`W tej kategorii limit to ${maxLimit} zdjęć!`); 
             inp.value = ""; 
         } 
     };
@@ -1508,7 +1510,7 @@ window.edytujOgloszenie = (id) => {
                     try {
                         plikDoWyslania = await imageCompression(f, opt);
                     } catch (e) {
-                        console.error("Kompresja w edycji nie udała się:", e);
+                        console.error(e);
                     }
                 }
                 const name = `${Date.now()}-${Math.random().toString(36).substr(7)}.jpg`;
@@ -1516,11 +1518,10 @@ window.edytujOgloszenie = (id) => {
                 const { data: { publicUrl } } = baza.storage.from('zdjecia').getPublicUrl(name);
                 noweUrls.push(publicUrl);
             } catch(err) { 
-                console.error("Błąd zdjęcia w edycji:", err); 
+                console.error(err); 
             }
         }
 
-        // Przy zapisie generujemy zaktualizowany blok parametrów, jeśli to motoryzacja
         let zaktualizowanyOpis = document.getElementById('f-opis').value;
         if (document.getElementById('extra-marka')) {
             const marka = document.getElementById('extra-marka').value;
@@ -1532,7 +1533,6 @@ window.edytujOgloszenie = (id) => {
             const paliwo = document.getElementById('extra-paliwo').value;
             const skrzynia = document.getElementById('extra-skrzynia').value;
 
-            // Czyścimy stare wpisy parametrów, żeby się nie dublowały w opisie
             zaktualizowanyOpis = zaktualizowanyOpis
                 .replace(/Marka:\s*[^\n\r]+/gi, '')
                 .replace(/Model:\s*[^\n\r]+/gi, '')
@@ -1544,7 +1544,6 @@ window.edytujOgloszenie = (id) => {
                 .replace(/Skrzynia:\s*[^\n\r]+/gi, '')
                 .trim();
 
-            // Doklejamy nowe parametry na końcu opisu
             zaktualizowanyOpis += `\n\nMarka: ${marka}\nModel: ${model}\nRok: ${rok}\nPrzebieg: ${przebieg}\nPojemność: ${pojemnosc}\nMoc: ${moc}\nPaliwo: ${paliwo}\nSkrzynia: ${skrzynia}`;
         }
 
@@ -1560,6 +1559,11 @@ window.edytujOgloszenie = (id) => {
         if (error) { alert("Błąd: " + error.message); btn.disabled = false; }
         else { alert("Zaktualizowano ogłoszenie!"); location.reload(); }
     };
+};
+// Kompatybilność wsteczna, gdyby inny skrypt wywoływał stare okno
+window.edytujOgloszenie = (id) => {
+    const o = daneOgloszen.find(x => x.id === id);
+    if(o) window.przygotujEdycje(o);
 };
 window.otworzFormularzDodawania = () => {
     const mb = document.querySelector('#modal-form .modal-box');
