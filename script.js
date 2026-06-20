@@ -618,6 +618,34 @@ window.pokazSzczegoly = async (id) => {
         </div>
 
         <!-- OPIS (Zawsze na dole, na całą szerokość) -->
+        <div id="parametry-ogloszenia" style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 20px;">
+            ${(() => {
+                // Wyciągamy dane z opisu za pomocą regexów
+                const rok = o.opis.match(/Rok:\s*(\d+)/i)?.[1] || "";
+                const przebieg = o.opis.match(/Przebieg:\s*(\d+)/i)?.[1] || "";
+                const pojemnosc = o.opis.match(/Pojemność:\s*([^\n\r]+)/i)?.[1] || "";
+                const moc = o.opis.match(/Moc:\s*(\d+)/i)?.[1] || "";
+                const paliwo = o.opis.match(/Paliwo:\s*([^\n\r]+)/i)?.[1] || "";
+                const skrzynia = o.opis.match(/Skrzynia:\s*([^\n\r]+)/i)?.[1] || "";
+
+                // Jeśli to motoryzacja i mamy chociaż część danych, renderujemy ładną siatkę
+                if (o.kategoria === 'Motoryzacja' && (rok || przebieg || paliwo)) {
+                    return `
+                        <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Dane techniczne</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 25px; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
+                            ${rok ? `<div style="font-size:14px; color:#555;">📅 Rok produkcji: <b style="color:#111;">${rok}</b></div>` : ''}
+                            ${przebieg ? `<div style="font-size:14px; color:#555;">🛣️ Przebieg: <b style="color:#111;">${parseFloat(przebieg).toLocaleString()} km</b></div>` : ''}
+                            ${pojemnosc ? `<div style="font-size:14px; color:#555;">🧪 Pojemność silnika: <b style="color:#111;">${pojemnosc} cm³</b></div>` : ''}
+                            ${moc ? `<div style="font-size:14px; color:#555;">💪 Moc: <b style="color:#111;">${moc} KM</b></div>` : ''}
+                            ${paliwo ? `<div style="font-size:14px; color:#555;">⛽ Rodzaj paliwa: <b style="color:#111;">${paliwo}</b></div>` : ''}
+                            ${skrzynia ? `<div style="font-size:14px; color:#555;">⚙️ Skrzynia biegów: <b style="color:#111;">${skrzynia}</b></div>` : ''}
+                        </div>
+                    `;
+                }
+                return ""; // Dla innych kategorii zwraca pusty ciąg
+            })()}
+        </div>
+
         <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top:10px;">
             <h3 style="margin-bottom:15px; font-size:18px; font-weight:800;">Opis ogłoszenia</h3>
             <div style="background: #ffffff;">
