@@ -887,6 +887,9 @@ window.wyslijOgloszenie = async (e) => {
     if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(!noTel && telVal.length !== 9) { alert("Podaj 9-cyfrowy numer lub zaznacz kontakt przez stronę."); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
 
+        const isMoto = document.getElementById('f-kat').value === 'Motoryzacja';
+    const motoInfo = isMoto ? `\n\nRok: ${document.getElementById('extra-rok').value}\nPrzebieg: ${document.getElementById('extra-przeglad')?.value || document.getElementById('extra-przebieg').value}\nPojemność: ${document.getElementById('extra-pojemnosc').value}\nMoc: ${document.getElementById('extra-moc').value}\nPaliwo: ${document.getElementById('extra-paliwo').value}\nSkrzynia: ${document.getElementById('extra-skrzynia').value}` : "";
+
     const { error } = await baza.from('ogloszenia').insert([{
         user_email: user.email,
         tytul: tytulVal,
@@ -894,7 +897,7 @@ window.wyslijOgloszenie = async (e) => {
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
-        opis: opisVal,
+        opis: opisVal + motoInfo,
         zdjecia: zdjeciaUrls,
         telefon: noTel ? 'brak' : telVal
     }]);
@@ -1493,11 +1496,14 @@ window.edytujOgloszenie = (id) => {
             }
         }
 
+                const isMoto = document.getElementById('f-kat').value === 'Motoryzacja';
+        const motoInfo = isMoto ? `\n\nRok: ${document.getElementById('extra-rok').value}\nPrzebieg: ${document.getElementById('extra-przebieg').value}\nPojemność: ${document.getElementById('extra-pojemnosc').value}\nMoc: ${document.getElementById('extra-moc').value}\nPaliwo: ${document.getElementById('extra-paliwo').value}\nSkrzynia: ${document.getElementById('extra-skrzynia').value}` : "";
+
         const { error } = await baza.from('ogloszenia').update({
             tytul: document.getElementById('f-tytul').value,
             cena: parseFloat(document.getElementById('f-cena').value),
             lokalizacja: document.getElementById('f-lok').value,
-            opis: document.getElementById('f-opis').value,
+            opis: document.getElementById('f-opis').value + motoInfo,
             telefon: document.getElementById('f-tel').value,
             zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
         }).eq('id', o.id);
