@@ -823,22 +823,39 @@ window.wyslijOgloszenie = async (e) => {
     const opisVal = document.getElementById('f-opis').value;
     const noTel = document.getElementById('f-no-tel').checked;
     const telVal = document.getElementById('f-tel').value;
+    const katVal = document.getElementById('f-kat').value;
 
     if(tytulVal.length < 10) { alert("Tytuł musi mieć min. 10 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(opisVal.length < 50) { alert("Opis musi mieć min. 50 znaków!"); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
     if(!noTel && telVal.length !== 9) { alert("Podaj 9-cyfrowy numer lub zaznacz kontakt przez stronę."); btn.disabled = false; btn.innerText = "Spróbuj ponownie"; return; }
 
-    const { error } = await baza.from('ogloszenia').insert([{
+    // 1. BUDUJEMY PODSTAWOWY OBIEKT REKORDU
+    const daneNowegoOgloszenia = {
         user_email: user.email,
         tytul: tytulVal,
-        kategoria: document.getElementById('f-kat').value,
+        kategoria: katVal,
         podkategoria: document.getElementById('f-podkat').value,
         cena: parseFloat(document.getElementById('f-cena').value),
         lokalizacja: document.getElementById('f-lok').value,
         opis: opisVal,
         zdjecia: zdjeciaUrls,
         telefon: noTel ? 'brak' : telVal
-    }]);
+    };
+
+    // 2. TUTAJ BYŁ BŁĄD – DOPISUJEMY POLA MOTO JEŚLI TO TA KATEGORIA
+    if (katVal === 'Motoryzacja') {
+        daneNowegoOgloszenia.marka = document.getElementById('extra-marka')?.value || null;
+        daneNowegoOgloszenia.model = document.getElementById('extra-model')?.value || null;
+        daneNowegoOgloszenia.rok_produkcji = parseInt(document.getElementById('extra-rok')?.value) || null;
+        daneNowegoOgloszenia.przebieg = parseInt(document.getElementById('extra-przebieg')?.value) || null;
+        daneNowegoOgloszenia.pojemnosc = document.getElementById('extra-pojemnosc')?.value || null;
+        daneNowegoOgloszenia.moc = parseInt(document.getElementById('extra-moc')?.value) || null;
+        daneNowegoOgloszenia.paliwo = document.getElementById('extra-paliwo')?.value || null;
+        daneNowegoOgloszenia.skrzynia_biegow = document.getElementById('extra-skrzynia')?.value || null;
+    }
+
+    // 3. DO SUPABASE WRZUCAMY JUŻ KOMPLETNY OBIEKT
+    const { error } = await baza.from('ogloszenia').insert([daneNowegoOgloszenia]);
 
     if (error) {
         alert("Błąd: " + error.message);
