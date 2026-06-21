@@ -839,7 +839,8 @@ window.wyslijOgloszenie = async (e) => {
         lokalizacja: document.getElementById('f-lok').value,
         opis: opisVal,
         zdjecia: zdjeciaUrls,
-        telefon: noTel ? 'brak' : telVal
+        telefon: noTel ? 'brak' : telVal,
+        wojewodztwo: document.getElementById('f-woj')?.value || null
     };
 
     // 2. TUTAJ BYŁ BŁĄD – DOPISUJEMY POLA MOTO JEŚLI TO TA KATEGORIA
@@ -1434,7 +1435,8 @@ window.limitZdjec = (inp) => {
             lokalizacja: document.getElementById('f-lok').value,
             opis: document.getElementById('f-opis').value,
             telefon: document.getElementById('f-tel').value,
-            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls]
+            zdjecia: [...window.tempZdjeciaEdycja, ...noweUrls],
+            wojewodztwo: document.getElementById('f-woj')?.value || null
         };
 
         // Jeśli edytujemy Motoryzację, dopisujemy wartości do nowych kolumn w bazie
